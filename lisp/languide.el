@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-07-18 13:18:25 john>
+;;; Time-stamp: <2004-12-08 12:33:17 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -173,6 +173,10 @@ The results are:
   valuestart valueend Character positions of the start and end of the initial
                       value expression
 ")
+
+(defmodel variables-in-scope (whereat)
+  "Return, as an alist, the names and types of variables in scope at WHEREAT.
+Where types are not declared, as in Lisp, nil can be given as the type.")
 
 (defmodel variable-reference (varname) "")
 

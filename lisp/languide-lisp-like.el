@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2004-05-20 11:39:14 john>
+;;; Time-stamp: <2004-12-08 13:08:59 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -61,6 +61,18 @@
   ()
   "Insert a progn's closing bracket."
   (insert ")"))
+
+(defmodal variables-in-scope (lisp-mode emacs-lisp-mode lisp-interaction-mode) (whereat)
+  "Return the list of variables in scope at WHEREAT."
+  (save-excursion
+    (goto-char (whereat))
+    (beginning-of-defun)
+    (let ((bod (point))
+	  (variables nil))
+      (goto-char (whereat))
+      (while (and (re-search-backward "(let\\*?" bod))
+	)
+      variables)))
 
 (defstatement comment (lisp-mode
 		       emacs-lisp-mode
