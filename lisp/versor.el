@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-01-30 14:27:17 john>
+;;; Time-stamp: <2004-02-19 10:42:46 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -41,6 +41,16 @@
   :group 'versor
   :type 'boolean)
 
+(defcustom versor-change-cursor-color t
+  "*Whether to use the cursor color to indicate the level."
+  :group 'versor
+  :type 'boolean)
+
+(defcustom versor-item-attribute nil
+  "*An attribute to use to indicate the current item.
+This is looked up in the current item, to get the value to set it to.
+You can only use this from Emacs 20 onwards.")
+
 (defcustom versor-indicate-items nil
   "*Whether to indicate the current item after each versor movement.
 The indication is cancelled at the start of the next command."
@@ -49,7 +59,9 @@ The indication is cancelled at the start of the next command."
 
 (defcustom versor:reversible (not (eq window-system 'x))
   "*Whether we allow reversing.
-This is useful if you cannot use \"shift-next\" for \"previous\"."
+This is useful if you cannot use \"shift-next\" for \"previous\".
+These seem to work OK on X but not on Windows; not sure about
+other platforms/terminals yet."
   :group 'versor
   :type 'boolean)
 
@@ -134,7 +146,7 @@ package to the end of an item."
 ;;   call versor-setup
 ;; If you want to use navigation by statements, you will need languide too.
 
-(defvar versor-insertion-keymap (make-sparse-keymap "Versor")
+(defvar versor:insertion-keymap (make-sparse-keymap "Versor")
   "Keymap for reading what kind of insertion to do.")
 
 (defun versor:setup (&rest keysets)
@@ -202,6 +214,15 @@ to select which keys are set up to do versor commands."
     (global-set-key [ next ]    'versor:over-over-next)
     (global-set-key [ C-prior ] 'versor:over-over-start)
     (global-set-key [ C-next ]  'versor:over-over-end)
+    
+    (global-set-key [ insert ]   'versor:insertion-keymap)
+    (global-set-key [ delete ]   'versor:kill)
+    (global-set-key [ M-delete ] 'versor:copy)
+
+    (define-key versor:insertion-keymap [ left ]  'versor:insert-before)
+    (define-key versor:insertion-keymap [ right ] 'versor:insert-after)
+    (define-key versor:insertion-keymap [ up ]    'versor:insert-around)
+    (define-key versor:insertion-keymap [ down ]  'versor:insert-within)
     )
 
   (when (memq 'keypad keysets)
@@ -228,31 +249,17 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-prior ]    'versor:over-over-start)
     (global-set-key [ C-next ]     'versor:over-over-end)
 
-    )
-
-  (when (memq 'keypad-misc keysets)
     (global-set-key [ kp-enter ]  'versor:copy)
-    (global-set-key [ kp-insert ] 'versor:insert)
+    (global-set-key [ kp-insert ] 'versor:insertion-keymap)
     (global-set-key [ kp-delete ] 'versor:kill)
     (global-set-key [ kp-add ]    'other-window)
-    (cond
-     ((memq 'arrows keysets)
-      (define-key versor-insertion-keymap [ left ]  'versor-insert-before)
-      (define-key versor-insertion-keymap [ right ] 'versor-insert-after)
-      (define-key versor-insertion-keymap [ up ]    'versor-insert-around)
-      (define-key versor-insertion-keymap [ down ]  'versor-insert-within)
-      )
-     ((memq 'keypad keysets)
-      (define-key versor-insertion-keymap [ kp-left ]  'versor-insert-before)
-      (define-key versor-insertion-keymap [ kp-right ] 'versor-insert-after)
-      (define-key versor-insertion-keymap [ kp-up ]    'versor-insert-around)
-      (define-key versor-insertion-keymap [ kp-down ]  'versor-insert-within)
-      )))
 
-  (global-set-key [ insert ]   'versor:insert)
-  (global-set-key [ delete ]   'versor:kill)
-  (global-set-key [ M-delete ] 'versor:copy)
-
+    (define-key versor:insertion-keymap [ kp-left ]  'versor:insert-before)
+    (define-key versor:insertion-keymap [ kp-right ] 'versor:insert-after)
+    (define-key versor:insertion-keymap [ kp-up ]    'versor:insert-around)
+    (define-key versor:insertion-keymap [ kp-down ]  'versor:insert-within)
+    )
+  
   (unless (memq 'versor:current-level-name global-mode-string)
     (setq global-mode-string
 	  (append global-mode-string
@@ -319,6 +326,8 @@ not interact properly with any existing definitions in the map."
 	  "phrases"
 	  "sentences"
 	  "paragraphs"
+	  "blocks"
+	  "block-depth"
 	  "cells"
 	  "rows"))
 
@@ -348,6 +357,8 @@ not interact properly with any existing definitions in the map."
 
 (versor:define-moves movemap-exprs
 		     '((color "green")
+		       (:underline "dark green")
+		       (:background "pale green")
 		       (first first-sexp)
 		       (previous previous-sexp)
 		       (next next-sexp)
@@ -359,8 +370,8 @@ not interact properly with any existing definitions in the map."
 (versor:define-moves movemap-depth
 		     '((color "orange")
 		       (first beginning-of-defun)
-		       (previous backward-up-list)
-		       (next down-list)
+		       (previous versor-backward-up-list)
+		       (next versor-down-list)
 		       (last innermost-list)))
 
 (versor:define-moves movemap-statement-parts
@@ -389,7 +400,14 @@ not interact properly with any existing definitions in the map."
 
 (versor:define-moves movemap-words
 		     '((color "grey")
-		       (first backward-phrase)
+		       (:background "light gray")
+		       (:underline "dark slate gray")
+		       ;; things like this (notionally the wrong
+		       ;; dimension) still work OK, because of how
+		       ;; versor-indicate-current-item works when the
+		       ;; things it calls don't explicitly set the item
+		       ;; boundaries for it:
+		       (first backward-phrase) 
 		       (previous backward-word)
 		       (next next-word)
 		       (end-of-item forward-word)
@@ -397,6 +415,7 @@ not interact properly with any existing definitions in the map."
 
 (versor:define-moves movemap-phrases
 		     '((color "blue")
+		       (:background "cornflower blue")
 		       (first backward-sentence)
 		       (previous backward-phrase)
 		       (next forward-phrase)
@@ -404,20 +423,24 @@ not interact properly with any existing definitions in the map."
 
 (versor:define-moves movemap-sentences
 		     '((color "cyan")
-		       (first backward-paragraph)
+		       (:background "light sky blue")
+		       (first versor:backward-paragraph)
 		       (previous backward-sentence)
 		       (next forward-sentence)
-		       (last forward-paragraph)))
+		       (last versor:forward-paragraph)))
 
 (versor:define-moves movemap-paragraphs
 		     '((color "yellow")
 		       (first beginning-of-buffer)
-		       (previous backward-paragraph)
-		       (next forward-paragraph)
+		       (previous versor:backward-paragraph)
+		       (next versor:forward-paragraph)
+		       (end-of-item forward-paragraph)
 		       (last end-of-buffer)))
 
 (versor:define-moves movemap-blocks
 		     '((color "green")
+		       (:underline "dark green")
+		       (:background "pale green")
 		       (previous nested-blocks-backward)
 		       (next nested-blocks-forward)))
 
@@ -532,6 +555,17 @@ With optional LEVEL-OFFSET, add that to the level first."
   ;; (message "adjusted meta-level=%d" versor:meta-level)
   )
 
+(defvar versor:item-face (make-face 'versor-item)
+  "Face to use for versor items")
+
+;; (copy-face 'region 'versor-item)
+
+;; these are conditional for the benefit of emacs 19
+
+(setq vern (string-to-int emacs-version))
+(when (>= vern 20)
+  (set-face-attribute 'versor-item nil :inherit 'region))
+
 (defun versor:set-status-display ()
   "Indicate the state of the versor system."
   (message (first (versor:current-level)))
@@ -543,7 +577,13 @@ With optional LEVEL-OFFSET, add that to the level first."
     (setq versor:mode-line-begin-string " <"
 	  versor:mode-line-end-string ">"))
   (force-mode-line-update t)
-  (when t (set-cursor-color (versor:action (versor:current-level) 'color))))
+  (when versor-change-cursor-color 
+    (set-cursor-color (versor:action (versor:current-level) 'color)))
+  (when (and versor-item-attribute (fboundp 'set-face-attribute))
+    (set-face-attribute 'versor-item nil
+			versor-item-attribute
+			(versor:action (versor:current-level)
+				       versor-item-attribute))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; underlining current item ;;;;
@@ -552,22 +592,25 @@ With optional LEVEL-OFFSET, add that to the level first."
 (defvar versor-items (list (cons (cons nil nil) nil))
   "The current versor items.
 There is a separate value of this variable for each buffer.
+Each item is represented by an overlay.
 There is always at least one item in this list, to avoid churning
 overlays; if there is no current item, the top item has nil for its
-start and end.
-Each item is ((start . end) . overlay)")
+buffer.")
 (make-variable-buffer-local 'versor-items)
 
 (defun versor:set-current-item (start end)
   "Set the start and end of the current item."
   (let ((item (car versor-items)))
-    (rplaca (car item) start)
-    (rplacd (car item) end)))
+    (if (and (overlayp item) (overlay-buffer item))
+	(move-overlay item start end)
+      (make-versor-overlay start end))))
 
 (defun versor:get-current-item ()
   "Return (start . end) for the current item."
   (if (versor:current-item-valid)
-      (car (car versor-items))
+      (let ((olay (car (car versor-items))))
+	(cons (overlay-start olay)
+	      (overlay-end olay)))
     (let* ((end (progn (funcall (or (versor:get-action 'end-of-item)
 				    (versor:get-action 'next))
 				1)
@@ -578,34 +621,53 @@ Each item is ((start . end) . overlay)")
 
 (defun versor:current-item-valid ()
   "Return whether there is a valid current item."
-  (let ((item-pair (car (car versor-items))))
-    (and (car item-pair) (cdr item-pair))))
+  (let ((item (car versor-items)))
+    (and (overlayp item)
+	 (overlay-buffer item))))
 
 (defun versor-item-overlay ()
-  "The item indication overlay for this buffer."
-  (cdr (car versor-items)))
+  "The (primary) item indication overlay for this buffer."
+  (car versor-items))
 
 (defun make-versor-overlay (start end)
   "Make a versor overlay at START END.
 If there is already a versor overlay for this buffer, reuse that."
   (unless (overlayp (versor-item-overlay))
     (let ((overlay (make-overlay start end (current-buffer))))
-      (rplacd (car versor-items) overlay)
-      (overlay-put overlay 'face 'region)))
+      (setq versor-items (list overlay))
+      (overlay-put overlay 'face
+		   (if (>= vern 20)
+		       'versor-item
+		     'region)
+		   )))
   (move-overlay (versor-item-overlay) start end (current-buffer)))
+
+(defun versor-extra-overlay (start end)
+  "Make an extra versor overlay between START and END."
+  (let ((overlay (make-overlay start end (current-buffer))))
+    (overlay-put overlay 'face
+		 (if (>= vern 20)
+		     'versor-item
+		   'region))
+    (rplacd versor-items
+	    (cons overlay
+		  (cdr versor-items)))))
 
 (defun delete-versor-overlay ()
   "Delete the versor overlay for this buffer."
   ;; in fact, we just disconnect it from the buffer
   (let ((overlay (versor-item-overlay)))
     (when (overlayp overlay)
-      (delete-overlay overlay))))
+      (delete-overlay overlay)))
+  ;; get rid of any extras
+  (while (cdr versor-items)
+    (delete-overlay (car (cdr versor-items)))
+    (rplacd versor-items (cdr (cdr versor-items)))))
 
 (defun versor-clear-current-item-indication ()
   "Intended to go at the start of each versor motion command.
 It clears variables looked at by versor-indicate-current-item, which sets them
 up for itself only if the command didn't set them for it."
-  (versor:set-current-item nil nil)
   (setq versor-indication-known-valid nil)
   (delete-versor-overlay))
 
@@ -618,21 +680,27 @@ Intended to be called at the end of all versor commands."
   ;; It makes me aware that many of the movements need redefining,
   ;; to be consistent over quite where they end up!
 
-  (unless (versor:current-item-valid)
-    (versor:set-current-item
-     ;; the command we have just run may have set these for us, if it knows in such a way that
-     ;; it can tell us much faster than we could work out for ourselves;
-     ;; they are cleared at the start of each command by versor-clear-current-item-indication,
-     ;; which, like us, is called by the as-versor-command macro
-     (point)
-     (versor-end-of-item)))
-
   (when versor-indicate-items
-    ;; re-do this because it somehow gets taken off from time to time
-    (add-hook 'pre-command-hook 'versor-de-indicate-current-item)
-    (versor-de-indicate-current-item) ; make sure there is only one --- shouldn't need this here???????????????
-    (let ((pair (versor:get-current-item)))
-      (make-versor-overlay (car pair) (cdr pair)))))
+    (condition-case error-var
+	(progn
+
+	  ;; the command we have just run may have set these for us,
+	  ;; if it knows in such a way that it can tell us much faster
+	  ;; than we could work out for ourselves; they are cleared at
+	  ;; the start of each command by
+	  ;; versor-clear-current-item-indication, which, like us, is
+	  ;; called by the as-versor-command macro
+
+	  (unless (versor:current-item-valid)
+	    (versor:set-current-item (point) (versor-end-of-item)))
+
+	  ;; re-do this because it somehow gets taken off from time to time
+	  (add-hook 'pre-command-hook 'versor-de-indicate-current-item))
+      (error
+       (progn
+	 (message "Caught error %S in item indication" error-var)
+	 (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
+	 )))))
 
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
@@ -908,12 +976,44 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	(kill-region (car item) (cdr item)))))
   (versor-indicate-current-item))
 
-(defun versor:insert ()
-  "Insert something relative to the current versor item."
+(defun versor:insert-before ()
+  "Insert something before the current versor item."
   (interactive)
 )
 
+(defun versor:insert-after ()
+  "Insert something after the current versor item."
+  (interactive)
+)
+
+(defun versor:insert-around ()
+  "Insert something around to the current versor item."
+  (interactive)
+)
+
+(defun versor:insert-within ()
+  "Insert something within the current versor item."
+  (interactive)
+)
 ;;;; some internal functions for operations that aren't typically there already
+
+(defun versor:forward-paragraph (&optional n)
+  "Like forward-paragraph, but don't end up on a blank line."
+  (interactive "p")
+  (forward-paragraph n)
+  (message "forward-paragraph %d" n)
+  (if (> n 0)
+      (while (looking-at "^$")
+	(forward-line 1))))
+
+(defun versor:backward-paragraph (&optional n)
+  "Like backward-paragraph, but don't end up on a blank line."
+  (interactive "p")
+  (backward-paragraph (1+ n))
+  (message "backward-paragraph %d" n)
+  (if (> n 0)
+      (while (looking-at "^$")
+	(forward-line 1))))
 
 (defun versor:start-of-line (n)
   "Move to first non-space on line, or to start of Nth line from here."
@@ -947,6 +1047,26 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
   "Move to the next line, following margins if on one."
   (interactive "p")
   (versor:following-margins (next-line n)))
+
+(defun versor-backward-up-list (&rest args)
+  (interactive "p")
+  (apply 'backward-up-list args)
+  (message "main overlay at %d..%d" (point) (1+ (point)))
+  (make-versor-overlay (point) (1+ (point)))
+  (save-excursion
+    (forward-sexp 1)
+    (message "extra overlay at %d..%d" (point) (1+ (point)))
+    (versor-extra-overlay (point) (1+ (point)))))
+
+(defun versor-down-list (&rest args)
+  (interactive "p")
+  (apply 'down-list args)
+  (message "main overlay at %d..%d" (point) (1+ (point)))
+  (make-versor-overlay (point) (1+ (point)))
+  (save-excursion
+    (forward-sexp 1)
+    (message "extra overlay at %d..%d" (point) (1+ (point)))
+    (versor-extra-overlay (point) (1+ (point)))))
 
 ;; (defun other-window-backwards (n)
 ;;   "Select the -Nth window -- see other-window, this just negates the argument."
