@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2004-09-16 11:02:34 john>
+;;; Time-stamp: <2005-02-07 16:36:57 John.Sturdy>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -292,10 +292,11 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
        (goto-char (car (versor:get-current-item)))
      (versor:prev-action 1))))
 
-(defun versor:other-end-of-item ()
+(defun versor:other-end-of-item (&rest junk)
   "Move to the other end of the current item."
   (interactive)
-  (versor:as-motion-command
+  (message "versor:other-end-of-item %S" junk)
+  (versor:as-motion-command		; todo: this is leaving the wrong item highlighted, I think... when it moves to the end of the item, the following item is highlighted; not sure whether this affects the selection as well as the highlighting, but I presume it does
    (let ((item (versor:get-current-item)))
      (cond
       ((= (point) (car item))
@@ -422,6 +423,17 @@ this."
 	    (kill-new (buffer-substring start end))
 	    (delete-region start end)))
 	(reverse (versor:get-current-items)))))))
+
+(defun versor:transpose ()
+  "Transpose this item with the following one."
+  (interactive)
+  (versor:as-motion-command
+   (let ((ready-made (versor:get-action 'transpoe)))
+     (if ready-made
+	 (call-interactively ready-made)
+       (error "awaiting slightly labourious general implementation of versor:transpose")
+       )
+     )))
 
 (defvar versor:isearch-string nil
   "A string that we pass to isearch, via versor:isearch-mode-hook-function")
