@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 14:01:16 john>
+;;; Time-stamp: <2004-05-26 16:23:21 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -30,6 +30,14 @@
 
 (defvar versor:level 1
   "The current versor level, as an index into (aref moves-moves versor:meta-level)")
+
+(defmacro versor:level-name (level)
+  "Return the name of LEVEL."
+  `(first (aref (versor:current-meta-level) ,level)))
+
+(defmacro versor:meta-level-name (meta-level)
+  "Return the name of META-LEVEL."
+  `(aref (aref moves-moves ,meta-level) 0))
 
 (defun versor:make-movemap-set (name &rest movemaps)
   "Make a set of movemaps called NAME from the remaining arguments.
