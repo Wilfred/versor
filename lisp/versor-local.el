@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2004-02-26 17:42:14 john>
+;;; Time-stamp: <2004-02-27 10:50:11 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -45,32 +45,29 @@
 
 (defun versor:mode-change-function (old-mode)
   "Select dimension if necessary, as a hook on changing modes."
-  (if (and versor:auto-change-for-modes
-	   (not versor:per-buffer))
-      (save-excursion
-	(set-buffer old-buffer)
-	(let ((old-pair (assoc major-mode versor:mode-current-levels)))
-	  (if (null old-pair)
-	      (push (cons major-mode (cons versor:meta-level versor:level))
-		    versor:mode-current-levels)
-	    (rplaca (cdr old-pair) versor:meta-level)
-	    (rplacd (cdr old-pair) versor:level))))
+  (when (and versor:auto-change-for-modes
+	     (not versor:per-buffer))
+    (let ((old-pair (assoc old-mode versor:mode-current-levels)))
+      (if (null old-pair)
+	  (push (cons old-mode (cons versor:meta-level versor:level))
+		versor:mode-current-levels)
+	(rplaca (cdr old-pair) versor:meta-level)
+	(rplacd (cdr old-pair) versor:level)))
     (let ((new-pair (assoc major-mode versor:mode-current-levels)))
       (when new-pair
 	(setq versor:meta-level (cadr new-pair)
 	      versor:level (cddr new-pair))
-	(versor:set-status-display)))))
+	(versor:set-status-display t)))))
 
 (defun versor:buffer-change-function (old-buffer)
   "Select dimension if necessary, as a hook on changing buffers."
-  (if versor:per-buffer
-      (progn
-	(save-excursion
-	  (set-buffer old-buffer)
-	  (setq versor:this-buffer-meta-level versor:meta-level
-		versor:this-buffer-level versor:level))
-	(versor:select-named-meta-level versor:this-buffer-meta-level)
-	(versor:select-named-level versor:this-buffer-level))))
+  (when versor:per-buffer
+    (save-excursion
+      (set-buffer old-buffer)
+      (setq versor:this-buffer-meta-level versor:meta-level
+	    versor:this-buffer-level versor:level))
+    (versor:select-named-meta-level versor:this-buffer-meta-level)
+    (versor:select-named-level versor:this-buffer-level)))
 
 (add-hook 'mode-selection-hook 'versor:mode-change-function)
 (add-hook 'buffer-selection-hook 'versor:buffer-change-function)
