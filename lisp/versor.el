@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <04/04/22 18:01:00 jcgs>
+;;; Time-stamp: <2004-04-27 12:25:15 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -863,6 +863,21 @@ of conses of start . end, in versor:latest-items."
 	 versor-items))
   ;; (versor:display-item-list (format "starting command %S" this-command) versor:latest-items)
   (delete-versor-overlay))
+
+(defun versor-set-item-indication (arg)
+  "Set whether item indication is done.
+Positive argument means on, negative or zero is off."
+  (interactive "p")
+  (if (> arg 0)
+      (progn
+	(message "Item indication turned on")
+	(setq versor-indicate-items t)
+	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
+	(versor-indicate-current-item))
+    (message "Item indication turned off")
+    (setq versor-indicate-items nil)
+    (versor-de-indicate-current-item)
+    (remove-hook 'pre-command-hook 'versor-de-indicate-current-item)))
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;; reversing ;;;;
