@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-02-20 13:49:59 john>
+;;; Time-stamp: <2004-03-02 10:01:36 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -20,6 +20,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (require 'cl)
+(require 'modal-functions)
 (provide 'languide)
 
 ;; To use languide, you need to:
@@ -27,47 +28,6 @@
 ;;   load this file
 ;; This is designed to work with versor, so you may want to have loaded that too.
 ;; It is also designed with vr-mode in mind.
-
-(defun safe-funcall (fn &rest args)
-  "Call FN with remaining ARGS if not nil, else return first of ARGS"
-  ;; (message "(safe-funcall %S %S)" fn args)
-  (if fn
-      (apply fn args)
-    (car args)))
-
-(defmacro defmodel (fun args doc &optional interactive)
-  "Define a caller for contextual FUN with ARGS and optional INTERACTIVE.
-The function is a property of that name on the symbol naming the major mode."
-  (append
-   (list 'defun fun args doc)
-   (if interactive
-       (list interactive)
-     nil)
-   (list (append (list 'safe-funcall
-		       (list 'get 'major-mode (list 'quote fun)))
-
-		 args))))
-
-
-(defun defmodal0 (fun mode args body)
-  "Define FUNCTION, for MODE with ARGS and BODY.
-This is for use inside defmodal."
-  (let* ((this-name (intern (concat (symbol-name mode) "-_-" (symbol-name fun)))))
-    ;; (message "Defining %S to be %S for %S with args %S and body %S" this-name fun mode args body)
-    (list 'progn
-	  (append (list 'defun this-name args)
-		  body)
-	  (list 'put (list 'quote mode) (list 'quote fun) (list 'quote this-name)))))
-
-(defmacro defmodal (fun mode args &rest body)
-  "Define FUNCTION, for MODE with ARGS and BODY."
-  (if (consp mode)
-      (append
-       '(progn)
-       (mapcar (lambda (this-mode)
-		 (defmodal0 fun this-mode args body))
-	       mode))
-    (defmodal0 fun mode args body)))
 
 (defmodel beginning-of-statement-internal (n)
   "Move to the beginning of the statement.
