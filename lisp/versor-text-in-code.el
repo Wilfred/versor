@@ -1,5 +1,5 @@
 ;;; versor-text-in-code.el -- versatile cursor handling of strings and comments
-;;; Time-stamp: <2004-05-26 12:59:11 john>
+;;; Time-stamp: <2004-05-27 09:36:40 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -23,6 +23,7 @@
 
 (provide 'versor-text-in-code)
 (require 'versor-names)
+(require 'versor-dimensions)
 
 (defvar versor:am-in-text-in-code nil
   "Whether we were last in text embedded in code, i.e. comment or string.
@@ -51,24 +52,30 @@ Local to each buffer.")
   "Detect whether we have landed in a comment or string, and set versor up accordingly.
 This piggy-backs onto font-lock-mode.
 Meant to go on post-command-hook."
-  (let* ((face (get-text-property (point) 'face))
-	 (am-in-text (memq face '(font-lock-string-face font-lock-comment-face))))
-    (unless (eq am-in-text versor:am-in-text-in-code)
-      (setq versor:am-in-text-in-code am-in-text)
-      (if am-in-text
-	  (progn
-	    (setq versor:non-text-meta-level versor:meta-level
-		  versor:non-text-level versor:level
-		  versor:meta-level versor:text-meta-level
-		  versor:level versor:text-level)
-	    (versor:set-status-display t)
-	    (message "Arrived in comment or string"))
-	(progn
-	    (setq versor:text-meta-level versor:meta-level
-		  versor:text-level versor:level
-		  versor:meta-level versor:non-text-meta-level
-		  versor:level versor:non-text-level)
-	    (versor:set-status-display t)
-	    (message "Left comment or string"))))))
+  (condition-case error-var
+      (let* ((face (get-text-property (point) 'face))
+	     (am-in-text (memq face '(font-lock-string-face font-lock-comment-face))))
+	(unless (eq am-in-text versor:am-in-text-in-code)
+	  (setq versor:am-in-text-in-code am-in-text)
+	  (if am-in-text
+	      (progn
+		(setq versor:non-text-meta-level versor:meta-level
+		      versor:non-text-level versor:level
+		      versor:meta-level versor:text-meta-level
+		      versor:level versor:text-level)
+		(versor:set-status-display t)
+		(message "Arrived in comment or string, using %s:%s"
+			 (versor:meta-level-name versor:meta-level)
+			 (versor:level-name versor:level)))
+	    (progn
+	      (setq versor:text-meta-level versor:meta-level
+		    versor:text-level versor:level
+		    versor:meta-level versor:non-text-meta-level
+		    versor:level versor:non-text-level)
+	      (versor:set-status-display t)
+	      (message "Left comment or string, returning to %s:%s"
+		       (versor:meta-level-name versor:meta-level)
+		       (versor:level-name versor:level))))))
+    (error (message "Error in versor-text-in-code"))))
 
 (add-hook 'post-command-hook 'versor:text-in-code-function)
