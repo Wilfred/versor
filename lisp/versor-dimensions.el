@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2004-09-09 12:26:37 john>
+;;; Time-stamp: <2005-02-07 16:40:18 John.Sturdy>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -130,6 +130,7 @@ See the definition of versor:make-movemap for details of move maps."
 			(next forward-char)
 			(last end-of-line)
 			;; (delete delete-char)
+			(transpose transpose-chars)
 			))
 
 (versor:define-moves movemap-lines
@@ -140,6 +141,7 @@ See the definition of versor:make-movemap for details of move maps."
 		       (last end-of-buffer)
 		       (end-of-item end-of-line)
 		       ;; (delete kill-line)
+			(transpose transpose-lines)
 		       ))
 
 (versor:define-moves movemap-pages
@@ -160,6 +162,7 @@ See the definition of versor:make-movemap for details of move maps."
 		       (last last-sexp)
 		       (mark mark-sexp)
 		       ;; (delete kill-sexp)
+		       (transpose transpose-sexps)
 		       ))
 
 (versor:define-moves movemap-depth
@@ -191,7 +194,9 @@ See the definition of versor:make-movemap for details of move maps."
 		       (previous versor:previous-defun)
 		       (next versor:next-defun)
 		       (end-of-item end-of-defun)
-		       (last versor:last-defun)))
+		       (last versor:last-defun)
+		       ;; (transpose transpose-sexps); would only work for lisp?
+		       ))
 
 (versor:define-moves movemap-words
 		     '((color "grey")
@@ -204,9 +209,11 @@ See the definition of versor:make-movemap for details of move maps."
 		       ;; boundaries for it:
 		       (first backward-phrase) 
 		       (previous backward-word)
-		       (next next-word)
-		       (end-of-item forward-word)
-		       (last forward-phrase)))
+		       (next versor:next-word)
+		       (end-of-item versor:end-of-word)
+		       (last forward-phrase)
+		       (delete versor:delete-word)
+		       (transpose transpose-words)))
 
 (versor:define-moves movemap-phrases
 		     '((color "blue")
@@ -222,15 +229,17 @@ See the definition of versor:make-movemap for details of move maps."
 		       (first versor:backward-paragraph)
 		       (previous backward-sentence)
 		       (next forward-sentence)
-		       (last versor:forward-paragraph)))
+		       (last versor:forward-paragraph)
+		       (transpose transpose-sentences)))
 
 (versor:define-moves movemap-paragraphs
 		     '((color "yellow")
 		       (first beginning-of-buffer)
 		       (previous versor:backward-paragraph)
 		       (next versor:forward-paragraph)
-		       (end-of-item forward-paragraph)
-		       (last end-of-buffer)))
+		       (end-of-item versor:end-of-paragraph)
+		       (last end-of-buffer)
+		       (transpose transpose-paragraphs)))
 
 (versor:define-moves movemap-blocks
 		     '((color "green")
@@ -282,6 +291,7 @@ See the definition of versor:make-movemap for details of move maps."
       moves-structured-text (versor:make-movemap-set "structured text"
 						     movemap-chars
 						     movemap-words
+						     movemap-paragraphs
 						     movemap-blocks
 						     movemap-block-depth)
 
