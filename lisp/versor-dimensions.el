@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2004-05-26 16:23:21 john>
+;;; Time-stamp: <2004-09-09 12:26:37 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -30,6 +30,18 @@
 
 (defvar versor:level 1
   "The current versor level, as an index into (aref moves-moves versor:meta-level)")
+
+(defvar versor:meta-level-shadow nil
+  "If non-nil, the value to use instead of versor:meta-level.
+Bound in versor:do-dynamic-menu because otherwise we end up with the
+wrong meta-level, as we have just come out of some menuing code.
+Other uses for this might be found.")
+
+(defvar versor:level-shadow nil
+  "If non-nil, the value to use instead of versor:level.
+Bound in versor:do-dynamic-menu because otherwise we end up with the
+wrong level, as we have just come out of some menuing code.
+Other uses for this might be found.")
 
 (defmacro versor:level-name (level)
   "Return the name of LEVEL."
@@ -299,16 +311,16 @@ Note that this is a reuse of that data type at a different level. ")
 
 (defmacro versor:current-meta-level ()
   "The current meta-level, as an array."
-  '(aref moves-moves versor:meta-level))
+  '(aref moves-moves (or versor:meta-level-shadow versor:meta-level)))
 
 (defun versor:current-level (&optional level-offset)
   "Return the current level, as an array.
 With optional LEVEL-OFFSET, add that to the level first."
   (if (integerp level-offset)
       (let ((meta (versor:current-meta-level)))
-	(aref meta (min (+ versor:level level-offset)
+	(aref meta (min (+ (or versor:level-shadow versor:level) level-offset)
 			(1- (length meta)))))
-    (aref (versor:current-meta-level) versor:level)))
+    (aref (versor:current-meta-level) (or versor:level-shadow versor:level))))
 
 (defun versor:action (level action)
   "From LEVEL get ACTION, which will be a move such as next or previous."
@@ -342,7 +354,7 @@ With optional LEVEL-OFFSET, add that to the level first."
 
 (defvar versor:mode-current-levels nil
   "Alist of mode name symbols to the current meta-level and level for that mode.
-Used by versor:local, but set here."
+Used by versor:local, but defined in versor:dimensions."
   ;; I tried getting versor:local's versor:mode-change-function to remember the
   ;; levels for the mode, but couldn't get it to work -- something about the
   ;; mode being set strangely in the minibuffer, I think

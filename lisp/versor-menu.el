@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2004-05-24 14:02:43 john>
+;;; Time-stamp: <2004-09-09 12:28:04 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -86,7 +86,9 @@ Allows various actions that depend on the current fine movement dimension."
   "Dynamic menu for versor.
 Allows various actions that depend on the current fine movement dimension."
   (interactive)
-  (tmm-prompt (versor:generate-dynamic-menu)))
+  (let ((versor:level-shadow versor:level)
+	(versor:meta-level-shadow versor:meta-level))
+    (tmm-prompt (versor:generate-dynamic-menu))))
 
 
 ;;;;experimental!!!!!!!!!!!!!!!!
