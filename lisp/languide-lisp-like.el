@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2004-01-26 16:28:40 john>
+;;; Time-stamp: <2004-05-20 11:39:14 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -23,21 +23,21 @@
 					   emacs-lisp-mode
 					   lisp-interaction-mode
 					   scheme-mode)
-  (n)
-  "Move to the beginning of Lisp statement, which is a pretty nebulous concept.
-Argument 1 means the current statement, 2 the next, etc."
+  ()
+  "Move to the beginning of Lisp statement, which is a pretty nebulous concept."
+  ;;;;;;;;;;;;;;;; wrong -- this effectively does previous-statement
   (unless (looking-at "(") (backward-up-list 1))
-  (forward-sexp (1- n)))
+  (forward-sexp -1))
 
 (defmodal end-of-statement-internal (lisp-mode
 				     emacs-lisp-mode
 				     lisp-interaction-mode
 				     scheme-mode)
-  (n)
-  "Move to the end of Lisp statement.
-Argument 1 means the current statement, 2 the next, etc."
+  ()
+  "Move to the end of Lisp statement."
+  ;;;;;;;;;;;;;;;; wrong -- this effectively does next-statement
   (unless (looking-at "(") (backward-up-list 1))
-  (forward-sexp n))
+  (forward-sexp 1))
 
 (defmodal identify-statement (lisp-mode emacs-lisp-mode lisp-interaction-mode) (default)
   "Identify a Lisp form or function."

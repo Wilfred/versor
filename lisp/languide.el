@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-04-29 10:42:51 john>
+;;; Time-stamp: <2004-05-20 11:37:10 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -29,55 +29,86 @@
 ;; This is designed to work with versor, so you may want to have loaded that too.
 ;; It is also designed with vr-mode in mind.
 
-(defmodel beginning-of-statement-internal (n)
+(defmodel beginning-of-statement-internal ()
   "Move to the beginning of the statement.
-Argument 1 means the current statement, 2 the next, etc.
 Do not do auxiliary stuff that might be associated with this."
-  (interactive "p"))
+  (interactive))
 
-(defmodel end-of-statement-internal (n)
+(defmodel end-of-statement-internal ()
   "Move to the end of the current statement.
-Argument 1 means the current statement, 2 the next, etc.
 Do not do auxiliary stuff that might be associated with this."
-  (interactive "p"))
+  (interactive))
+
+(defmodel move-into-previous-statement ()
+  "Move into the previous statement.
+This need be valid only after a beginning-of-statement-internal.
+It should move point back such that another beginning-of-statement-internal
+will go back another statement."
+  (interactive))
+
+(defmodel move-into-next-statement ()
+  "Move into the next statement.
+This need be valid only after an end-of-statement-internal.
+It should move point forward such that another end-of-statement-internal
+will go forward another statement."
+  (interactive))
 
 (defmodel identify-statement (default)
   "Note what kind of statement we are at the start of.
 Need not work if not at the start of a statement.
 If the statement cannot be identified, return DEFAULT.")
 
-(defun beginning-of-statement (n)
-  "Move to the beginning of the statement.
-Argument 1 means the current statement, 2 the next, etc."
-  (interactive "p")
-  (beginning-of-statement-internal n)
+(defun establish-current-statement ()
+  "Record some things about the current statement."
   (let ((type (identify-statement nil)))
     (statement-set-type type)
     (statement-remember (point) type)
     (setq statement-latest-start (point)
 	  navigated-latest-part 'whole)))
 
-(defun end-of-statement (n)
+(defun beginning-of-statement ()
+  "Move to the beginning of the statement.
+Argument 1 means the current statement, 2 the next, etc."
+  (interactive "p")
+  (beginning-of-statement-internal)
+  (establish-current-statement))
+
+(global-set-key [ kp-subtract ] 'beginning-of-statement-internal)
+
+(defun end-of-statement ()
   "Move to the end of the current statement.
 Argument 1 means the current statement, 2 the next, etc."
   (interactive "p")
-  (end-of-statement-internal n)
-  (let ((type (identify-statement nil)))
-    (statement-set-type type)
-    (statement-remember (point) type)
-    (setq statement-latest-start (point)
-	  navigated-latest-part 'whole)))
+  (beginning-of-statement-internal)
+  (establish-current-statement)
+  (end-of-statement-internal))
 
 (defun previous-statement (n)
   "Move to the NTH previous statement."
   (interactive "p")
-  (beginning-of-statement (1+ n)))
+  (while (> n 0)
+    (message "%d left; going to beginning of current statement" n)
+    (beginning-of-statement-internal)
+    (message "moving into previous statement")
+    (move-into-previous-statement)
+    (decf n))
+  (message "final move to beginning of statement")
+  (beginning-of-statement-internal)
+  (establish-current-statement))
 
 (defun next-statement (n)
   "Move to the NTH next statement."
   (interactive "p")
-  (end-of-statement (1+ n))
-  (beginning-of-statement 1))
+  (while (> n 0)
+    (message "%d left; going to end of current statement" n)
+    (end-of-statement-internal)
+    (message "skipping to code at start of next statement")
+    (skip-to-actual-code)
+    (when (> n 1)
+      (message "moving into next statement")
+      (move-into-next-statement))
+    (decf n))
+  (establish-current-statement))
 
 (defun safe-scan-lists (from count depth)
   "Like scan-lists, but returns nil on error."
@@ -108,9 +139,19 @@ Returns point, if there was a bracket to go out of, else nil."
 (defmodel statement-container ()
   "Select the container of the current statement.")
 
-(defmodel scope-around (whereat) "")
+(defmodel scope-around (whereat)
+  "Return (as a list / multiple value) the start and end of the scope around WHEREAT.")
 
-(defmodel binding-around (whereat) "")
+(defmodel binding-around (whereat)
+  "Return (as a list / multiple value) a description of the binding around WHEREAT.
+The results are:
+  name                The name bound, as a string
+  value               The expression giving the initial value for the variable,
+                      as a string
+  namestart nameend   Character positions of the start and end of the name
+  valuestart valueend Character positions of the start and end of the initial
+                      value expression
+")
 
 (defmodel variable-reference (varname) "")
 

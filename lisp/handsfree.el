@@ -1,5 +1,5 @@
 ;;;; handsfree.el -- operate emacs (almost) entirely through some footswitches
-;;; Time-stamp: <2004-01-26 14:30:55 john>
+;;; Time-stamp: <2004-05-07 17:30:54 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -22,6 +22,7 @@
 (provide 'handsfree)
 
 (require 'pedals)
+(require 'flexi-choose)
 (require 'handsfree-menus)
 (require 'handsfree-tools-menus)
 

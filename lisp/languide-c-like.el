@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2004-03-26 18:18:34 john>
+;;; Time-stamp: <2004-05-21 14:34:06 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -87,147 +87,175 @@ is liable to return the wrong result."
     (= (- b a)
        (skip-chars-forward " \t\n\r" b))))
 
-(defmodal beginning-of-statement-internal (c-mode perl-mode) (n)
+(defmodal move-into-previous-statement (c-mode perl-mode) ()
+  "Move into the previous C or Perl statement.
+Need only work if already at or just before the start of a statement."
+  (interactive)
+  (let ((done nil))
+    (while (not done)
+      (skip-chars-backward " \t\n")
+      (backward-char 2)
+      (if (looking-at "\\*/")
+	  (search-backward "/*" (point-min) t)
+	(forward-char 2)
+	(setq done t))))
+  (backward-char 1))
+
+(defmodal move-into-next-statement (c-mode perl-mode) ()
+  "Move into the next C or Perl statement.
+Need only work if already at or just beyond the end of a statement."
+  (interactive)
+  (skip-to-actual-code)
+  (forward-char 1))
+
+(defun languide-previous-substatement ()
+  "Go back a block, if at a block end, otherwise go back a statement."
+;;;;;;;;;;;;;;;; check first what kind, do things conditionally!
+  (goto-char (safe-scan-sexps (point) -1))
+)
+
+(defun continue-back-past-curly-ket (starting-point)
+  "Continue to back to the start of a C statement, having got back to a closing curly bracket."
+  ;; taken out-of-line for readability of surrounding code
+  (interactive)				; for testing
+  (let* ((close (point))
+	 (following-code (skip-to-actual-code)))
+    (message "From starting-point at %d, found close at %d, following code at %d is \"%s\"" starting-point close following-code (buffer-substring following-code (+ following-code 20)))
+    (cond
+     ;; first two cases are those where a keyword can follow a closing brace
+     ;; and still be within a statement
+     ((looking-at "\\<while\\>")
+      (message "Got \"while\" at %d, looking back to see which kind" (point))
+      ;; might be
+      ;;   do { ... } * while ( ... )
+      ;; or
+      ;;   { ... } * while ( ... ) { ... }
+      ;; and so must go back to check for the "do"
+      (languide-previous-substatement)
+      (goto-char (safe-scan-sexps (point) -1))
+      (message "That get us to %d:\"%s\"" (point) (buffer-substring (point) (+ (point) 20)))
+      (unless (looking-at "\\<do\\>")
+	(message "was not \"do\"")
+	;; go back to the "while"
+	(goto-char following-code)))
+     ((looking-at "\\<else\\>")
+      ;;   if ( ... ) { ... } * else { ... }
+      ;; and so must go back
+      (message "Got \"else\" following closing brace, so going back")
+      (languide-previous-substatement)
+      (goto-char (safe-scan-sexps (point) -2))
+      (message "That got us to \"%s\" which I hope is an \"if\"" (buffer-substring (point) (+ (point) 20))))
+
+     ;; having dealt with both the "{ ... } <keyword>" cases,
+     ;; now see whether we started inside a statement that follows a closing brace
+     ((> starting-point following-code)
+      (message "We started inside the statement following a closing brace, so go to the start of that statement")
+      (goto-char following-code))
+
+     ;; next, try going back a statement and a keyword
+     ;; and seeing if that is an else
+     ((progn
+	(languide-previous-substatement)
+	(goto-char (safe-scan-sexps close -1))
+	(looking-at "\\<else\\>"))
+      (message "Got else")
+      (languide-previous-substatement)
+      (goto-char (safe-scan-sexps (point) -2))
+      )
+
+     ;; if it wasn't an else, try going back another sexp
+     ((progn
+	(goto-char (safe-scan-sexps (point) -1))
+	(looking-at "\\<\\(if\\)\\|\\(while\\)\\|\\(for\\)\\|\\(until\\)\\>"))
+      (message "Got if/while/for/until")
+      )
+
+     (t
+      ;; Go back and see what was before the brace; could be
+      ;;   if ( ... ) { ... }
+      ;;   while ( ... ) { ... }
+      ;;   until ( ... ) { ... }
+      ;;   for ( ... ) { ... }
+      ;; or it could just be a free-standing code block
+      (message "Other case of closing brace, at \"%s\"" (buffer-substring (point) (+ (point) 20)))
+
+
+      (message "Other case; going back to look before the brace... got \"%s\"" (buffer-substring (point) (+ (point) 20)))
+      (cond
+
+
+       (t
+	(message "Before the brace was not if/while/for/until/else; assuming plain block")
+	(goto-char (safe-scan-sexps close -1))))))
+    (message "finished classifying code at close")
+    ))
+
+(defmodal beginning-of-statement-internal (c-mode perl-mode) ()
   "Move to the beginning of a C or Perl statement."
-  ;; to do to this: if we were already before a statement, and the first non-comment
-  ;; non-whitespace thing we find on the way backwards is a semicolon, we should go
-  ;; back before the semicolon and carry on looking, otherwise this won't work for use
-  ;; as "previous-statement"
-  (interactive "p")
-  (let ((old (point))
+  (interactive)
+  (let ((starting-point (point))
 	;; get beginning of defun, so we can use parse-partial-sexp to
 	;; see whether we have landed in a string or comment
 	(bod (save-excursion
 	       (beginning-of-defun 1)
 	       (point))))
-    (message "Starting beginning-of-statement-internal-c-perl at %d, with beginning-of-defun at %d" old bod)
-    ;; (if (looking-at "{") (backward-char 1))
-    (while (> n 0)
-      (languide-c-back-to-possible-ender bod)
-      (let ((possible-ender (point)))
+    (message "")
+    (message "Starting beginning-of-statement-internal-c-perl at %d, with beginning-of-defun at %d" starting-point bod)
 
-	(message "Countdown %d; now at %d: \"%s\", which is not in a comment or string" n (point) (buffer-substring (point) (min (point-max) (+ (point) 20))))
+    (languide-c-back-to-possible-ender bod)
 
-	;; We've now found a statement delimiter, and checked that it is a
-	;; real one, and not part of a string or comment. Now we might make
-	;; some adjustments, then finally move over any whitespace or comments
-	;; leading in to the actual statement.
+    (let ((possible-ender (point)))
 
-	(cond
-	 ((looking-at "{")
-	  (message "found open")
-	  (setq n 0)  ; can't go outside container, so stop right here
-	  (forward-char 1))
-	 ((looking-at "}")
-	  (forward-char 1)
-	  (let* ((close (point))
-		 (following-code (skip-to-actual-code)))
-	    (message "From old at %d, found close at %d, following code at %d is \"%s\"" old close following-code (buffer-substring following-code (+ following-code 20)))
-	    (cond
-	     ;; first two cases are those where a keyword can follow a closing brace
-	     ;; and still be within a statement
-	     ((looking-at "\\<while\\>")
-	      (message "Got \"while\", looking back to see which kind")
-	      ;; might be
-	      ;;   do { ... } * while ( ... )
-	      ;; or
-	      ;;   { ... } * while ( ... ) { ... }
-	      ;; and so must go back to check for the "do"
-	    ;;;;;;;;;;;;;;;; will only work with compound statements for now, there are
-	    ;;;;;;;;;;;;;;;; several of these, and I should probably make them recurse
-	    ;;;;;;;;;;;;;;;; on this routine as needed!!!!!!!!!!!!!!!!
-	      (goto-char (safe-scan-sexps (point) -2)) 
-	      (message "That get us to \"%s\"" (buffer-substring (point) (+ (point) 20)))
-	      (unless (looking-at "\\<do\\>")
-		(message "was not \"do\"")
-		(goto-char following-code))
-	      (decf n))
-	     ((looking-at "\\<else\\>")
-	      ;;   if ( ... ) { ... } * else { ... }
-	      ;; and so must go back
-	      (message "Got \"else\" following closing brace, so going back")
-	      (goto-char (safe-scan-sexps (point) -3))
-	      (message "That got us to \"%s\"" (buffer-substring (point) (+ (point) 20)))
-	      (decf n))
+      (message "now at possible ender %d: \"%s\", which is not in a comment or string" (point) (buffer-substring (point) (min (point-max) (+ (point) 20))))
 
-	     ;; having dealt with both the "{ ... } <keyword>" cases,
-	     ;; now see whether we started inside a statement that follows a closing brace
-	     ((> old following-code)
-	      (message "We started inside the statement following a closing brace, so go to the start of that statement")
-	      (goto-char following-code)
-	      (decf n))
+      ;; We've now found a statement delimiter, and checked that it is a
+      ;; real one, and not part of a string or comment. Now we might make
+      ;; some adjustments, then finally move over any whitespace or comments
+      ;; leading in to the actual statement.
 
-	     ;; next, try going back 2 sexps (really should be a statement and a keyword)
-	     ;; and seeing if that is an else
-	     ((progn
-		(goto-char (safe-scan-sexps close -2))
-		(looking-at "\\<else\\>"))
-	      (message "Got else")
-	      (goto-char (safe-scan-sexps (point) -3))
-	      (decf n)
-	      )
+      (cond
+       ((looking-at "{")
+	(message "found open as possible ender")
+	(forward-char 1))
+       ((looking-at "}")
+	(message "found close as possible ender at %d" (point)) (sit-for 2)
+	(forward-char 1)
+	(continue-back-past-curly-ket starting-point))
 
-	     ;; if it wasn't an else, try going back another sexp
-	     ((progn
-		(goto-char (safe-scan-sexps (point) -1))
-		(looking-at "\\<\\(if\\)\\|\\(while\\)\\|\\(for\\)\\|\\(until\\)\\>"))
-	      (message "Got if/while/for/until")
-	      (decf n)
-	      )
-
-	     (t
-	      ;; Go back and see what was before the brace; could be
-	      ;;   if ( ... ) { ... }
-	      ;;   while ( ... ) { ... }
-	      ;;   until ( ... ) { ... }
-	      ;;   for ( ... ) { ... }
-	      ;; or it could just be a free-standing code block
-	      (message "Other case of closing brace, at \"%s\"" (buffer-substring (point) (+ (point) 20)))
-	     
-
-	      (message "Other case; going back to look before the brace... got \"%s\"" (buffer-substring (point) (+ (point) 20)))
-	      (cond
-		 
-		
-	       (t
-		(message "Before the brace was not if/while/for/until/else; assuming plain block")
-		(goto-char (safe-scan-sexps close -1))
-		(decf n)))))))
-
-	 ((looking-at ";")
-	  (message "found semicolon at %d" (point))
-	  (let ((following-code (skip-to-actual-code)))
-	    (if (> old following-code)
-		(progn
-		  (message "already after following code, here we are")
-		  (goto-char following-code)
-		  (if (looking-at "else")
-		      (progn
-			(message "Looking at else")
-			(goto-char (- possible-ender 1))	
-			)
-		    (decf n)))
+       ((looking-at ";")
+	(let ((following-code (skip-to-actual-code)))
+	  (message "found semicolon as possible ender at %d, code following it is at %d" (point) following-code)
+	  (if (<= following-code starting-point)
 	      (progn
-		(message "already before following code, go back another")
-		(goto-char (- possible-ender 1)) ; need to do more than this!!!!!!!!!!!!!!!!
-		)
-	      )
-	    )
-	  (when (save-excursion	; this is old version, is it right????????????????
-		  (parse-partial-sexp (point) old nil t)
-		  (= (point) old))
-	    (message "no code between it and where we were (%d); am now at %d" old (point))
-	    (backward-char 1)
-	    (incf n)
-	    )))))
-    (message "Now at real delimiter, skip to code; am at %d, old is %d" (point) old)
-    ;; now we're at a real statement delimiter
-    (unless (blank-between (point) (1+ old))
-      (skip-to-actual-code old))))
+		(message "code following semicolon is behind or at where we started, so here we are")
+		(goto-char following-code)
+		(if (looking-at "else")
+		    (progn
+		      (message "Looking at else")
+		      (goto-char (- possible-ender 1))
 
-(defmodal end-of-statement-internal (c-mode perl-mode) (n)
+		      ;;;;;;;;;;;;;;;; probably more to do here?
+		      )))
+	    (progn
+	      (message "code following semicolon is after where we started, go back another statement")
+	      (goto-char (- possible-ender 1))
+	      (beginning-of-statement-internal))))
+	(when (save-excursion ; this is old version, is it right????????????????
+		(parse-partial-sexp (point) starting-point nil t)
+		(= (point) starting-point))
+	  (message "no code between it and where we were (%d); am now at %d" starting-point (point))
+	  (backward-char 1)
+	  ))))
+
+    ;; now we're at a real statement delimiter
+    (message "Now at real delimiter, skip to code; am at %d, starting-point is %d" (point) starting-point)
+    ;;;;;;;;;;;;;;;; why this "unless"? find out, and comment it!
+    (if (blank-between (point) (1+ starting-point))
+	(message "in blank area at %d..%d" (point) (1+ starting-point))
+      (skip-to-actual-code starting-point))))
+
+(defmodal end-of-statement-internal (c-mode perl-mode) ()
   "Move to the end of a C or Perl statement."
-  ;; (re-search-forward "[{;}]" (point-max) t)
   (let ((old (point))
 	;; get beginning of defun, so we can see whether we have landed in a
 	;; string or comment
@@ -236,64 +264,60 @@ is liable to return the wrong result."
 	       (point))))
     (message "Starting end-of-statement-internal at %d, with beginning-of-defun at %d" old bod)
     ;; (if (looking-at "{") (backward-char 1))
-    (while (> n 0)
-      (message "Countdown %d" n)
-      (let ((in-comment-or-string t))
-	;; keep looking for the possible start of a statement, and checking that
-	;; it is not part of a comment or string
-	(while in-comment-or-string
-	  (re-search-forward "[{;}]" (point-max) t) ; leaves point at end of match
-	  (message "Found a \"%s\" at %d" (match-string 0) (point))
-	  (let ((result (save-excursion (parse-partial-sexp bod (point)
-							    0 ; target-depth
-							    nil	; stop-before
-							    nil	; state
-							    nil	; stop-comment
-							    ))))
-	    (message "parse-partial-sexp returned %S" result)
-	    (setq in-comment-or-string (or
-					;; emacs19 doesn't give us that handy 8th element!
-					(nth 8 result)
-					(languide-c-inside-for-control)
-					(if (nth 3 result) t nil)
-					(nth 4 result)
-					))
-	    (message "in-comment-or-string=%S" in-comment-or-string)
-	    (if in-comment-or-string
-		(forward-char 1)))))
+    (let ((in-comment-or-string t))
+      ;; keep looking for the possible start of a statement, and checking that
+      ;; it is not part of a comment or string
+      (while in-comment-or-string
+	(re-search-forward "[{;}]" (point-max) t) ; leaves point at end of match
+	(message "Found a \"%s\" at %d" (match-string 0) (point))
+	(let ((result (save-excursion (parse-partial-sexp bod (point)
+							  0 ; target-depth
+							  nil ; stop-before
+							  nil ; state
+							  nil ; stop-comment
+							  ))))
+	  (message "parse-partial-sexp returned %S" result)
+	  (setq in-comment-or-string (or
+				      ;; emacs19 doesn't give us that handy 8th element!
+				      (nth 8 result)
+				      (languide-c-inside-for-control)
+				      (if (nth 3 result) t nil)
+				      (nth 4 result)
+				      ))
+	  (message "in-comment-or-string=%S" in-comment-or-string)
+	  (if in-comment-or-string
+	      (forward-char 1)))))
 
-      (message "Now at %d=%c, which is not in a comment or string; the latest match, which is \"%s\", starts at %d"
-	       (point) (char-after (point)) (match-string 0) (match-beginning 0))
-      (cond
-       ((= (char-after (1- (point))) ?{)
-	(message "Found block start")
-	(backward-char 1)
-	(forward-sexp 1)))
-      (cond
-       ((save-excursion
-	  (skip-to-actual-code)
-	  (looking-at "else"))
-	(message "Found ELSE")
-	(forward-sexp 2)		; NB assumes using { } -- should change this
-	)
-       ((save-excursion
-	  (skip-to-actual-code)
-	  (looking-at "while"))
-	;; now look around to see whether this is part of "do {} while ()"
-	;; avert your eyes when reading this code, or re-write it for me!
-	(when (save-excursion
-		(skip-to-actual-code)
-		(forward-sexp 2)
-		(if (looking-at "[ \t\r\n]")
-		    (skip-to-actual-code))
-		(looking-at "[;}]"))
-	  (message "That WHILE is part of a DO")
-	  (skip-to-actual-code)
-	  (forward-sexp 2)
-	  (if (looking-at "[ \t\r\n]")
-	      (skip-to-actual-code)))))
-      (decf n)))
-  (skip-to-actual-code))
+    (message "Now at %d=%c, which is not in a comment or string; the latest match, which is \"%s\", starts at %d"
+	     (point) (char-after (point)) (match-string 0) (match-beginning 0))
+    (cond
+     ((= (char-after (1- (point))) ?{)
+      (message "Found block start")
+      (backward-char 1)
+      (forward-sexp 1)))
+    (cond
+     ((save-excursion
+	(skip-to-actual-code)
+	(looking-at "else"))
+      (message "Found ELSE")
+      (forward-sexp 2)	  ; NB assumes using { } -- should change this
+      )
+     ((save-excursion
+	(skip-to-actual-code)
+	(looking-at "while"))
+      ;; now look around to see whether this is part of "do {} while ()"
+      ;; avert your eyes when reading this code, or re-write it for me!
+      (when (save-excursion
+	      (skip-to-actual-code)
+	      (forward-sexp 2)
+	      (if (looking-at "[ \t\r\n]")
+		  (skip-to-actual-code))
+	      (looking-at "[;}]"))
+	(message "That WHILE is part of a DO")
+	(skip-to-actual-code)
+	(forward-sexp 2)
+	(if (looking-at "[ \t\r\n]")
+	    (skip-to-actual-code)))))))
 
 (defmodal identify-statement (c-mode) (default)
   "Identify the current statement, or return DEFAULT.
@@ -357,7 +381,35 @@ this does not have to work."
 (defmodal statement-container (c-mode perl-mode java-mode) ()
   "Select the container of the current statement."
   ;; needs to do the "not in string, not in comment" stuff
-  )
+  (let* ((bod (save-excursion
+		(beginning-of-defun 1)
+		(point)))
+	 (in-comment-or-string t))
+    ;; keep looking for the possible start of a statement, and checking that
+    ;; it is not part of a comment or string
+    (while in-comment-or-string
+      (search-backward "{" (point-min) t) ; leaves point at end of match
+      (let ((result (save-excursion (parse-partial-sexp bod (point)
+							0 ; target-depth
+							nil ; stop-before
+							nil ; state
+							nil ; stop-comment
+							))))
+	(message "parse-partial-sexp returned %S" result)
+	(setq in-comment-or-string (or
+				    ;; emacs19 doesn't give us that handy 8th element!
+				    (nth 8 result)
+
+				    ;;					(languide-c-inside-for-control)
+				    ;;					(if (nth 3 result) t nil)
+				    ;;					(nth 4 result)
+
+				    ))
+	(message "in-comment-or-string=%S" in-comment-or-string)
+	;;	    (if in-comment-or-string
+	;;		(forward-char 1))
+
+	)))  )
 
 (defstatement comment (c-mode)
   "Comment"
