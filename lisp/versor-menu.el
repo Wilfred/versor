@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2004-09-16 10:20:56 john>
+;;; Time-stamp: <2005-01-13 11:12:49 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -72,10 +72,13 @@ Allows various actions that depend on the current fine movement dimension."
 		 (versor:add-menu-item dynamic-menu formatted-name (cdr name-command)))))
 	    '(
 	      ("yank" . yank)
+	      ("alter %s" . versor:begin-altering-item)
 	      ("kill %s" . versor:kill)
 	      ("versor control" . versor:control-menu)
 	      ;; cannibalize ~/open-projects/emacs-pedals/handsfree-tools-menus.el for
 	      ;; more to go here -- stuff like tag lookup
+	      ("find" . dwim-find)
+	      ("describe" . dwim-help)
 	      ("search for next %s" . versor:search)
 	      ("copy region" . kill-ring-save)
 	      ("mark %s" . versor:mark)
