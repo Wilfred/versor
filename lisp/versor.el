@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-03-04 14:55:37 john>
+;;; Time-stamp: <2004-03-15 14:11:23 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -607,10 +607,18 @@ buffer.")
 	(move-overlay item start end)
       (make-versor-overlay start end))))
 
+(defvar versor:latest-items nil
+  "The items list as it was at the start of the current command.")
+
 (defun versor:get-current-item ()
   "Return (start . end) for the current item."
-  (if (versor:current-item-valid)
-      (let ((olay (car versor-items)))
+  ;;;;;;;;;;;;;;;; this should have some way of getting to what the
+  ;;;;;;;;;;;;;;;; item was at the start of the command (just before
+  ;;;;;;;;;;;;;;;; the pre-command-hook got rid of it);
+  ;;;;;;;;;;;;;;;; we will use versor:latest-items for this
+  (if (or (versor:current-item-valid)
+	  versor:latest-items)
+      (let ((olay (car (or versor-items versor:latest-items))))
 	(cons (overlay-start olay)
 	      (overlay-end olay)))
     (let* ((end (progn (funcall (or (versor:get-action 'end-of-item)
@@ -712,13 +720,17 @@ Intended to be called at the end of all versor commands."
 	(add-hook 'pre-command-hook 'versor-de-indicate-current-item))
     (error
      (progn
-       (message "Caught error %S in item indication" error-var)
-       (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
+       ;; (message "Caught error %S in item indication" error-var)
+       ;; (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
+       (versor-de-indicate-current-item)
        ))))
 
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
 Intended to go on pre-command-hook."
+  (if versor-items
+      (setq versor:latest-items versor-items))
+  ;; (message "starting command %S: versor:latest-items=%S" this-command versor:latest-items)
   (delete-versor-overlay))
 
 (defun versor-set-item-indication (arg)
@@ -990,12 +1002,20 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	(kill-region (car item) (cdr item)))))
   (versor-indicate-current-item))
 
+(defun versor:get-insertable ()
+  "Return a thing to insert."
+  ;; should prompt for whether to use kill ring or whatever the user wants
+  ;; should also be available for putting things into the search string --
+  ;; in which case it ought to have a different name
+  "testing")
+
 (defun versor:insert-before ()
   "Insert something before the current versor item."
   (interactive)
   (let* ((new-thing (versor:get-insertable))
 	 (current-item (versor:get-current-item)))
-    
+    (goto-char (car current-item))
+    (insert new-thing)
     (versor-indicate-current-item)))
 
 (defun versor:insert-after ()
@@ -1003,7 +1023,8 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
   (interactive)
   (let* ((new-thing (versor:get-insertable))
 	 (current-item (versor:get-current-item)))
-    
+    (goto-char (cdr current-item))
+    (insert new-thing)
     (versor-indicate-current-item)))
 
 (defun versor:insert-around ()
@@ -1011,7 +1032,14 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
   (interactive)
   (let* ((new-thing (versor:get-insertable))
 	 (current-item (versor:get-current-item)))
-    
+    (if (and (consp new-thing)
+	     (= (length new-thing) 2))
+	(progn
+	  (goto-char (cdr current-item))
+	  (insert (second new-thing))
+	  (goto-char (car current-item))
+	  (insert (first new-thing)))
+      (error "Not suitable for inserting around"))
     (versor-indicate-current-item)))
 
 (defun versor:insert-within ()
@@ -1180,13 +1208,19 @@ end of the current one, and so skips leading whitespace etc."
   (interactive "p")
   (let* ((where (safe-scan-sexps (point) n))
 	 (one-more (safe-scan-sexps where 1)))
-    (if (and where one-more)
+    ;; (message "where=%S one-more=%S" where one-more)
+    (if (and where
+	     ;; one-more
+	     )
 	(progn
 	  (goto-char where)
 	  (let ((limit (save-excursion (last-sexp) (point))))
 	    (when (> n 0)
 	      (parse-partial-sexp where limit
-				  0 t))))
+				  0 t)))
+	  (unless one-more
+	    (versor:set-current-item where
+				     (safe-scan-sexps (point) -1))))
       (message "No more sexps"))))
 
 (defun previous-sexp (n)
