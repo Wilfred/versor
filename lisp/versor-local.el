@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2004-01-23 16:43:42 john>
+;;; Time-stamp: <2004-02-26 12:44:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -26,7 +26,7 @@
 (require 'buffer-select-hooks)
 
 (defvar versor:per-buffer nil
-  "*Remember the dimensions per buffer")
+  "*Whether to remember the dimensions per buffer")
 
 (defvar versor:this-buffer-meta-level nil
   "The remembered meta-level for this buffer.")
@@ -39,6 +39,12 @@
 
 (defvar versor:auto-change-for-modes t
   "*Whether to change the dimension on changing modes.")
+
+(defvar versor:mode-current-meta-levels nil
+  "Alist of mode name symbols to the current meta-level for that mode.")
+
+(defvar versor:mode-current-levels nil
+  "Alist of mode name symbols to the current level for that mode.")
 
 (defun versor:mode-change-function (old-mode)
   "Select dimension if necessary, as a hook on changing modes."

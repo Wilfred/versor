@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2004-02-24 13:55:50 john>
+;;; Time-stamp: <2004-02-24 14:46:30 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -270,8 +270,8 @@ is liable to return the wrong result."
 We must be at the start of the statement already, otherwise
 this does not have to work."
   (cond
-   ((looking-at "(\\(do\\)\\|\\(for\\)\\|\\(while\\)\\|\\(if\\)\\|\\(switch\\)\\|\\(continue\\)\\|\\(default\\)\\|\\(case\\)")
-    ;; (message "found %s" (match-string 0))
+   ((looking-at "\\(do\\)\\|\\(for\\)\\|\\(while\\)\\|\\(if\\)\\|\\(switch\\)\\|\\(continue\\)\\|\\(default\\)\\|\\(case\\)")
+    (message "identify-statement-c-mode found %s" (match-string 0))
     (let ((keyword-string (buffer-substring-no-properties (match-beginning 0) (match-end 0))))
       (cond
        ((string= keyword-string "if")

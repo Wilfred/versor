@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-01-26 16:33:38 john>
+;;; Time-stamp: <2004-02-20 13:49:59 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -126,11 +126,14 @@ Returns point, if there was a bracket to go out of, else nil."
 
 (defmodel insert-compound-statement-open ()
   "Insert the start of a compound statement")
+
 (defmodel insert-compound-statement-close ()
   "Insert the end of a compound statement")
 
 (defmodel scope-around (whereat) "")
+
 (defmodel binding-around (whereat) "")
+
 (defmodel variable-reference (varname) "")
 
 ;;;; statement-based stuff
@@ -184,37 +187,15 @@ Returns point, if there was a bracket to go out of, else nil."
 
 ;;;; execute statement navigation
 
+(defun languide-after-change-function (start end length)
+  "After a change, languide's cached information would be wrong, so throw it away."
+  (if (<= start statement-latest-start)
+      (setq statement-latest-start nil
+	    navigated-latest-part nil
+	    statement-latest-parts nil
+	    statement-latest-type nil)))
+
 ;;;; commands for statement navigation
-
-(defvar statement-navigation-forwards 'forwards
-  "The current direction for statement navigation.")
-
-(defvar statement-navigation-direction-string "following"
-  "A string describing the current direction for statement navigation.")
-
-(defvar statement-latest-start 0
-  "The latest statement start that we have moved to.")
-
-(defun following ()
-  "Indicate that navigation by statement types is to be to the following one.
-This means the search will start by looking forwards for the initial keyword."
-  (interactive)
-  (setq statement-navigation-forwards 'forwards
-	statement-navigation-direction-string "following"))
-
-(defun surrounding ()
-  "Indicate that navigation by statement types is to be to the surrounding one.
-This means the search will start by looking backwards for the initial keyword."
-  (interactive)
-  (setq statement-navigation-forwards 'backwards
-	statement-navigation-direction-string "surrounding"))
-
-(defun toggle-following/surrounding ()
-  "Toggle between following and surrounding."
-  (interactive)
-  (if (eq statement-navigation-forwards 'forwards)
-      (surrounding)
-    (following)))
 
 (defun statement-types (&optional full)
   "Return (and display, if interactive) the list of statement types available in this mode."
@@ -242,17 +223,6 @@ Initialized to 'comment as pretty well every language should have a definition o
   "The name of the current type of statement to navigate to parts of.
 Initialized to \"comment\" as pretty well every language should have a definition of this.")
 
-;; we indicate the current statement-navigation direction and the current statement type,
-;; in the mode line
-(unless (memq 'statement-navigation-type-string global-mode-string)
-    (setq global-mode-string
-	  (append global-mode-string
-		  '(" {"
-		    statement-navigation-direction-string
-		    " "
-		    statement-navigation-type-string
-		    "} "))))
-
 (defun statement-set-type (type)
   "Set the statement type to TYPE.
 If TYPE is nil, do nothing (might change this to say \"unknown\").
@@ -278,50 +248,9 @@ This also updates the mode line display of it."
 
 (defun statement-type-at-point ()
   "Return the type of statement at point."
-  (identify-statement nil))
-
-(defun navigate-head ()
-  "Navigate to the head of the relevant statement."
-  (interactive)
-  (navigate-to statement-navigation-type statement-navigation-forwards 'head)
-  ;; take as implicit that we will now want to go to other parts of the same statement
-  (surrounding))
-
-(defun navigate-body ()
-  "Navigate to the body of the relevant statement."
-  (interactive)
-  (navigate-to statement-navigation-type statement-navigation-forwards 'body)
-  ;; take as implicit that we will now want to go to other parts of the same statement
-  (surrounding))
-
-(defun navigate-tail ()
-  "Navigate to the tail of the relevant statement."
-  (interactive)
-  (navigate-to statement-navigation-type statement-navigation-forwards 'tail)
-  ;; take as implicit that we will now want to go to other parts of the same statement
-  (surrounding))
-
-(defun statement-navigate-next-head ()
-  "Navigate to the head of the next statement of the current type."
-  (interactive)
-  (following)
-  (navigate-head))
-
-(defun navigate-whole ()
-  "Select the whole statement around point."
-  (interactive)
-  (setq navigated-latest-part 'whole)
-  (message "Whole statements not yet implemented")
-)
-
-(defun navigate-container ()
-  "Select the container of the statement around point."
-  (interactive)
-  (setq navigated-latest-part 'container)
-  (beginning-of-statement-internal 1)
-  (backward-up-list 1)
-  (beginning-of-statement 1)
-)
+  (save-excursion
+    (beginning-of-statement 1)
+    (identify-statement nil)))
 
 (defun create-statement ()
   "Insert a statement of the current type."
@@ -412,8 +341,20 @@ Interactively, uses the current surrounding / following status."
 	    nil))
       nil)))
 
-(defvar navigated-latest-part 'tail
-  "The latest part to which we have navigated.")
+(defun navigate-this-head ()
+  "Navigate to the head of the current statement."
+  (interactive)
+  (navigate-to 'head)) 
+
+(defun navigate-this-body ()
+  "Navigate to the body of the current statement."
+  (interactive)
+  (navigate-to 'body))
+
+(defun navigate-this-tail ()
+  "Navigate to the tail of the current statement."
+  (interactive)
+  (navigate-to 'tail))
 
 (defvar statement-navigate-parts-cyclic nil
   "*Whether to step forwards from body (or tail if present) back round to head.")
@@ -424,49 +365,94 @@ Interactively, uses the current surrounding / following status."
 (defun statement-navigate-parts-next ()
   "Navigate to the next part of the statement."
   (interactive)
-  (setq statement-navigation-forwards 'forwards)
   (case navigated-latest-part
-    ('container (navigate-head))
-    ('whole (navigate-head))
-    ('head (navigate-body))
+    ('container (navigate-this-head))
+    ('whole (navigate-this-head))
+    ('head (navigate-this-body))
     ('body (if (get-statement-part statement-navigation-type 'tail)
-	       (navigate-tail)
-	     (navigate-head)))
+	       (navigate-this-tail)
+	     (navigate-this-head)))
     ('tail
      (cond
       (statement-navigate-parts-include-container (navigate-container))
-      (statement-navigate-parts-cyclic (navigate-head))
+      (statement-navigate-parts-cyclic (navigate-this-head))
       (t (beginning-of-statement 1))))))
 
 (defun statement-navigate-parts-previous ()
   "Navigate to the previous part of the statement."
   (interactive)
-  (setq statement-navigation-forwards 'forwards)
   (case navigated-latest-part
-    ('whole (navigate-body))
-    ('container (navigate-head))
+    ('whole (navigate-this-body))
+    ('container (navigate-this-head))
     ('head
-     (cond ((get-statement-part statement-navigation-type 'tail) (navigate-tail))
+     (cond ((get-statement-part statement-navigation-type 'tail) (navigate-this-tail))
 	   (statement-navigate-parts-include-container (navigate-container))
-	   (statement-navigate-parts-cyclic (navigate-body))
+	   (statement-navigate-parts-cyclic (navigate-this-body))
 	   (t (beginning-of-statement 2))))
-    ('body (navigate-head))
-    ('tail (navigate-body))))
+    ('body (navigate-this-head))
+    ('tail (navigate-this-body))))
 
-(defun navigate-to (type start-direction part)
-  "Navigate to a statement of TYPE, START-DIRECTION, PART thereof."
+(defvar navigated-latest-part nil
+  "The latest part of a statement that we navigated to.")
+
+(defvar statement-latest-start nil
+  "Where the latest statement to be explored starts.
+If asked to navigate again, and the current statement starts here,
+we can use the information cached in statement-latest-parts to
+avoid going through the navigation steps again. We invalidate this
+on any relevant change (changes after this point do not count) to
+the buffer (in languide-after-change-function).")
+
+(defvar statement-latest-type nil
+  "The type of statement we saw at statement-latest-start.")
+
+(defvar statement-latest-parts nil
+  "The known parts of the latest navigated statement.
+We cache them (if the statement starts at statement-latest-start)
+to avoid having to go through the navigation steps each time.")
+
+(defun navigate-to (part)
+  "Navigate to PART of the current statement."
   (setq navigated-latest-part part)
-  (goto-char statement-latest-start)
-  (let ((directions (get-statement-part type part)))
-    (message "navigate-to %S %S %S got %S" type start-direction part directions)
-    (if directions
-	(if (eq (car directions) 'statement-navigate)
-	    (statement-navigate (cdr directions) start-direction)
-	  (error "Don't know how to handle directions like %S" directions))
-      (error "No %S defined for %S for %S" part type major-mode))))
+  (add-hook 'after-change-functions 'languide-after-change-function nil t)
+  ;; see which statement we are now on; if it is the same as the last
+  ;; time we did any navigation, we can use cached navigation data
+  (beginning-of-statement-internal 1)
+  (message "navigate-to %S found statement begins \"%s\"" part (buffer-substring (point) (+ 20 (point))))
+  (let (remembered)
+    (if (and (eq (point) statement-latest-start)
+	     (setq remembered (assoc part statement-latest-parts)))
+	(progn				; we have cached data for this
+	  (message "cached")
+	  (set-mark-candidate (cddr remembered))
+	  (goto-char (cadr remembered)))
+      (let* ((type (identify-statement nil))
+	     (directions (get-statement-part type part)))
+	(setq statement-latest-start (point)
+	      statement-latest-type type
+	      statement-latest-parts nil ; new lot of cached data (should be empty anyway)
+	      )
+	;; no cached data, really do the navigation
+	(message "not cached; navigate-to %S %S got %S" type part directions)
+	(if directions
+	    (if (eq (car directions) 'statement-navigate)
+		(progn
+		  (statement-navigate (cdr directions))
+		  ;; cache the data in case we want it again;
+		  ;; don't bother to search for having it cached already,
+		  ;; as we ought not to (or we wouldn't be in this branch)
+		  ;; and it wouldn't really matter if we did
+		  (push (cons part
+			      (cons (point)
+				    mark-candidate))
+			statement-latest-parts))
+	      (error "Don't know how to handle directions like %S" directions))
+	  (error "No %S defined for %S for %S" part type major-mode))))))
 
 (defvar mark-candidate nil
-  "Where the mark will be set at the end of statement-navigate.")
+  "Where the mark will be set at the end of statement-navigate.
+We set this (using set-mark-candidate) instead of setting the mark,
+at each stage of navigation, to avoid polluting the mark-ring.")
 
 (defun latest-statement-navigation-end (&optional junk)
   "Return the end of the latest statement navigation result.
@@ -480,42 +466,26 @@ if this is a number, is used as the number of seconds for which to do this.
 If you make this as long as you're likely to wait, it will in effect sit there
 until you do something else.")
 
-(defun statement-navigate (directions start-direction &optional do-not-mark)
-  "Take DIRECTIONS for navigating around a statement. If START-DIRECTION is 'forwards start by looking forwards.
-Leave point at the start of the selected section.
-Unless optional DO-NOT-MARK is set, leave the mark at the end of the selected section."
-  ;; (message "Statement-Navigate %S %S" directions forwards)
-  (let ((first t))
-    (setq mark-candidate nil)
-    (dolist (direction directions)
-      ;; (message " statement-navigate: %S" direction)
-      (cond
-       ((stringp direction)
-	;; (message "Searching for %s" direction)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; this bit needs changing
-	(cond
-	 ((or (not first)
-	      (eq start-direction 'forwards))
-	  (re-search-forward direction (point-max) t))
-	 ((eq start-direction 'backwards)
-	  (re-search-backward direction (point-min) t)
-	  (goto-char (match-end 0)))
-	 (t nil)))
-       ((consp direction)
-	;; (message "Evaluating direction %S" direction)
-	(eval direction)))
-      (setq first nil)
-      ;; (message "Mark candidate now %S" mark-candidate)
-      ))
-  (when (and (not do-not-mark) mark-candidate)
+(defun statement-navigate (directions)
+  "Take DIRECTIONS for navigating around a statement.
+Leave point at the start of the selected section."
+  (setq mark-candidate nil)
+  (dolist (direction directions)
+    ;; (message " statement-navigate: %S" direction)
+    (cond
+     ((stringp direction)
+      ;; (message "Searching for %s" direction)
+      (re-search-forward direction (point-max) t))
+     ((consp direction)
+      ;; (message "Evaluating direction %S" direction)
+      (eval direction))
+     (t (error "unknown navigation element %S" direction))
+     )
     (set-mark mark-candidate)
-    (when (and transient-transient-mark-mode
-	       (not transient-mark-mode))
-      (transient-mark-mode 1)
-      (sit-for (if (numberp transient-transient-mark-mode)
-		   transient-transient-mark-mode
-		 1))
-      (transient-mark-mode -1))))
+    ;; (message "Mark candidate now %S" mark-candidate)
+    )
+  (set-mark mark-candidate))
+
 
 (defun set-mark-candidate (m)
   "Set the mark candidate to M.
@@ -542,7 +512,7 @@ Intended for use from statement-navigate."
     (forward-sexp (- n))
     (if (looking-at "\\s(")
 	(progn
-	  (forward-char 1);; or (down-list 1) would do, but this is probably quicker
+	  (forward-char 1) ; or (down-list 1) would do, but this is probably quicker
 	  (skip-syntax-forward " ")
 	  (let ((start (point)))
 	    (goto-char (1- after-end))
@@ -589,24 +559,5 @@ Intended for use from statement-navigate."
 (load "languide-sh-like")
 (load "languide-lisp-like")
 (load "languide-html-like")
-
-;;;; voice commands
-;;; Part of the point of this project was to create a form of editing that is voice-friendly,
-;;; so I have included these as an inherent part of it.
-
-(defvar languide-languages-commands
-  '(following
-    surrounding
-    statement-set-type
-    statement-types
-    create-statement
-    surround-statement
-    ("head" . navigate-head)
-    ("body" . navigate-body)
-    ("tail" . navigate-tail)
-    ("statement head" . navigate-head)
-    ("statement body" . navigate-body)
-    ("statement tail" . navigate-tail))
-  "Voice commands for navigating by the sense of the language.")
 
 ;;; end of languide.el

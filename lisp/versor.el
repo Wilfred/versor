@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-02-23 11:37:54 john>
+;;; Time-stamp: <2004-02-23 11:56:15 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -710,7 +710,7 @@ Intended to be called at the end of all versor commands."
 		    (if (<= lines-needed lines-available)
 			(recenter (/ (- lines-available lines-needed) 2))
 		      (recenter 0)
-		      (message "%d more lines" (- lines-needed lines-available 1)))))))
+		      (message "%d more lines of this item would not fit on screen" (- lines-needed lines-available 1)))))))
 
 	  ;; re-do this because it somehow gets taken off from time to time
 	  (add-hook 'pre-command-hook 'versor-de-indicate-current-item))
