@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2004-05-17 14:02:58 john>
+;;; Time-stamp: <2004-05-19 09:05:28 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -42,25 +42,6 @@
 
 (defvar versor:auto-change-for-modes t
   "*Whether to change the dimension on changing modes.")
-
-;;;; some debugging stuff:
-
-(require 'lessage)
-
-(defun versor-local-test-begin ()
-  (interactive)
-  (delete-other-windows)
-  (switch-to-buffer "versor.el")
-  (switch-to-buffer-other-window "versor.html")
-  (setq lessages nil)
-)
-
-(defun versor-local-test-end ()
-  (interactive)
-  (dlesg))
-
-(global-set-key [ kp-divide ] 'versor-local-test-begin)
-(global-set-key [ kp-multiply ] 'versor-local-test-end)
 
 ;;;; entry points
 
