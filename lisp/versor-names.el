@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-04-23 11:48:10 john>
+;;; Time-stamp: <2004-04-23 11:56:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -27,18 +27,24 @@
 (provide 'versor-names)
 (require 'versor)
 
-(defun versor:meta-level-names ()
-  "Return an alist of the meta-level names, consed with the numbers."
-  (let ((result nil))
-    (dotimes (i (length moves-moves))
-      (if (> i 0)
-	  (push (cons (aref (aref moves-moves i) 0)
-		      i)
-		result)))
-    (nreverse result)))
-
 (defvar versor:level-names-cache nil
   "A cache used internally by versor:level-names.")
+
+(defun versor:meta-level-names ()
+  "Return an alist of the meta-level names, consed with the numbers."
+  (let ((cached (assoc "metamoves" versor:level-names-cache)))
+    (if cached
+	(cdr cached)
+      (let ((result nil))
+	(dotimes (i (length moves-moves))
+	  (if (> i 0)
+	      (push (cons (aref (aref moves-moves i) 0)
+			  i)
+		    result)))
+	(setq result (nreverse result))
+	(push (cons "metamoves" result)
+		    versor:level-names-cache)
+	result))))
 
 (defun versor:level-names ()
   "Return an alist of the level names for the current meta-level, consed with the numbers."
