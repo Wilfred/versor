@@ -1,5 +1,5 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2004-01-30 08:39:37 john>
+;;; Time-stamp: <2005-02-02 15:19:21 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -26,7 +26,9 @@
 (provide 'nested-blocks)
 
 (defvar nested-blocks-mode-starts
-  '((html-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
+  ;; todo: update to include TeX and LaTeX
+  '((latex-mode . "\\(\\\\begin{\\([a-z]+\\)}\\)")
+    (html-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
     (html-helper-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
     (c-mode . "{")
     (java-mode . "{")
@@ -36,7 +38,9 @@
   "Alist showing how nested blocks start in each mode")
 
 (defvar nested-blocks-mode-ends
-  '((html-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
+  ;; todo: update to include TeX and LaTeX
+  '((latex-mode . "\\(\\\\end{\\([a-z]+\\)}\\)")
+    (html-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
     (html-helper-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
     (c-mode . "}")
     (java-mode . "}")
@@ -46,7 +50,9 @@
   "Alist showing how nested blocks finish in each mode")
 
 (defvar nested-blocks-mode-starts-or-ends
-  '((html-mode . "</?\\([^>]+\\)>")
+  ;; todo: update to include TeX and LaTeX
+  '((latex-mode . "\\(\\\\\\(begin\\|end\\){\\([a-z]+\\)}\\)")
+    (html-mode . "</?\\([^>]+\\)>")
     (html-helper-mode . "</?\\([^>]+\\)>")
     (bcpl-mode . "\\$[()]")
     (t . "[][}{)(]"))
@@ -57,6 +63,7 @@ but the performance should be a lot better than combining them
 automatically, given the nature, for example, of HTML blocks.")
 
 (defvar nested-blocks-mode-ignorables
+  ;; todo: update to include TeX and LaTeX
   '((html-mode . "</?\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)")
     (html-helper-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\)")
     (t .  ";"))
@@ -143,7 +150,8 @@ A sensible default is provided if no mode-specific value is available."
 	      (decf depth))
 	     (t (error "inconsistency in nested-block patterns")))
 	    (if (zerop depth)
-		(throw 'found (point)))))))))
+		(throw 'found (point)))))
+	nil))))
 
 (defun nested-blocks-backward ()
   "Move back over a nested block. Like backward-sexp but more general."
@@ -178,13 +186,5 @@ This is a list of strings."
 	(push (buffer-substring-no-properties (match-beginning 0) (match-end 0))
 	      template))
       (nreverse template))))
-
-(defvar vr-nested-blocks-voice-commands
-  '(("enter block" . nested-blocks-enter)
-    ("leave block" . nested-blocks-leave)
-    ("another block" . nested-blocks-another)
-    ("forward block" . nested-blocks-forward)
-    ("backward block" . nested-blocks-backward))
-  "Voice commands for handling nested blocks.")
 
 ;; end of nested-blocks.el
