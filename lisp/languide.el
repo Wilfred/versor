@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-03-02 10:07:12 john>
+;;; Time-stamp: <2004-03-26 18:16:45 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -89,6 +89,9 @@ Returns point, if there was a bracket to go out of, else nil."
 
 (defmodel insert-compound-statement-close ()
   "Insert the end of a compound statement")
+
+(defmodel statement-container ()
+  "Select the container of the current statement.")
 
 (defmodel scope-around (whereat) "")
 
@@ -316,6 +319,13 @@ Interactively, uses the current surrounding / following status."
   (interactive)
   (navigate-to 'tail))
 
+(defun navigate-this-container ()
+  "Navigate to the container of the current statement."
+  (interactive)
+  (statement-container)
+  (versor:display-highlighted-choice "container" languide-parts)  
+  )
+
 (defvar statement-navigate-parts-cyclic nil
   "*Whether to step forwards from body (or tail if present) back round to head.")
 
@@ -371,6 +381,9 @@ the buffer (in languide-after-change-function).")
 We cache them (if the statement starts at statement-latest-start)
 to avoid having to go through the navigation steps each time.")
 
+(defvar languide-parts '("container" "whole" "head" "body" "tail")
+  "The parts we can navigate to.")
+
 (defun navigate-to (part)
   "Navigate to PART of the current statement."
   (setq navigated-latest-part part)
@@ -405,7 +418,9 @@ to avoid having to go through the navigation steps each time.")
 		  (push (cons part
 			      (cons (point)
 				    mark-candidate))
-			statement-latest-parts))
+			statement-latest-parts)
+		  (versor:display-highlighted-choice (symbol-name part) languide-parts)
+		  )
 	      (error "Don't know how to handle directions like %S" directions))
 	  (error "No %S defined for %S for %S" part type major-mode))))))
 
