@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2004-03-02 15:08:33 john>
+;;; Time-stamp: <2004-03-26 18:18:34 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -106,7 +106,7 @@ is liable to return the wrong result."
       (languide-c-back-to-possible-ender bod)
       (let ((possible-ender (point)))
 
-	(message "Countdown %d; now at %d: \"%s\", which is not in a comment or string" n (point) (buffer-substring (point) (+ (point) 20)))
+	(message "Countdown %d; now at %d: \"%s\", which is not in a comment or string" n (point) (buffer-substring (point) (min (point-max) (+ (point) 20))))
 
 	;; We've now found a statement delimiter, and checked that it is a
 	;; real one, and not part of a string or comment. Now we might make
@@ -353,6 +353,11 @@ this does not have to work."
 (defmodal insert-compound-statement-close (c-mode perl-mode) ()
   "Insert a block end."
   (insert "}"))
+
+(defmodal statement-container (c-mode perl-mode java-mode) ()
+  "Select the container of the current statement."
+  ;; needs to do the "not in string, not in comment" stuff
+  )
 
 (defstatement comment (c-mode)
   "Comment"
