@@ -1,5 +1,5 @@
 ;;; versor-text-in-code.el -- versatile cursor handling of strings and comments
-;;; Time-stamp: <2004-06-14 09:46:58 john>
+;;; Time-stamp: <2004-09-09 14:38:42 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -48,13 +48,20 @@ Local to each buffer.")
 	  versor:text-meta-level
 	  versor:text-level))
 
+(defvar versor:text-faces '(font-lock-string-face font-lock-comment-face)
+  "Faces which versor regards as being text rather than code.
+See versor:text-in-code-function.")
+
 (defun versor:text-in-code-function ()
   "Detect whether we have landed in a comment or string, and set versor up accordingly.
 This piggy-backs onto font-lock-mode.
 Meant to go on post-command-hook."
   (condition-case error-var
-      (let* ((face (get-text-property (point) 'face))
-	     (am-in-text (memq face '(font-lock-string-face font-lock-comment-face))))
+      (let* ((face-here (get-text-property (point) 'face))
+	     (face-before (get-text-property (max (1- (point))
+						  (point-min)) 'face))
+	     (am-in-text (and (memq face-here versor:text-faces)
+			      (memq face-before versor:text-faces))))
 	(unless (eq am-in-text versor:am-in-text-in-code)
 	  (setq versor:am-in-text-in-code am-in-text)
 	  (if am-in-text
