@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-02-27 10:50:11 john>
+;;; Time-stamp: <2004-03-04 14:55:37 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -50,12 +50,6 @@
   "*An attribute to use to indicate the current item.
 This is looked up in the current item, to get the value to set it to.
 You can only use this from Emacs 20 onwards.")
-
-(defcustom versor-indicate-items nil
-  "*Whether to indicate the current item after each versor movement.
-The indication is cancelled at the start of the next command."
-  :group 'versor
-  :type 'boolean)
 
 (defcustom versor:try-to-display-whole-item t
   "*Whether to try to display the whole item after each movement."
@@ -175,10 +169,9 @@ which series you are in. The cursor colour indicates which dimension
 is selected, and the current meta-dimension and dimension are shown
 in the mode line.
 
-If you set the variable versor-indicate-items (which see) the current
-item is highlighted after each versor move. (The highlighting is removed
-at the next command, so versor can co-operate unobtrusively with
-traditional character-based editing.)
+The current item is highlighted after each versor move. The
+highlighting is removed at the next command, so versor can co-operate
+unobtrusively with traditional character-based editing.
 
 DEL deletes the current item.
 
@@ -191,6 +184,7 @@ The meta-dimensions and dimensions defined by default are:
 
 The arguments can be any (combination) of
   'arrows        -- for the main cursor keys
+  'arrows-misc   -- for insert, delete etc
   'keypad        -- for the keypad cursor keys
   'keypad-misc   -- for keypad insert, delete etc
 to select which keys are set up to do versor commands."
@@ -213,8 +207,9 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-up ]    'versor:over-start)
     (global-set-key [ C-down ]  'versor:over-end)
     (global-set-key [ C-home ]  'versor:over-start)
-    (global-set-key [ C-end ]   'versor:over-end)
+    (global-set-key [ C-end ]   'versor:over-end))
 
+  (when (memq 'arrows-misc keysets)
     (global-set-key [ prior ]   'versor:over-over-prev)
     (global-set-key [ next ]    'versor:over-over-next)
     (global-set-key [ C-prior ] 'versor:over-over-start)
@@ -249,11 +244,12 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-home ]     'versor:over-start)
     (global-set-key [ C-end ]      'versor:over-end)
 
-    (global-set-key [ prior ]      'versor:over-over-prev)
-    (global-set-key [ next ]       'versor:over-over-next)
-    (global-set-key [ C-prior ]    'versor:over-over-start)
-    (global-set-key [ C-next ]     'versor:over-over-end)
+    (global-set-key [ kp-prior ]   'versor:over-over-prev)
+    (global-set-key [ kp-next ]    'versor:over-over-next)
+    (global-set-key [ C-kp-prior ] 'versor:over-over-start)
+    (global-set-key [ C-kp-next ]  'versor:over-over-end))
 
+  (when (memq 'keypad-misc keysets)
     (global-set-key [ kp-enter ]  'versor:copy)
     (global-set-key [ kp-insert ] 'versor:insertion-keymap)
     (global-set-key [ kp-delete ] 'versor:kill)
@@ -686,40 +682,39 @@ Intended to be called at the end of all versor commands."
   ;; It makes me aware that many of the movements need redefining,
   ;; to be consistent over quite where they end up!
 
-  (when versor-indicate-items
-    (condition-case error-var
-	(progn
+  (condition-case error-var
+      (progn
 
-	  ;; the command we have just run may have set these for us,
-	  ;; if it knows in such a way that it can tell us much faster
-	  ;; than we could work out for ourselves; they are cleared at
-	  ;; the start of each command by
-	  ;; versor-clear-current-item-indication, which, like us, is
-	  ;; called by the as-versor-command macro
+	;; the command we have just run may have set these for us,
+	;; if it knows in such a way that it can tell us much faster
+	;; than we could work out for ourselves; they are cleared at
+	;; the start of each command by
+	;; versor-clear-current-item-indication, which, like us, is
+	;; called by the as-versor-command macro
 
-	  (unless (versor:current-item-valid)
-	    (versor:set-current-item (point) (versor-end-of-item)))
+	(unless (versor:current-item-valid)
+	  (versor:set-current-item (point) (versor-end-of-item)))
 
-	  (when versor:try-to-display-whole-item
-	    (let* ((item (versor:get-current-item))
-		   (end (cdr item)))
-	      ;; try to get the whole item on-screen
-	      (when (> end (window-end))
-		  (let* ((start (car item))
-			 (lines-needed (count-lines start end))
-			 (lines-available (- (window-height (selected-window)) 2)))
-		    (if (<= lines-needed lines-available)
-			(recenter (/ (- lines-available lines-needed) 2))
-		      (recenter 0)
-		      (message "%d more lines of this item would not fit on screen" (- lines-needed lines-available 1)))))))
+	(when versor:try-to-display-whole-item
+	  (let* ((item (versor:get-current-item))
+		 (end (cdr item)))
+	    ;; try to get the whole item on-screen
+	    (when (> end (window-end))
+	      (let* ((start (car item))
+		     (lines-needed (count-lines start end))
+		     (lines-available (- (window-height (selected-window)) 2)))
+		(if (<= lines-needed lines-available)
+		    (recenter (/ (- lines-available lines-needed) 2))
+		  (recenter 0)
+		  (message "%d more lines of this item would not fit on screen" (- lines-needed lines-available 1)))))))
 
-	  ;; re-do this because it somehow gets taken off from time to time
-	  (add-hook 'pre-command-hook 'versor-de-indicate-current-item))
-      (error
-       (progn
-	 (message "Caught error %S in item indication" error-var)
-	 (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
-	 )))))
+	;; re-do this because it somehow gets taken off from time to time
+	(add-hook 'pre-command-hook 'versor-de-indicate-current-item))
+    (error
+     (progn
+       (message "Caught error %S in item indication" error-var)
+       (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
+       ))))
 
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
@@ -998,22 +993,35 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 (defun versor:insert-before ()
   "Insert something before the current versor item."
   (interactive)
-)
+  (let* ((new-thing (versor:get-insertable))
+	 (current-item (versor:get-current-item)))
+    
+    (versor-indicate-current-item)))
 
 (defun versor:insert-after ()
   "Insert something after the current versor item."
   (interactive)
-)
+  (let* ((new-thing (versor:get-insertable))
+	 (current-item (versor:get-current-item)))
+    
+    (versor-indicate-current-item)))
 
 (defun versor:insert-around ()
   "Insert something around to the current versor item."
   (interactive)
-)
+  (let* ((new-thing (versor:get-insertable))
+	 (current-item (versor:get-current-item)))
+    
+    (versor-indicate-current-item)))
 
 (defun versor:insert-within ()
   "Insert something within the current versor item."
   (interactive)
-)
+  (let* ((new-thing (versor:get-insertable))
+	 (current-item (versor:get-current-item)))
+    
+    (versor-indicate-current-item)))
+
 ;;;; some internal functions for operations that aren't typically there already
 
 (defun versor:forward-paragraph (&optional n)
