@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-03-15 14:38:40 john>
+;;; Time-stamp: <2004-04-23 11:48:10 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -37,19 +37,27 @@
 		result)))
     (nreverse result)))
 
+(defvar versor:level-names-cache nil
+  "A cache used internally by versor:level-names.")
+
 (defun versor:level-names ()
   "Return an alist of the level names for the current meta-level, consed with the numbers."
-  (let* ((result nil)
-	 (meta-level (versor:current-meta-level))
-	 (n (length meta-level))
-	 (i 1)
-	 )
-    (while (< i n)
-      (push (cons (car (aref meta-level i))
-		  i)
-	    result)
-      (incf i))
-    (nreverse result)))
+  (let* ((meta-level (versor:current-meta-level))
+	 (meta-level-name (aref meta-level 0))
+	 (cached (assoc meta-level-name versor:level-names-cache)))
+    (if cached
+	(cdr cached)
+      (let* ((result nil)
+	     (n (length meta-level))
+	     (i 1))
+	(while (< i n)
+	  (push (cons (car (aref meta-level i))
+		      i)
+		result)
+	  (incf i))
+	(push (cons meta-level-name result)
+	      versor:level-names-cache)
+	result))))
 
 (defun versor:find-meta-level-by-name (name)
   "Return the index of the meta-level called NAME."
