@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 08:55:06 john>
+;;; Time-stamp: <2004-05-24 09:36:43 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -25,6 +25,7 @@
 (require 'tempo)
 (require 'cl)
 (require 'versor-base-moves)
+(require 'versor-commands)
 
 (defgroup versor nil
   "Switch cursor keys between different sorts of movement."
