@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-02-23 11:56:15 john>
+;;; Time-stamp: <2004-02-27 10:50:11 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -571,9 +571,10 @@ With optional LEVEL-OFFSET, add that to the level first."
 (when (>= vern 20)
   (set-face-attribute 'versor-item nil :inherit 'region))
 
-(defun versor:set-status-display ()
+(defun versor:set-status-display (&optional quiet)
   "Indicate the state of the versor system."
-  (message (first (versor:current-level)))
+  (unless quiet
+    (message (first (versor:current-level))))
   (setq versor:current-level-name (first (versor:current-level))
 	versor:current-meta-level-name (aref (versor:current-meta-level) 0))
   (if versor:reversible
