@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-05-17 17:44:29 john>
+;;; Time-stamp: <2004-05-17 17:45:23 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -180,7 +180,6 @@ With non-nil arg, include meta-level names."
 	 (i 0)
 	 )
     (while (< i grid-width)
-      (message "%d" i)
       (aset widths i
 	    (apply 'max
 	    (mapcar (lambda (row)
