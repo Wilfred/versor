@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2004-05-24 09:35:41 john>
+;;; Time-stamp: <2004-05-24 13:24:05 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -288,6 +288,22 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
        (goto-char (car (versor:get-current-item)))
      (versor:prev-action 1))))
 
+(defun versor-other-end-of-item ()
+  "Move to the other end of the current item."
+  (interactive)
+  (as-versor-motion-command
+   (let ((item (versor:get-current-item)))
+     (cond
+      ((= (point) (car item))
+       (goto-char (cdr item)))
+      ((= (point) (cdr item))
+       (goto-char (car item)))
+      (t
+       (let ((halfway (/ (+ (car item) (cdr item)) 2)))
+	 (if (< (point) halfway)
+	     (goto-char (cdr item))
+	   (goto-char (car item)))))))))
+
 ;;;;;;;;;;;;;;;;;;;;;
 ;;;; extend item ;;;;
 ;;;;;;;;;;;;;;;;;;;;;
@@ -426,7 +442,7 @@ can delete an opening and closing bracket together."
     (while (> n 0)
       (decf n)
       (push (current-kill n t) result))
-    result))
+    (nreverse result)))
 
 (versor:definesert "\d" 'versor:top-n-kills)
 (versor:definesert [ kp-delete ] 'versor:top-n-kills)
@@ -475,8 +491,12 @@ This lets us do commands such as insert-around using a common framework."
      (message "insert-around: current-item=%S" current-item)
      (goto-char (versor-overlay-end current-item))
      (insert (second new-thing))
-     (goto-char (versor-overlay-start current-item))
-     (insert (first new-thing)))))
+     (let ((end (make-marker))
+	   (start (versor-overlay-start current-item)))
+       (set-marker end (point))
+       (goto-char start)
+       (insert (first new-thing))
+       (versor:set-current-item start end)))))
 
 (defun versor:insert-within ()
   "Insert something within the current versor item."
