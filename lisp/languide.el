@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-03-26 18:16:45 john>
+;;; Time-stamp: <2004-03-31 15:44:53 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -149,14 +149,6 @@ Returns point, if there was a bracket to go out of, else nil."
    (t part)))
 
 ;;;; execute statement navigation
-
-(defun languide-after-change-function (start end length)
-  "After a change, languide's cached information would be wrong, so throw it away."
-  (if (<= start statement-latest-start)
-      (setq statement-latest-start nil
-	    navigated-latest-part nil
-	    statement-latest-parts nil
-	    statement-latest-type nil)))
 
 ;;;; commands for statement navigation
 
@@ -365,21 +357,93 @@ Interactively, uses the current surrounding / following status."
 (defvar navigated-latest-part nil
   "The latest part of a statement that we navigated to.")
 
-(defvar statement-latest-start nil
-  "Where the latest statement to be explored starts.
-If asked to navigate again, and the current statement starts here,
-we can use the information cached in statement-latest-parts to
-avoid going through the navigation steps again. We invalidate this
-on any relevant change (changes after this point do not count) to
-the buffer (in languide-after-change-function).")
+(defvar statements-known nil
+  "List of known statement positions (buffer-local).
+Each element is
+  (startpos endpos type (part start . end) (part start . end) ...)
+and the list is sorted by starting position.
+Whenever we change something in the buffer, we invalidate
+all the data referring to things further down the buffer.")
 
-(defvar statement-latest-type nil
-  "The type of statement we saw at statement-latest-start.")
+(defvar latest-statement-known nil
+  "The latest-used entry in statements-known.
+This is kept as a handy cache.")
 
-(defvar statement-latest-parts nil
-  "The known parts of the latest navigated statement.
-We cache them (if the statement starts at statement-latest-start)
-to avoid having to go through the navigation steps each time.")
+(mapcar 'make-variable-buffer-local
+	'(navigated-latest-part
+	  statements-known
+	  latest-statement-known))
+
+(defun languide-after-change-function (start end length)
+  "After a change, some of languide's cached information may be wrong, so throw it away."
+  (let ((statements-prev statements-known)
+	(statements statements-known))
+    (while statements
+      (let* ((statement (car statements))
+	     (stastart (first statement)))
+	(when (>= stastart start)
+	  (rplacd statements-prev nil)
+	  (setq statements nil)))
+      (setq statements-prev statements
+	    statements (cdr statements)))))
+
+(defun statement-remember (start type)
+  "Remember that there is a statement starting at START, of TYPE.
+See the variable statements-known."
+  (if statements-known
+      (let ((statements-prev statements-known)
+	    (statements statements-known))
+	(while statements
+	  (let* ((statement (car statements))
+		 (stastart (first statement)))
+	    (cond
+	     ((= start stastart)
+	      (rplacd statement (list nil type))
+	      (setq latest-statement-known statement
+		    statements nil))
+	     ((> start stastart)
+	      (rplacd statements-prev
+		      (cons
+		       (setq latest-statement-known (list start nil type))
+		       statements))
+	      (setq statements nil))
+	     (t
+	      )))
+	  (setq statements-prev statements
+		statements (cdr statements))))
+    (setq statements-known
+	  (list
+	   (setq latest-statement-known (list start nil type)))))
+  latest-statement-known)
+
+(defun statement-find (start)
+  "Find the statement starting at START."
+  (if (and (consp latest-statement-known)
+	   (= start (car latest-statement-known)))
+      latest-statement-known
+    (assoc start statements-known)))
+
+(defun statement-remember-part (statement-start type part start end)
+  "Remember that for the statement starting at STATEMENT-START and of TYPE, the PART runs from START to END."
+  (let ((statement (statement-find statement-start)))
+    (when (null statement)
+      (setq statement (statement-remember statement-start type)))
+    (when (null statement)
+      (error "Null statement in statement-remember-part"))
+    (let ((part (assoc part (cdddr statement))))
+      (message "statement-remember-part got statement=%S part=%S" statement part)
+      (if part
+	  (rplacd part (cons start end))
+	(rplacd (cddr statement)
+		(cons (cons start end)
+		      (cdddr statement)))))))
+
+(defun statement-find-part (start part)
+  "For the statement at START, find cached PART as a cons of (start . end)."
+  (let ((statement (statement-find start)))
+    (if statement
+	(cdr (assoc part (cddr statement)))
+      nil)))
 
 (defvar languide-parts '("container" "whole" "head" "body" "tail")
   "The parts we can navigate to.")
@@ -388,41 +452,36 @@ to avoid having to go through the navigation steps each time.")
   "Navigate to PART of the current statement."
   (setq navigated-latest-part part)
   (add-hook 'after-change-functions 'languide-after-change-function nil t)
-  ;; see which statement we are now on; if it is the same as the last
-  ;; time we did any navigation, we can use cached navigation data
-  (beginning-of-statement-internal 1)
-  (message "navigate-to %S found statement begins \"%s\"" part (buffer-substring (point) (+ 20 (point))))
-  (let (remembered)
-    (if (and (eq (point) statement-latest-start)
-	     (setq remembered (assoc part statement-latest-parts)))
-	(progn				; we have cached data for this
-	  (message "cached")
-	  (set-mark-candidate (cddr remembered))
-	  (goto-char (cadr remembered)))
-      (let* ((type (identify-statement nil))
-	     (directions (get-statement-part type part)))
-	(setq statement-latest-start (point)
-	      statement-latest-type type
-	      statement-latest-parts nil ; new lot of cached data (should be empty anyway)
-	      )
-	;; no cached data, really do the navigation
-	(message "not cached; navigate-to %S %S got %S" type part directions)
-	(if directions
-	    (if (eq (car directions) 'statement-navigate)
-		(progn
-		  (statement-navigate (cdr directions))
-		  ;; cache the data in case we want it again;
-		  ;; don't bother to search for having it cached already,
-		  ;; as we ought not to (or we wouldn't be in this branch)
-		  ;; and it wouldn't really matter if we did
-		  (push (cons part
-			      (cons (point)
-				    mark-candidate))
-			statement-latest-parts)
-		  (versor:display-highlighted-choice (symbol-name part) languide-parts)
-		  )
-	      (error "Don't know how to handle directions like %S" directions))
-	  (error "No %S defined for %S for %S" part type major-mode))))))
+  (let ((old-position (point)))		; in case we give up
+    ;; see which statement we are now on; if it is the same as the last
+    ;; time we did any navigation, we can use cached navigation data
+    (beginning-of-statement-internal 1)
+    (message "navigate-to %S found statement begins \"%s\"" part (buffer-substring (point) (+ 20 (point))))
+    (let* ((statement-start (point))
+	   (remembered (statement-find-part statement-start part)))
+      (if remembered
+	  (progn			; we have cached data for this
+	    (message "using cached statement position %d..%d" (car remembered) (cdr remembered))
+	    (set-mark-candidate (cdr remembered))
+	    (goto-char (car remembered))
+	    (versor:display-highlighted-choice (symbol-name part) languide-parts))
+	(let* ((type (identify-statement nil))
+	       (directions (get-statement-part type part)))
+	  ;; no cached data, really do the navigation
+	  (message "not cached; navigate-to %S %S got %S" type part directions)
+	  (if directions
+	      (if (eq (car directions) 'statement-navigate)
+		  (progn
+		    (statement-navigate (cdr directions))
+		    ;; cache the data in case we want it again;
+		    (statement-remember-part statement-start type
+					     part (point) mark-candidate)
+		    (message "caching statement position %d..%d" (point) mark-candidate)
+		    (versor:display-highlighted-choice (symbol-name part) languide-parts))
+		(goto-char old-position)
+		(error "Don't know how to handle directions like %S" directions))
+	    (goto-char old-position)
+	    (error "No %S defined for %S for %S" part type major-mode)))))))
 
 (defvar mark-candidate nil
   "Where the mark will be set at the end of statement-navigate.
