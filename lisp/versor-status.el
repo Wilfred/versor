@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 14:29:23 john>
+;;; Time-stamp: <2004-05-26 16:25:37 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -22,6 +22,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (provide 'versor-status)
+(require 'versor-dimensions)
 
 ;; Display the current meta-dimension and dimension etc
 
@@ -31,8 +32,8 @@
 
 (defun versor:set-status-display (&optional one of-these explicit)
   "Indicate the state of the versor system."
-  (setq versor:current-level-name (first (versor:current-level))
-	versor:current-meta-level-name (aref (versor:current-meta-level) 0))
+  (setq versor:current-level-name (versor:level-name versor:level)
+	versor:current-meta-level-name (versor:meta-level-name versor:meta-level))
   (if (and versor:multi-line-level-display explicit)
       (versor:display-dimensions-2d)
     (if one
