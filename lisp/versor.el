@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-18 10:23:29 john>
+;;; Time-stamp: <2004-05-19 16:44:01 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -368,7 +368,8 @@ See the definition of versor:make-movemap for details of move maps."
 			(previous backward-char)
 			(next forward-char)
 			(last end-of-line)
-			(delete delete-char)))
+			;; (delete delete-char)
+			))
 
 (versor:define-moves movemap-lines
 		     '((color "black")
@@ -377,7 +378,8 @@ See the definition of versor:make-movemap for details of move maps."
 		       (next versor:next-line)
 		       (last end-of-buffer)
 		       (end-of-item end-of-line)
-		       (delete kill-line)))
+		       ;; (delete kill-line)
+		       ))
 
 (versor:define-moves movemap-pages
 		     '((color "white")
@@ -396,7 +398,8 @@ See the definition of versor:make-movemap for details of move maps."
 		       (end-of-item forward-sexp)
 		       (last last-sexp)
 		       (mark mark-sexp)
-		       (delete kill-sexp)))
+		       ;; (delete kill-sexp)
+		       ))
 
 (versor:define-moves movemap-depth
 		     '((color "orange")
@@ -418,7 +421,7 @@ See the definition of versor:make-movemap for details of move maps."
 		       (first beginning-of-defun)
 		       (previous previous-statement)
 		       (next next-statement)
-		       (last end-of-defun)
+		       (last end-of-defun) ;;;;;;;;;;;;;;;; make this go back one statement from the end of the defun
 		       (end-of-item latest-statement-navigation-end)))
 
 (versor:define-moves movemap-defuns
