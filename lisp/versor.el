@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 15:45:07 john>
+;;; Time-stamp: <2004-05-24 15:54:00 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -112,10 +112,6 @@ package to the end of an item."
 This is for choosing before, after, around or inside.")
 
 (fset 'versor:insertion-placement-keymap versor:insertion-placement-keymap)
-
-(defvar versor:insertion-kind-alist nil
-  "Alist for reading what kind of insertion to do.
-Almost a keymap, but the functions it contains are not commands.")
 
 (defun versor:setup (&rest keysets)
   "Set up the versor (versatile cursor) key system.
