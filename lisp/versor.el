@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 15:54:00 john>
+;;; Time-stamp: <2004-10-07 10:41:11 guest05>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -250,5 +250,8 @@ to select which keys are set up to do versor commands."
 
 (when versor:use-face-attributes
   (set-face-attribute 'versor:item nil :inherit 'region))
+
+(unless window-system
+  (set-face-attribute 'versor:item nil :underline t))
 
 ;;;; end of versor.el

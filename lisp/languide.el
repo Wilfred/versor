@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-06-03 16:11:05 john>
+;;; Time-stamp: <2004-07-18 13:18:25 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -22,6 +22,7 @@
 (require 'cl)
 (require 'modal-functions)
 (provide 'languide)
+(require 'versor-commands) ; for versor:as-motion-command
 
 ;; To use languide, you need to:
 ;;   add the directory containing this elisp file, and its companions, to your load-path
@@ -73,6 +74,7 @@ Argument 1 means the current statement, 2 the next, etc."
   (beginning-of-statement-internal)
   (establish-current-statement))
 
+;; this is for testing
 (global-set-key [ kp-subtract ] 'beginning-of-statement-internal)
 
 (defun end-of-statement ()
@@ -86,33 +88,48 @@ Argument 1 means the current statement, 2 the next, etc."
 (defun previous-statement (n)
   "Move to the NTH previous statement."
   (interactive "p")
-  (while (> n 0)
-    (message "%d left; going to beginning of current statement" n)
-    (beginning-of-statement-internal)
-    (message "moving into previous statement")
-    (move-into-previous-statement)
-    (message "that gets us to %d" (point))
-    (decf n))
-  (message "final move to beginning of statement")
-  (beginning-of-statement-internal)
-  (message "that gets us to %d" (point))
-  (establish-current-statement))
+  (versor:as-motion-command
+   (let ((previous-end nil))
+     (while (> n 0)
+       (message "%d left; going to beginning of current statement" n)
+       (beginning-of-statement-internal)
+       (setq previous-end (point))
+       (message "moving into previous statement")
+       (move-into-previous-statement)
+       (message "that gets us to %d" (point))
+       (decf n))
+     (message "final move to beginning of statement")
+     (beginning-of-statement-internal)
+     (message "that gets us to %d" (point))
+     (establish-current-statement)
+     (if previous-end
+	 (versor:set-current-item (point) previous-end)
+       (save-excursion
+	 (let ((start (point)))
+	   (condition-case nil
+	       (end-of-statement-internal)
+	     (error (message "Could not find end of statement")))
+	   (versor:set-current-item start (point))))))))
 
 (defun next-statement (n)
   "Move to the NTH next statement."
   (interactive "p")
-  (while (> n 0)
-    (message "%d left; going to end of current statement" n)
-    (end-of-statement-internal)
-    (message "skipping to code at start of next statement")
-    (skip-to-actual-code)
-    (message "that gets us to %d" (point))
-    (when (> n 1)
-      (message "moving into next statement")
-      (move-into-next-statement)
-      (message "that gets us to %d" (point)))
-    (decf n))
-  (establish-current-statement))
+  (versor:as-motion-command
+   (while (> n 0)
+     (message "%d left; going to end of current statement" n)
+     (end-of-statement-internal)
+     (message "skipping to code at start of next statement")
+     (skip-to-actual-code)
+     (message "that gets us to %d" (point))
+     (when (> n 1)
+       (message "moving into next statement")
+       (move-into-next-statement)
+       (message "that gets us to %d" (point)))
+     (decf n))
+   (establish-current-statement)
+   ;; (versor:set-current-item ... ...)
+   ;; TODO: should now set things up for versor to see
+   ))
 
 (defun safe-scan-lists (from count depth)
   "Like scan-lists, but returns nil on error."
@@ -374,9 +391,12 @@ Interactively, uses the current surrounding / following status."
 (defun navigate-this-container ()
   "Navigate to the container of the current statement."
   (interactive)
-  (statement-container)
-  (versor:display-highlighted-choice "container" languide-parts)  
-  )
+  (versor:as-motion-command
+   (statement-container)
+   ;; TODO: should now set things up for versor to see
+   ;; (versor:set-current-item ... ...)
+   (versor:display-highlighted-choice "container" languide-parts)  
+   ))
 
 (defvar statement-navigate-parts-cyclic nil
   "*Whether to step forwards from body (or tail if present) back round to head.")
@@ -387,32 +407,34 @@ Interactively, uses the current surrounding / following status."
 (defun statement-navigate-parts-next (&optional ignore)
   "Navigate to the next part of the statement."
   (interactive)
-  (case navigated-latest-part
-    ('container (navigate-this-head))
-    ('whole (navigate-this-head))
-    ('head (navigate-this-body))
-    ('body (if (get-statement-part statement-navigation-type 'tail)
-	       (navigate-this-tail)
-	     (navigate-this-head)))
-    ('tail
-     (cond
-      (statement-navigate-parts-include-container (navigate-this-container))
-      (statement-navigate-parts-cyclic (navigate-this-head))
-      (t (beginning-of-statement 1))))))
+  (versor:as-motion-command
+   (case navigated-latest-part
+     ('container (navigate-this-head))
+     ('whole (navigate-this-head))
+     ('head (navigate-this-body))
+     ('body (if (get-statement-part statement-navigation-type 'tail)
+		(navigate-this-tail)
+	      (navigate-this-head)))
+     ('tail
+      (cond
+       (statement-navigate-parts-include-container (navigate-this-container))
+       (statement-navigate-parts-cyclic (navigate-this-head))
+       (t (beginning-of-statement 1)))))))
 
 (defun statement-navigate-parts-previous (&optional ignore)
   "Navigate to the previous part of the statement."
   (interactive)
-  (case navigated-latest-part
-    ('whole (navigate-this-body))
-    ('container (navigate-this-head))
-    ('head
-     (cond ((get-statement-part statement-navigation-type 'tail) (navigate-this-tail))
-	   (statement-navigate-parts-include-container (navigate-this-container))
-	   (statement-navigate-parts-cyclic (navigate-this-body))
-	   (t (beginning-of-statement 2))))
-    ('body (navigate-this-head))
-    ('tail (navigate-this-body))))
+  (versor:as-motion-command
+   (case navigated-latest-part
+     ('whole (navigate-this-body))
+     ('container (navigate-this-head))
+     ('head
+      (cond ((get-statement-part statement-navigation-type 'tail) (navigate-this-tail))
+	    (statement-navigate-parts-include-container (navigate-this-container))
+	    (statement-navigate-parts-cyclic (navigate-this-body))
+	    (t (beginning-of-statement 2))))
+     ('body (navigate-this-head))
+     ('tail (navigate-this-body)))))
 
 (defvar navigated-latest-part nil
   "The latest part of a statement that we navigated to.")
@@ -536,6 +558,7 @@ See the variable statements-known."
 	    (message "using cached statement position %d..%d" (car remembered) (cdr remembered))
 	    (set-mark-candidate (cdr remembered))
 	    (goto-char (car remembered))
+	    (versor:set-current-item (car remembered) (cdr remembered))
 	    (versor:display-highlighted-choice (symbol-name part) languide-parts))
 	(let* ((type (identify-statement nil))
 	       (directions (get-statement-part type part)))
@@ -546,9 +569,10 @@ See the variable statements-known."
 		  (progn
 		    (statement-navigate (cdr directions))
 		    ;; cache the data in case we want it again;
+		    (message "caching statement position %d..%d" (point) mark-candidate)
 		    (statement-remember-part statement-start type
 					     part (point) mark-candidate)
-		    (message "caching statement position %d..%d" (point) mark-candidate)
+		    (versor:set-current-item (point) mark-candidate)
 		    (versor:display-highlighted-choice (symbol-name part) languide-parts))
 		(goto-char old-position)
 		(error "Don't know how to handle directions like \"%S\"" directions))

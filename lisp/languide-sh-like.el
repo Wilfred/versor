@@ -1,5 +1,5 @@
 ;;;; languide-sh-like.el -- shell etc definitions for language-guided editing
-;;; Time-stamp: <2004-01-26 16:30:27 john>
+;;; Time-stamp: <2004-11-01 11:49:40 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -26,8 +26,8 @@
       (goto-char whereat)
       (beginning-of-line 1)
       (if (looking-at "^\\(export +\\)?\\([^=]+\\)=\\(.+\\)$")
-	  (list (buffer-matched 2)
-		(buffer-matched 3)
+	  (list (match-string 2)
+		(match-string 3)
 		(match-beginning 2) (match-end 2)
 		(match-beginning 3) (match-end 3))
 	nil))))

@@ -1,5 +1,5 @@
 ;;;; modal-functions.el -- make a function which despatches on current major mode
-;;; Time-stamp: <2004-03-02 10:01:36 john>
+;;; Time-stamp: <2004-11-27 20:37:03 jcgs>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -28,9 +28,26 @@
       (apply fn args)
     (car args)))
 
+(defun remove-optional (args)
+  "Remove any occurrence of &optional from ARGS."
+  (let ((result nil))
+    (while args
+      (let ((arg (car args)))
+	(if (not (eq arg '&optional))
+	    (setq result (cons arg result)))
+	(setq args (cdr args))))
+    (nreverse result)))
+
 (defmacro defmodel (fun args doc &optional interactive)
   "Define a caller for contextual FUN with ARGS and optional INTERACTIVE.
-The function is a property of that name on the symbol naming the major mode."
+For each major mode, a function of that name should be defined using defmodal,
+which see. When the function named as FUN is called, the specific function for
+the current major mode is called to implement it. If no such function is defined,
+the first of the arguments is returned.
+If FUN has an interactive definition, each of the modal functions implementing it
+should also have one.
+The implementing functions are stored as a property of that name on the symbol
+naming each major mode for which this function is implemented."
   (append
    (list 'defun fun args doc)
    (if interactive
@@ -38,8 +55,7 @@ The function is a property of that name on the symbol naming the major mode."
      nil)
    (list (append (list 'safe-funcall
 		       (list 'get 'major-mode (list 'quote fun)))
-
-		 args))))
+		 (remove-optional args)))))
 
 
 (defun defmodal0 (fun mode args body)
@@ -53,7 +69,8 @@ This is for use inside defmodal."
 	  (list 'put (list 'quote mode) (list 'quote fun) (list 'quote this-name)))))
 
 (defmacro defmodal (fun mode args &rest body)
-  "Define FUNCTION, for MODE with ARGS and BODY."
+  "Define FUNCTION, for MODE with ARGS and BODY.
+MODE may be a symbol naming a mode, or a list of such symbols."
   (if (consp mode)
       (append
        '(progn)
@@ -61,3 +78,21 @@ This is for use inside defmodal."
 		 (defmodal0 fun this-mode args body))
 	       mode))
     (defmodal0 fun mode args body)))
+
+(defun defmodalalias0 (fun mode def)
+  "Define the implementation of symbol FUNCTION for MODE to be DEF.
+For use inside defmodalalias."
+  (put mode fun (symbol-function def)))
+
+(defmacro defmodalalias (fun mode def)
+  "Define the implementation of FUNCTION for MODE to be DEF.
+MODE may be a symbol naming a mode, or a list of such symbols."
+  (if (consp mode)
+      (append
+       '(progn)
+       (mapcar (lambda (this-mode)
+		 (defmodalalias0 fun this-mode def))
+	       mode))
+    (defmodalalias0 fun mode def)))
+
+;;; end of modal-functions.el

@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2004-05-24 14:02:09 john>
+;;; Time-stamp: <2004-09-09 15:17:24 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -54,6 +54,7 @@
       (when new-pair
 	(setq versor:meta-level (cadr new-pair)
 	      versor:level (cddr new-pair))
+	;; (message "Versor spotted mode change to %s, using %d %d" major-mode versor:meta-level versor:level)
 	(versor:set-status-display t)))))
 
 (defun versor:buffer-change-function (old-buffer)

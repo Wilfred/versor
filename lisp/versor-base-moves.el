@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 13:56:37 john>
+;;; Time-stamp: <2004-07-16 18:40:56 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -82,22 +82,22 @@
   (interactive "p")
   (apply 'backward-up-list args)
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
-  (make-versor:overlay (point) (1+ (point))) ; should probably be versor:set-current-item
+  (make-versor:overlay (point) (1+ (point))) ; TODO: should probably be versor:set-current-item
   (save-excursion
     (forward-sexp 1)
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-    (versor:extra-overlay (1- (point)) (point)))) ; should probably be versor:add-to-current-item when I've written one
+    (versor:extra-overlay (1- (point)) (point)))) ; TODO: should probably be versor:add-to-current-item when I've written one
 
 (defun versor:down-list (&rest args)
   (interactive "p")
   (apply 'down-list args)
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
-  (make-versor:overlay (point) (1+ (point))) ; should probably be versor:set-current-item
+  (make-versor:overlay (point) (1+ (point))) ; TODO: should probably be versor:set-current-item
   (when (looking-at "\\s(")
     (save-excursion
       (forward-sexp 1)
       ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-      (versor:extra-overlay (1- (point)) (point))))) ; should probably be versor:add-to-current-item when I've written one
+      (versor:extra-overlay (1- (point)) (point))))) ; TODO: should probably be versor:add-to-current-item when I've written one
 
 ;; left over from trying a window selection dimension
 ;; (defun other-window-backwards (n)

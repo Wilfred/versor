@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2004-09-16 11:35:46 john>
+;;; Time-stamp: <2004-10-07 10:28:43 guest05>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;

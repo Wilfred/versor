@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2004-06-03 15:29:35 john>
+;;; Time-stamp: <2004-09-15 12:15:11 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -41,12 +41,18 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
     ;; it is not part of a comment or string
     (while in-comment-or-string
       (cond
-       ((and nil (looking-at "[a-z_]"))
+       ((and nil (looking-at "[a-z_]"))	; not sure what this was -- remove????????????????
 	(skip-syntax-backward "w_")
 	)
        (t
-	(re-search-backward "[{;}]" (point-min) t) ; leaves point at start of match
+	(re-search-backward "[{;}]"
+			    bod ; (point-min)
+			    t) ; leaves point at start of match
 	(message "Found a \"%s\" at %d" (match-string 0) (point))
+	;; having found a character that can end a C statement,
+	;; we now parse from the start of the defun up to the
+	;; position of the character, to see whether the character
+	;; is in code or in string-or-comment
 	(let ((result (save-excursion (parse-partial-sexp bod (point)
 							  0 ; target-depth
 							  nil ; stop-before

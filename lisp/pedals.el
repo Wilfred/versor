@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2004-09-16 11:31:31 john>
+;;; Time-stamp: <2004-11-09 17:26:37 John.Sturdy>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -34,6 +34,8 @@
 ;; (require 'gud)
 ;; (require 'autocue)
 ;; (require 'vm)
+(if (>= emacs-major-version 21)
+    (require 'todo-mode))
 
 (defvar pedals-hosts-preferring-num-lock
   '("hosea")
@@ -141,8 +143,10 @@ This symbol may be given inside a vector to define-key etc")
   ;; get rid of once I've verified that it is in fact OK.
   (let ((num-lock (handsfree-use-num-lock)))
     (cond
-     ((eq system-type 'gnu/linux)
-      (message "Setting up pedals as for gnu/linux")
+     ((or (eq system-type 'gnu/linux)
+	  (equal (downcase (system-short-name)) "mayo")
+	  )
+      (message "Setting up pedals as for gnu/linux or mayo")
       (setq pedal-aux [ kp-down ]
 	    pedal-C-aux [ C-kp-down ]
 	    pedal-M-aux [ M-kp-down ]
@@ -274,16 +278,16 @@ See handsfree-menus.el for menus."
 
   (global-set-key pedal-C-aux (if pedal:versor-change-dimension-ctrl
 				  'versor:next-meta-level
-				'wander-yank))
+				'versor:other-end-of-item))
   (global-set-key pedal-C-S-aux (if pedal:versor-change-dimension-ctrl
 				    'versor:prev-meta-level
-				  'pick-up-sexp-at-point))
+				  'wander-yank-dwim))
 
   (global-set-key pedal-M-aux (if pedal:versor-change-dimension-ctrl
-				  'wander-yank
+				  'versor:other-end-of-item
 				'versor:next-meta-level))
   (global-set-key pedal-M-S-aux (if pedal:versor-change-dimension-ctrl
-				    'pick-up-sexp-at-point
+				    'wander-yank-dwim
 				  'versor:prev-meta-level))
 
   ;; middle pedal of right cluster -- dimensional navigation
@@ -367,6 +371,16 @@ See handsfree-menus.el for menus."
 	(define-key Buffer-menu-mode-map pedal-menu 'Buffer-menu-select)
 	(define-key Buffer-menu-mode-map pedal-S-menu 'Buffer-menu-delete)))
 
+  (if (and (boundp 'todo-mode-map)
+	   (keymapp todo-mode-map))
+      (progn
+	(define-key todo-mode-map pedal-onward 'todo-forward-item)
+	(define-key todo-mode-map pedal-S-onward 'todo-backward-item)
+	(define-key todo-mode-map pedal-aux 'todo-forward-category)
+	(define-key todo-mode-map pedal-S-aux 'todo-backward-category)
+	(define-key todo-mode-map pedal-menu 'todo-quit)
+	(define-key todo-mode-map pedal-S-menu 'todo-file-item)))
+
   (if (and (boundp 'dired-mode-map)
 	   (keymapp dired-mode-map))
       (progn
@@ -385,10 +399,10 @@ See handsfree-menus.el for menus."
   (if (and (boundp 'vm-summary-mode-map)
 	   (keymapp vm-summary-mode-map))
       (progn
-	(define-key vm-summary-mode-map pedal-aux 'vm-scroll-forward)
-	(define-key vm-summary-mode-map pedal-S-aux 'vm-scroll-backward)
-	(define-key vm-summary-mode-map pedal-onward 'vm-next-message)
-	(define-key vm-summary-mode-map pedal-S-onward 'previous-line)
+	(define-key vm-summary-mode-map pedal-aux 'vm-next-message)
+	(define-key vm-summary-mode-map pedal-S-aux 'vm-previous-message)
+	(define-key vm-summary-mode-map pedal-onward 'vm-scroll-forward)
+	(define-key vm-summary-mode-map pedal-S-onward 'vm-scroll-backward)
 	(define-key vm-summary-mode-map pedal-menu 'exit-recursive-edit ) ; because I normally run the mailer in a recursive edit
 	(define-key vm-summary-mode-map pedal-S-menu 'vm-delete-message)
 	(define-key vm-summary-mode-map pedal-C-S-menu 'vm-expunge-folder)
