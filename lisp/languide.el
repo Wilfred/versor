@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-03-31 15:44:53 john>
+;;; Time-stamp: <2004-04-29 10:42:51 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -51,18 +51,33 @@ If the statement cannot be identified, return DEFAULT.")
 Argument 1 means the current statement, 2 the next, etc."
   (interactive "p")
   (beginning-of-statement-internal n)
-  (statement-set-type (identify-statement nil))
-  (setq statement-latest-start (point)
-	navigated-latest-part 'whole))
+  (let ((type (identify-statement nil)))
+    (statement-set-type type)
+    (statement-remember (point) type)
+    (setq statement-latest-start (point)
+	  navigated-latest-part 'whole)))
 
 (defun end-of-statement (n)
   "Move to the end of the current statement.
 Argument 1 means the current statement, 2 the next, etc."
   (interactive "p")
   (end-of-statement-internal n)
-  (statement-set-type (identify-statement nil))
-  (setq statement-latest-start (point)
-	navigated-latest-part 'whole))
+  (let ((type (identify-statement nil)))
+    (statement-set-type type)
+    (statement-remember (point) type)
+    (setq statement-latest-start (point)
+	  navigated-latest-part 'whole)))
+
+(defun previous-statement (n)
+  "Move to the NTH previous statement."
+  (interactive "p")
+  (beginning-of-statement (1+ n)))
+
+(defun next-statement (n)
+  "Move to the NTH next statement."
+  (interactive "p")
+  (end-of-statement (1+ n))
+  (beginning-of-statement 1))
 
 (defun safe-scan-lists (from count depth)
   "Like scan-lists, but returns nil on error."
@@ -391,26 +406,38 @@ This is kept as a handy cache.")
   "Remember that there is a statement starting at START, of TYPE.
 See the variable statements-known."
   (if statements-known
-      (let ((statements-prev statements-known)
-	    (statements statements-known))
-	(while statements
-	  (let* ((statement (car statements))
-		 (stastart (first statement)))
-	    (cond
-	     ((= start stastart)
-	      (rplacd statement (list nil type))
-	      (setq latest-statement-known statement
-		    statements nil))
-	     ((> start stastart)
-	      (rplacd statements-prev
-		      (cons
-		       (setq latest-statement-known (list start nil type))
-		       statements))
-	      (setq statements nil))
-	     (t
-	      )))
-	  (setq statements-prev statements
-		statements (cdr statements))))
+      (if (< start (first (car statements-known)))
+	  ;; I think I can do the rest more clearly if I get this
+	  ;; case out of the way first
+	  (setq statements-known
+		(cons
+		 (setq latest-statement-known (list start nil type))
+		 statements-known))
+	(let ((statements-prev statements-known)
+	      (statements (cdr statements-known))
+	      (done nil))
+	  (while (and statements
+		      (not done))
+	    (let* ((statement (car statements))
+		   (stastart (first statement)))
+	      (cond
+	       ((= start stastart)
+		(rplacd statement (list nil type))
+		(setq latest-statement-known statement
+		      done t))
+	       ((> stastart start)
+		(rplacd statements-prev
+			(cons (setq latest-statement-known (list start nil type))
+			      statements))
+		(setq done t))
+	       (t
+		)))
+	    (setq statements-prev statements
+		  statements (cdr statements)))
+	  (unless done
+	    (rplacd statements-prev
+		    (list
+		     (setq latest-statement-known (list start nil type)))))))
     (setq statements-known
 	  (list
 	   (setq latest-statement-known (list start nil type)))))
