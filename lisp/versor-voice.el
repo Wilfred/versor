@@ -1,5 +1,5 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2004-05-24 14:29:55 john>
+;;; Time-stamp: <2004-05-26 09:52:05 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -57,6 +57,7 @@
     ("over" . versor:out-briefly)
     ("depth" . versor:select-in/out)
     ("expressions" . versor:select-expr)
+    ("other end" . versor:other-end-of-item)
     ("copy this" . versor:copy)
     ("cut this" . versor:kill)
     ("mark this" . versor:mark)
