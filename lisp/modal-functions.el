@@ -1,5 +1,5 @@
 ;;;; modal-functions.el -- make a function which despatches on current major mode
-;;; Time-stamp: <2004-11-27 20:37:03 jcgs>
+;;; Time-stamp: <2005-01-14 16:10:28 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -38,7 +38,7 @@
 	(setq args (cdr args))))
     (nreverse result)))
 
-(defmacro defmodel (fun args doc &optional interactive)
+(defmacro defmodel (fun args doc &optional interactive before-form after-form)
   "Define a caller for contextual FUN with ARGS and optional INTERACTIVE.
 For each major mode, a function of that name should be defined using defmodal,
 which see. When the function named as FUN is called, the specific function for
@@ -48,14 +48,24 @@ If FUN has an interactive definition, each of the modal functions implementing i
 should also have one.
 The implementing functions are stored as a property of that name on the symbol
 naming each major mode for which this function is implemented."
+  (if (and interactive
+	   (not (eq (car interactive) 'interactive)))
+      (progn
+	(setq after-form before-form
+	      before-form interactive
+	      interactive nil)))
   (append
    (list 'defun fun args doc)
    (if interactive
        (list interactive)
      nil)
+   (if before-form
+       (list before-form))
    (list (append (list 'safe-funcall
 		       (list 'get 'major-mode (list 'quote fun)))
-		 (remove-optional args)))))
+		 (remove-optional args)))
+   (if after-form
+       (list after-form))))
 
 
 (defun defmodal0 (fun mode args body)
