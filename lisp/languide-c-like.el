@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2004-02-24 14:46:30 john>
+;;; Time-stamp: <2004-03-01 16:52:12 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -79,6 +79,13 @@ is liable to return the wrong result."
 	  (backward-sexp 1)
 	  (looking-at "for"))
       (error nil))))
+
+(defun blank-between (a b)
+  "Return whether there is only whitespace between A and B."
+  (save-excursion
+    (goto-char a)
+    (= (- b a)
+       (skip-chars-forward " \t\n\r" b))))
 
 (defmodal beginning-of-statement-internal (c-mode perl-mode) (n)
   "Move to the beginning of a C or Perl statement."
@@ -194,7 +201,12 @@ is liable to return the wrong result."
 		(progn
 		  (message "already after following code, here we are")
 		  (goto-char following-code)
-		  (decf n))
+		  (if (looking-at "else")
+		      (progn
+			(message "Looking at else")
+			(goto-char (- possible-ender 1))	
+			)
+		    (decf n)))
 	      (progn
 		(message "already before following code, go back another")
 		(goto-char (- possible-ender 1)) ; need to do more than this!!!!!!!!!!!!!!!!
@@ -208,9 +220,10 @@ is liable to return the wrong result."
 	    (backward-char 1)
 	    (incf n)
 	    )))))
-
+    (message "Now at real delimiter, skip to code; am at %d, old is %d" (point) old)
     ;; now we're at a real statement delimiter
-    (skip-to-actual-code old)))
+    (unless (blank-between (point) (1+ old))
+      (skip-to-actual-code old))))
 
 (defmodal end-of-statement-internal (c-mode perl-mode) (n)
   "Move to the end of a C or Perl statement."
