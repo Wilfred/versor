@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-03-15 14:11:23 john>
+;;; Time-stamp: <2004-03-15 14:48:19 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -567,12 +567,16 @@ With optional LEVEL-OFFSET, add that to the level first."
 (when (>= vern 20)
   (set-face-attribute 'versor-item nil :inherit 'region))
 
-(defun versor:set-status-display (&optional quiet)
+(defun versor:set-status-display (&optional one of-these)
   "Indicate the state of the versor system."
-  (unless quiet
-    (message (first (versor:current-level))))
   (setq versor:current-level-name (first (versor:current-level))
 	versor:current-meta-level-name (aref (versor:current-meta-level) 0))
+  (if one
+      (if of-these
+	  (versor:display-highlighted-choice one of-these)
+	(if (stringp one)
+	    (message one)))
+    (message (first (versor:current-level))))
   (if versor:reversible
       (setq versor:mode-line-begin-string (if versor:reversed " <==" " <")
 	    versor:mode-line-end-string (if versor:reversed ">" "==>"))
@@ -586,6 +590,22 @@ With optional LEVEL-OFFSET, add that to the level first."
 			versor-item-attribute
 			(versor:action (versor:current-level)
 				       versor-item-attribute))))
+
+(defun versor:display-highlighted-choice (one of-these-choices)
+  "Display, with ONE highlighted, the members of OF-THESE-CHOICES"
+  (let ((msg (mapconcat
+	      (lambda (string)
+		(if (string= string one)
+		    (let ((strong (copy-sequence string)))
+		      (put-text-property 0 (length string)
+					 'face (if (>= vern 20) 'versor-item 'region)
+					 strong)
+		      strong)
+		  ;; (format "[%s]" string)
+		  string))
+	      of-these-choices
+	      ", ")))
+    (message msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; underlining current item ;;;;
@@ -791,7 +811,9 @@ Various pre- and post-processing get done."
        (decf versor:level)
      (incf versor:level))
    (versor::trim-level)
-   (versor:set-status-display)))
+   (versor:set-status-display
+    (first (versor:current-level))
+    (mapcar 'first (versor:level-names)))))
 
 (defun versor:in ()
   "Move versor:level in a dimension in (versor:current-meta-level)."
@@ -803,7 +825,9 @@ Various pre- and post-processing get done."
        (incf versor:level)
      (decf versor:level))
    (versor::trim-level)
-   (versor:set-status-display)))
+   (versor:set-status-display
+    (first (versor:current-level))
+    (mapcar 'first (versor:level-names)))))
 
 (defun versor:next-meta-level ()
   "Move to the next meta-level."
@@ -815,7 +839,9 @@ Various pre- and post-processing get done."
      (incf versor:meta-level))
    (versor::trim-meta-level)
    (versor::trim-level)
-   (versor:set-status-display)))
+   (versor:set-status-display
+     (aref (versor:current-meta-level) 0)
+     (mapcar 'first (versor:meta-level-names)))))
 
 (defun versor:prev-meta-level ()
   "Move to the previous meta-level."
@@ -827,7 +853,9 @@ Various pre- and post-processing get done."
      (decf versor:meta-level))
    (versor::trim-meta-level)
    (versor::trim-level)
-   (versor:set-status-display)))
+   (versor:set-status-display
+     (aref (versor:current-meta-level) 0)
+     (mapcar 'first (versor:meta-level-names)))))
 
 ;;;; commands within the current dimension(s)
 
