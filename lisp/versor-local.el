@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2004-03-01 09:02:17 john>
+;;; Time-stamp: <2004-05-17 14:02:58 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -24,6 +24,9 @@
 (provide 'versor-local)
 (require 'versor)
 (require 'buffer-select-hooks)
+(require 'cl)
+
+;;;; our variables
 
 (defvar versor:per-buffer nil
   "*Whether to remember the dimensions per buffer")
@@ -40,19 +43,32 @@
 (defvar versor:auto-change-for-modes t
   "*Whether to change the dimension on changing modes.")
 
-(defvar versor:mode-current-levels nil
-  "Alist of mode name symbols to the current meta-level and level for that mode.")
+;;;; some debugging stuff:
+
+(require 'lessage)
+
+(defun versor-local-test-begin ()
+  (interactive)
+  (delete-other-windows)
+  (switch-to-buffer "versor.el")
+  (switch-to-buffer-other-window "versor.html")
+  (setq lessages nil)
+)
+
+(defun versor-local-test-end ()
+  (interactive)
+  (dlesg))
+
+(global-set-key [ kp-divide ] 'versor-local-test-begin)
+(global-set-key [ kp-multiply ] 'versor-local-test-end)
+
+;;;; entry points
 
 (defun versor:mode-change-function (old-mode)
   "Select dimension if necessary, as a hook on changing modes."
   (when (and versor:auto-change-for-modes
 	     (not versor:per-buffer))
-    (let ((old-pair (assoc old-mode versor:mode-current-levels)))
-      (if (null old-pair)
-	  (push (cons old-mode (cons versor:meta-level versor:level))
-		versor:mode-current-levels)
-	(rplaca (cdr old-pair) versor:meta-level)
-	(rplacd (cdr old-pair) versor:level)))
+    ;; now get the meta-level and level for the new major mode
     (let ((new-pair (assoc major-mode versor:mode-current-levels)))
       (when new-pair
 	(setq versor:meta-level (cadr new-pair)
@@ -69,6 +85,33 @@
     (versor:select-named-meta-level versor:this-buffer-meta-level)
     (versor:select-named-level versor:this-buffer-level)))
 
+(defun versor:display-modal-levels (&optional label marked)
+  "Display which levels are currently used for each mode."
+  (interactive)
+  (when (null marked) (setq marked (list major-mode)))
+  (let ((format-string (format "%%c %% %ds: %%s:%%s\n"
+			       (apply 'max
+				      (mapcar 'length
+					      (mapcar 'symbol-name
+						      (mapcar 'car
+							      versor:mode-current-levels)))))))
+    (with-output-to-temp-buffer (if label label "*Modal levels*")
+      (dolist (level versor:mode-current-levels)
+	(princ (format format-string
+		       (if (member (car level) marked) ?* ? )
+		       (car level)
+		       (aref (aref moves-moves (cadr level)) 0)
+		       (first (aref (aref moves-moves (cadr level))
+				    (cddr level)))))))))
+
+(defun versor:popup-modal-levels (&optional label marked)
+  "Briefly display the modal levels. Mostly for debugging."
+  (save-window-excursion
+    (versor:display-modal-levels label marked)
+    (sit-for 4)))
+
+;;;; setup
+
 (add-hook 'mode-selection-hook 'versor:mode-change-function)
 (add-hook 'buffer-selection-hook 'versor:buffer-change-function)
 
@@ -80,3 +123,6 @@ This is a convenience function for use with mapcar for your .emacs to
 produce a ready-made starting point for versor:mode-current-levels."
   (cons (first spec)
 	(versor:find-level-by-double-name (second spec) (third spec))))
+
+;;;; end of versor-local.el
+
