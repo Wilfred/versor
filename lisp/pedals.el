@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2004-01-26 14:48:29 john>
+;;; Time-stamp: <2004-04-28 14:32:48 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -292,16 +292,16 @@ See handsfree-menus.el for menus."
 
   (global-set-key pedal-C-onward (if pedal:versor-change-dimension-ctrl
 				     'versor:in
-				   'versor:end))
+				   'versor-extend-item-forwards))
   (global-set-key pedal-C-S-onward (if pedal:versor-change-dimension-ctrl
 				       'versor:out
-				     'versor:start))
+				     'versor-extend-item-backwards))
 
   (global-set-key pedal-M-onward (if pedal:versor-change-dimension-ctrl
-				     'versor:end
+				     'versor-extend-item-forwards
 				   'versor:in))
   (global-set-key pedal-M-S-onward (if pedal:versor-change-dimension-ctrl
-				       'versor:start
+				       'versor-extend-item-backwards
 				     'versor:out))
 
   ;; right pedal of right cluster -- menus, yank, repeat, undo, quit
