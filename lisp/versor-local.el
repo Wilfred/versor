@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2004-02-27 10:50:11 john>
+;;; Time-stamp: <2004-02-27 12:09:37 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -72,3 +72,11 @@
 (add-hook 'mode-selection-hook 'versor:mode-change-function)
 (add-hook 'buffer-selection-hook 'versor:buffer-change-function)
 
+(defun versor:mode-levels-triplet (spec)
+  "Convert SPEC to the form needed for versor:mode-current-levels.
+SPEC is a list of mode name (as symbol), meta-level and level names (as strings).
+The result is (mode . (meta . level)) with meta and level as numbers.
+This is a convenience function for use with mapcar for your .emacs to
+produce a ready-made starting point for versor:mode-current-levels."
+  (cons (first spec)
+	(versor:find-level-by-double-name (second spec) (third spec))))
