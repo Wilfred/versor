@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2004-07-16 18:40:56 john>
+;;; Time-stamp: <2005-02-07 16:23:21 John.Sturdy>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -44,6 +44,10 @@
   (if (> n 0)
       (while (looking-at "^$")
 	(forward-line 1))))
+
+(defun versor:end-of-paragraph ()
+  "Move to the end of the paragraph."
+  (end-of-paragraph-text))
 
 (defun versor:start-of-line (n)
   "Move to first non-space on line, or to start of Nth line from here."
@@ -219,13 +223,29 @@ Like backward-sexp but stops without error on reaching the start."
       (setq p n))
     (goto-char p)))
 
-(defun next-word (n)
+(defun versor:next-word (n)
   "Move forward a word, or, with argument, that number of words.
 Like forward-word but leaves point on the first character of the word,
 and never on the space or punctuation before it."
   (interactive "p")
   (forward-word n)
   (skip-syntax-forward "^w"))
+
+(defun versor:end-of-word (n)
+  "Move to the end of the current word, or, with argument, that number of words."
+  (interactive "p")
+  (forward-word (1- n))
+  (skip-syntax-forward "w"))
+
+(defun versor:delete-word (n)
+  "Delete N words."
+  (interactive "p")
+  (versor:as-motion-command
+   (let* ((item (versor:get-current-item))
+	  (spaced (and (= (char-before (car item)) ? )
+		       (= (char-after (cdr item)) ? ))))
+     (delete-region (car item) (cdr item))
+     (if spaced (just-one-space)))))
 
 (defun forward-phrase (n)
   "Move forward a phrase, or, with argument, that number of phrases.
