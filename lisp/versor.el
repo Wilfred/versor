@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-17 14:00:51 john>
+;;; Time-stamp: <2004-05-18 10:23:29 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -602,21 +602,27 @@ Used by versor-local, but set here."
 (defvar versor:use-face-attributes
   (and (boundp 'emacs-major-version)
 	   (>= emacs-major-version 21))
-  "Whether to use face attributes, as provided from Emacs 21 onwards.")
+  "*Whether to use face attributes, as provided from Emacs 21 onwards.")
+
+(defvar versor:multi-line-level-display (and (boundp 'emacs-major-version)
+					     (>= emacs-major-version 21))
+  "*Whether to use multi-line indication of the current meta-level and level.")
 
 (when versor:use-face-attributes
   (set-face-attribute 'versor-item nil :inherit 'region))
 
-(defun versor:set-status-display (&optional one of-these)
+(defun versor:set-status-display (&optional one of-these explicit)
   "Indicate the state of the versor system."
   (setq versor:current-level-name (first (versor:current-level))
 	versor:current-meta-level-name (aref (versor:current-meta-level) 0))
-  (if one
-      (if of-these
-	  (versor:display-highlighted-choice one of-these)
-	(if (stringp one)
-	    (message one)))
-    (message (first (versor:current-level))))
+  (if (and versor:multi-line-level-display explicit)
+      (versor:display-dimensions-2d)
+    (if one
+	(if of-these
+	    (versor:display-highlighted-choice one of-these)
+	  (if (stringp one)
+	      (message one)))
+      (message (first (versor:current-level)))))
   (if versor:reversible
       (setq versor:mode-line-begin-string (if versor:reversed " <==" " <")
 	    versor:mode-line-end-string (if versor:reversed ">" "==>"))
@@ -635,25 +641,82 @@ Used by versor-local, but set here."
 	(push (cons major-mode (cons versor:meta-level versor:level))
 	      versor:mode-current-levels)
       (rplaca (cdr old-pair) versor:meta-level)
-      (rplacd (cdr old-pair) versor:level)))
-  )
+      (rplacd (cdr old-pair) versor:level))))
+
+(defun versor:highlighted-string (string)
+  "Return a highlighted version of STRING."
+  (if versor:use-face-attributes
+      (let ((strong (copy-sequence string)))
+	(put-text-property 0 (length string)
+			   'face 'versor-item
+			   strong)
+	strong)
+    (format "[%s]" string)))
 
 (defun versor:display-highlighted-choice (one of-these-choices)
   "Display, with ONE highlighted, the members of OF-THESE-CHOICES"
   (let* ((msg (mapconcat
 	       (lambda (string)
 		 (if (string= string one)
-		     (if versor:use-face-attributes
-			 (let ((strong (copy-sequence string)))
-			   (put-text-property 0 (length string)
-					      'face 'versor-item
-					      strong)
-			   strong)
-		       (format "[%s]" string))
+		     (versor:highlighted-string string)
 		   string))
 	       of-these-choices
 	       ", ")))
     (message msg)))
+
+(defvar versor:max-meta-name-length nil
+  "The length of the longest meta-level name.
+Used for display purposes, and cached here.")
+
+(defun versor:display-dimensions-2d ()
+  "Indicate the current meta-level and level, in a multi-line message."
+  (interactive)
+  (unless versor:max-meta-name-length
+    (setq versor:max-meta-name-length
+	  (apply 'max
+		 (mapcar 'length
+			 (mapcar 'car
+				 (versor:meta-level-names))))))
+  (message
+   (let ((meta-levels-name-format-string (format "%% %ds" versor:max-meta-name-length)))
+     (mapconcat
+      'identity
+      (let ((meta (1- (length moves-moves)))
+	    (formats (reverse (versor:all-names-grid-formats)))
+	    (result nil))
+	(while (>= meta 1)
+	  (let* ((meta-data (aref moves-moves meta))
+		 (meta-name (aref meta-data 0))
+		 (inner-result nil)
+		 (row-formats formats)
+		 (level 1)
+		 (n-level (length meta-data)))
+	    (while row-formats
+	      (let* ((level-name-raw 
+		      (if (< level n-level)
+			  (first (aref meta-data level))
+			""))
+		     (level-name (format (car row-formats) level-name-raw)))
+		(push
+		 (if (and (= meta versor:meta-level)
+			  (= level versor:level))
+		     (versor:highlighted-string level-name)
+		   level-name)
+		 inner-result)
+		(setq row-formats (cdr row-formats))
+		(incf level)))
+	    (push
+	     (concat
+	      (format meta-levels-name-format-string
+		      (if (= meta versor:meta-level)
+			  (versor:highlighted-string meta-name)
+			meta-name))
+	      ": "
+	      (mapconcat 'identity inner-result " "))
+	     result)
+	    (decf meta)))
+	result)
+      "\n"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; underlining current item ;;;;
@@ -938,7 +1001,8 @@ Necessary pre- and post-processing get done."
    (versor::trim-level)
    (versor:set-status-display
     (first (versor:current-level))
-    (mapcar 'first (versor:level-names)))))
+    (mapcar 'first (versor:level-names))
+    t)))
 
 (defun versor:in ()
   "Move versor:level in a dimension in (versor:current-meta-level)."
@@ -952,7 +1016,8 @@ Necessary pre- and post-processing get done."
    (versor::trim-level)
    (versor:set-status-display
     (first (versor:current-level))
-    (mapcar 'first (versor:level-names)))))
+    (mapcar 'first (versor:level-names))
+    t)))
 
 (defun versor:next-meta-level ()
   "Move to the next meta-level."
@@ -966,7 +1031,8 @@ Necessary pre- and post-processing get done."
    (versor::trim-level)
    (versor:set-status-display
      (aref (versor:current-meta-level) 0)
-     (mapcar 'first (versor:meta-level-names)))))
+     (mapcar 'first (versor:meta-level-names))
+     t)))
 
 (defun versor:prev-meta-level ()
   "Move to the previous meta-level."
@@ -980,7 +1046,8 @@ Necessary pre- and post-processing get done."
    (versor::trim-level)
    (versor:set-status-display
      (aref (versor:current-meta-level) 0)
-     (mapcar 'first (versor:meta-level-names)))))
+     (mapcar 'first (versor:meta-level-names))
+     t)))
 
 ;;;; commands within the current dimension(s)
 
