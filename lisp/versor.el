@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-13 13:34:34 john>
+;;; Time-stamp: <2004-05-17 14:00:51 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -588,6 +588,14 @@ With optional LEVEL-OFFSET, add that to the level first."
       (setq versor:meta-level
 	    (if versor:meta-level-wrap max 1)))))
 
+(defvar versor:mode-current-levels nil
+  "Alist of mode name symbols to the current meta-level and level for that mode.
+Used by versor-local, but set here."
+  ;; I tried getting versor-local's versor:mode-change-function to remember the
+  ;; levels for the mode, but couldn't get it to work -- something about the
+  ;; mode being set strangely in the minibuffer, I think
+)
+
 (defvar versor:item-face (make-face 'versor-item)
   "Face to use for versor items")
 
@@ -621,7 +629,14 @@ With optional LEVEL-OFFSET, add that to the level first."
     (set-face-attribute 'versor-item nil
 			versor-item-attribute
 			(versor:action (versor:current-level)
-				       versor-item-attribute))))
+				       versor-item-attribute)))
+  (let ((old-pair (assoc major-mode versor:mode-current-levels)))
+    (if (null old-pair)
+	(push (cons major-mode (cons versor:meta-level versor:level))
+	      versor:mode-current-levels)
+      (rplaca (cdr old-pair) versor:meta-level)
+      (rplacd (cdr old-pair) versor:level)))
+  )
 
 (defun versor:display-highlighted-choice (one of-these-choices)
   "Display, with ONE highlighted, the members of OF-THESE-CHOICES"
