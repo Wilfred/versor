@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-05-20 11:37:10 john>
+;;; Time-stamp: <2004-06-03 16:11:05 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -69,7 +69,7 @@ If the statement cannot be identified, return DEFAULT.")
 (defun beginning-of-statement ()
   "Move to the beginning of the statement.
 Argument 1 means the current statement, 2 the next, etc."
-  (interactive "p")
+  (interactive)
   (beginning-of-statement-internal)
   (establish-current-statement))
 
@@ -78,7 +78,7 @@ Argument 1 means the current statement, 2 the next, etc."
 (defun end-of-statement ()
   "Move to the end of the current statement.
 Argument 1 means the current statement, 2 the next, etc."
-  (interactive "p")
+  (interactive)
   (beginning-of-statement-internal)
   (establish-current-statement)
   (end-of-statement-internal))
@@ -91,9 +91,11 @@ Argument 1 means the current statement, 2 the next, etc."
     (beginning-of-statement-internal)
     (message "moving into previous statement")
     (move-into-previous-statement)
+    (message "that gets us to %d" (point))
     (decf n))
   (message "final move to beginning of statement")
   (beginning-of-statement-internal)
+  (message "that gets us to %d" (point))
   (establish-current-statement))
 
 (defun next-statement (n)
@@ -104,9 +106,11 @@ Argument 1 means the current statement, 2 the next, etc."
     (end-of-statement-internal)
     (message "skipping to code at start of next statement")
     (skip-to-actual-code)
+    (message "that gets us to %d" (point))
     (when (> n 1)
       (message "moving into next statement")
-      (move-into-next-statement))
+      (move-into-next-statement)
+      (message "that gets us to %d" (point)))
     (decf n))
   (establish-current-statement))
 
@@ -380,7 +384,7 @@ Interactively, uses the current surrounding / following status."
 (defvar statement-navigate-parts-include-container t
   "*Whether to step forwards from body (or tail if present) or back from head, to container.")
 
-(defun statement-navigate-parts-next ()
+(defun statement-navigate-parts-next (&optional ignore)
   "Navigate to the next part of the statement."
   (interactive)
   (case navigated-latest-part
@@ -392,11 +396,11 @@ Interactively, uses the current surrounding / following status."
 	     (navigate-this-head)))
     ('tail
      (cond
-      (statement-navigate-parts-include-container (navigate-container))
+      (statement-navigate-parts-include-container (navigate-this-container))
       (statement-navigate-parts-cyclic (navigate-this-head))
       (t (beginning-of-statement 1))))))
 
-(defun statement-navigate-parts-previous ()
+(defun statement-navigate-parts-previous (&optional ignore)
   "Navigate to the previous part of the statement."
   (interactive)
   (case navigated-latest-part
@@ -404,7 +408,7 @@ Interactively, uses the current surrounding / following status."
     ('container (navigate-this-head))
     ('head
      (cond ((get-statement-part statement-navigation-type 'tail) (navigate-this-tail))
-	   (statement-navigate-parts-include-container (navigate-container))
+	   (statement-navigate-parts-include-container (navigate-this-container))
 	   (statement-navigate-parts-cyclic (navigate-this-body))
 	   (t (beginning-of-statement 2))))
     ('body (navigate-this-head))
@@ -523,7 +527,7 @@ See the variable statements-known."
   (let ((old-position (point)))		; in case we give up
     ;; see which statement we are now on; if it is the same as the last
     ;; time we did any navigation, we can use cached navigation data
-    (beginning-of-statement-internal 1)
+    (beginning-of-statement-internal)
     (message "navigate-to %S found statement begins \"%s\"" part (buffer-substring (point) (+ 20 (point))))
     (let* ((statement-start (point))
 	   (remembered (statement-find-part statement-start part)))
@@ -547,9 +551,9 @@ See the variable statements-known."
 		    (message "caching statement position %d..%d" (point) mark-candidate)
 		    (versor:display-highlighted-choice (symbol-name part) languide-parts))
 		(goto-char old-position)
-		(error "Don't know how to handle directions like %S" directions))
+		(error "Don't know how to handle directions like \"%S\"" directions))
 	    (goto-char old-position)
-	    (error "No %S defined for %S for %S" part type major-mode)))))))
+	    (error "No %S defined for \"%S\" for %S" part type major-mode)))))))
 
 (defvar mark-candidate nil
   "Where the mark will be set at the end of statement-navigate.
