@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-04-27 12:25:15 john>
+;;; Time-stamp: <2004-04-28 14:35:17 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -201,8 +201,8 @@ to select which keys are set up to do versor commands."
     (global-set-key [ right ]   'versor:next)
     (global-set-key [ M-left ]  'versor:out)
     (global-set-key [ M-right ] 'versor:in)
-    (global-set-key [ C-left ]  'versor:start)
-    (global-set-key [ C-right ] 'versor:end)
+    (global-set-key [ C-left ]  'versor-extend-item-backwards)
+    (global-set-key [ C-right ] 'versor-extend-item-forwards)
     (global-set-key [ home ]    'versor:start)
     (global-set-key [ end ]     'versor:end)
   
@@ -904,6 +904,9 @@ Necessary pre- and post-processing get done."
      (versor-clear-current-item-indication)
      (progn
        ,@body)
+     ;; the few commands that want to do otherwise, must re-set this
+     ;; one just after using this macro
+     (setq versor-extension-direction nil)
      (versor-indicate-current-item)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1024,7 +1027,8 @@ With optional LEVEL-OFFSET, add that to the level first."
     (call-interactively (versor:get-action 'next level-offset))))
 
 (defun versor:prev (&optional level-offset)
-  "Move backward within the current dimension."
+  "Move backward within the current dimension.
+With optional LEVEL-OFFSET, add that to the level first."
   (interactive '(nil))
   (as-versor-motion-command
    (if versor:reversed
@@ -1032,7 +1036,8 @@ With optional LEVEL-OFFSET, add that to the level first."
      (versor:prev-action level-offset))))
 
 (defun versor:next (&optional level-offset)
-  "Move forward within the current dimension."
+  "Move forward within the current dimension.
+With optional LEVEL-OFFSET, add that to the level first."
   (interactive '(nil))
   (as-versor-motion-command
    (if versor:reversed
@@ -1132,6 +1137,67 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
    (if (versor:current-item-valid)
        (goto-char (car (versor:get-current-item)))
      (versor:prev-action 1))))
+
+;;;;;;;;;;;;;;;;;;;;;
+;;;; extend item ;;;;
+;;;;;;;;;;;;;;;;;;;;;
+
+(defvar versor-extension-direction nil
+  "Which direction versor is extending in.
+Once you are extending forwards, versor-extend-item-backwards will
+reduce the extension rather than extending backwards, and vice versa.")
+
+(make-variable-buffer-local 'versor-extension-direction)
+
+(defun versor-extend-item-forwards (&optional level-offset)
+  "Add another of the current unit to the end of the item.
+With optional LEVEL-OFFSET, add that to the level first."
+  (interactive)
+  ;; must go outside as-versor-motion-command as that sets
+  ;; versor-extension-direction, and we are about to preserve that
+  ;; variable to protect it from as-versor-motion-command
+  (unless versor-extension-direction
+    (setq versor-extension-direction 'forwards))
+  (let ((direction versor-extension-direction))
+    (as-versor-motion-command
+     (let* ((item (versor:get-current-item))
+	    (start (versor-overlay-start item))
+	    (end (versor-overlay-end item)))
+       (versor:next level-offset)
+       (if (eq direction 'forwards)
+	   (versor:set-current-item start (versor-end-of-item-position))
+	 (versor:set-current-item (point) end))))
+    (setq versor-extension-direction direction)))
+
+(defun versor-extend-item-backwards (&optional level-offset)
+  "Add another of the current unit to the start of the item.
+With optional LEVEL-OFFSET, add that to the level first."
+  (interactive)
+  ;; must go outside as-versor-motion-command as that sets
+  ;; versor-extension-direction, and we are about to preserve that
+  ;; variable to protect it from as-versor-motion-command
+  (unless versor-extension-direction
+    (setq versor-extension-direction 'backwards))
+  (let ((direction versor-extension-direction))
+    (as-versor-motion-command
+     (let* ((item (versor:get-current-item))
+	    (start (versor-overlay-start item))
+	    (end (versor-overlay-end item)))
+       (versor:prev level-offset)
+       (if (eq direction 'backwards)
+	   (versor:set-current-item (point) end)
+	 (versor:set-current-item start (versor-end-of-item-position)))))
+    (setq versor-extension-direction direction)))
+
+(defun versor-extend-over-item-forwards ()
+  "Add another of the unit above the current one, to the end of the item."
+  (interactive)
+  (versor-extend-item-forwards 1))
+
+(defun versor-extend-over-item-backwards ()
+  "Add another of the unit above the current one, to the start of the item."
+  (interactive)
+  (versor-extend-item-backwards 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; kill-ring operations ;;;;
