@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-01-23 16:43:42 john>
+;;; Time-stamp: <2004-01-30 14:27:17 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -77,6 +77,26 @@ If one of these returns non-nil, it is taken as having done the action.")
 (defvar versor:end-hooks nil
   "*Hooks for versor:end.
 If one of these returns non-nil, it is taken as having done the action.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; autoloads for structured text ;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(autoload 'nested-blocks-backward "nested-blocks"
+  "Move back over a nested block. Like backward-sexp but more general."
+  t)
+
+(autoload 'nested-blocks-forward "nested-blocks"
+  "Move forward over a nested block. Like forward-sexp but more general."
+  t)
+
+(autoload 'nested-blocks-enter "nested-blocks"
+  "Into the next nested block forwards."
+  t)
+
+(autoload 'nested-blocks-leave "nested-blocks"
+  "Move forwards out of current nested block."
+  t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; autoloads for language-guided navigation ;;;;
@@ -396,6 +416,16 @@ not interact properly with any existing definitions in the map."
 		       (next forward-paragraph)
 		       (last end-of-buffer)))
 
+(versor:define-moves movemap-blocks
+		     '((color "green")
+		       (previous nested-blocks-backward)
+		       (next nested-blocks-forward)))
+
+(versor:define-moves movemap-block-depth
+		     '((color "orange")
+		       (previous nested-blocks-leave)
+		       (next nested-blocks-enter)))
+
 (versor:define-moves movemap-cells
 		     '((color "blue")
 		       (first versor:first-cell)
@@ -428,6 +458,12 @@ not interact properly with any existing definitions in the map."
 					  movemap-sentences
 					  movemap-paragraphs)
 
+      moves-structured-text (versor:make-movemap-set "structured text"
+						     movemap-chars
+						     movemap-words
+						     movemap-blocks
+						     movemap-block-depth)
+
       moves-tables (versor:make-movemap-set "tables"
 					    movemap-chars
 					    movemap-cells
@@ -445,6 +481,7 @@ not interact properly with any existing definitions in the map."
 			   moves-cartesian
 			   moves-structural
 			   moves-text
+			   moves-structured-text
 			   moves-tables
 			   moves-program)
   "The map of meta-moves.")
