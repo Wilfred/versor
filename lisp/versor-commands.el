@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2004-05-24 08:55:33 john>
+;;; Time-stamp: <2004-05-24 09:35:41 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,6 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(require 'versor)
 (provide 'versor-commands)
 
 ;;;;;;;;;;;;;;;;;;;
