@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2004-05-24 13:58:54 john>
+;;; Time-stamp: <2004-05-24 15:54:00 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -418,6 +418,10 @@ this."
 	    (kill-new (buffer-substring start end))
 	    (delete-region start end)))
 	(reverse (versor:get-current-items)))))))
+
+(defvar versor:insertion-kind-alist nil
+  "Alist for reading what kind of insertion to do.
+Almost a keymap, but the functions it contains are not commands.")
 
 (defun versor:definesert (key fun)
   "Bind KEY to FUN in the map for choosing kinds of insertion.
