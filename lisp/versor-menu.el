@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2004-09-09 12:28:04 john>
+;;; Time-stamp: <2004-09-16 10:20:56 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -76,6 +76,7 @@ Allows various actions that depend on the current fine movement dimension."
 	      ("versor control" . versor:control-menu)
 	      ;; cannibalize ~/open-projects/emacs-pedals/handsfree-tools-menus.el for
 	      ;; more to go here -- stuff like tag lookup
+	      ("search for next %s" . versor:search)
 	      ("copy region" . kill-ring-save)
 	      ("mark %s" . versor:mark)
 	      ("copy %s" . versor:copy)
