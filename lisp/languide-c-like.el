@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2004-05-21 14:34:06 john>
+;;; Time-stamp: <2004-06-03 15:29:35 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -336,12 +336,12 @@ this does not have to work."
 	      'if-then-else
 	    'if-then)))
        ((string= keyword-string "for") 'for)
-       ((string= keyword-string "while") 'while)
+       ((string= keyword-string "while") 'while-do)
        ((string= keyword-string "switch") 'switch)
        ((string= keyword-string "continue") 'continue)
        ((string= keyword-string "case") 'case)
        ((string= keyword-string "default") 'default)
-       ((string= keyword-string "do") 'do)
+       ((string= keyword-string "do") 'do-while)
        (t nil)
        )
       )
