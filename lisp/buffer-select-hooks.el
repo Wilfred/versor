@@ -1,5 +1,5 @@
 ;;;; buffer-select-hooks.el -- do things when noticing that buffer or mode has changed
-;;; Time-stamp: <2004-02-27 10:18:04 john>
+;;; Time-stamp: <2004-05-17 12:07:43 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -31,25 +31,34 @@
 
 (defun buffer-selection-pre-command-hook ()
   "Function to run before each command, for detecting commands changing the current buffer."
-  ;; (message "In buffer-selection-pre-command-hook")
   (setq buffer-before-command (current-buffer)
 	mode-before-command major-mode)
-  ;; to get round something that is meant to prevent danger -- should I be doing this?
+  ;; (lessage "In buffer-selection-pre-command-hook buf=%S mode=%S" buffer-before-command mode-before-command)
+
+  ;; to get round something that is meant to prevent danger -- should
+  ;; I be doing this?  seems safe enough in this case -- I haven't had
+  ;; any problems with it, and I've been using it all the time for
+  ;; months now
   (add-hook 'post-command-hook 'buffer-selection-post-command-hook)
   )
 
 (defun buffer-selection-post-command-hook ()
   "Function to run after each command, for detecting commands changing the current buffer."
   ;; modes are less specific than buffers, so do them first
-  ;; (message "In buffer-selection-post-command-hook")
+  ;; (lessage "In buffer-selection-post-command-hook for %S %S-->%S" this-command mode-before-command major-mode)
+  (add-hook 'pre-command-hook 'buffer-selection-pre-command-hook)
   (if (not (eq mode-before-command major-mode))
-      (progn
-	;; (message "Running mode selection hook")
-	(run-hook-with-args 'mode-selection-hook mode-before-command)))
+      (condition-case error-var
+	  ;; (lessage "Running mode selection hook")
+	  (run-hook-with-args 'mode-selection-hook mode-before-command)
+	(error (message "error in mode-selection-hook")
+	       (with-output-to-temp-buffer "*mode selection hook error*"
+		 (backtrace)))))
   (if (not (eq (current-buffer) buffer-before-command))
-      (progn
-	;; (message "Running buffer selection hook")
-	(run-hook-with-args 'buffer-selection-hook buffer-before-command))))
+      (condition-case error-var
+	;; (lessage "Running buffer selection hook")
+	(run-hook-with-args 'buffer-selection-hook buffer-before-command)
+	(error (message "error in buffer-selection-hook")))))
 
 (add-hook 'pre-command-hook 'buffer-selection-pre-command-hook)
 (add-hook 'post-command-hook 'buffer-selection-post-command-hook)
@@ -57,13 +66,16 @@
 (defvar buffer-selection-hook
   nil
   "Functions to run on selecting a different buffer.
-They are given the previous buffer as an argument.")
+They are given the previous buffer as an argument, and can find the new
+buffer using (current-buffer)")
 
 (defvar mode-selection-hook
   nil
-  "Functions to run on finding yourself in a different mode than you were in before the last command.
-This could be because of changing buffer, or changing the mode of the same buffer.
-They are given the previous mode as an argument.")
+  "Functions to run on being in a different mode than before the last command.
+This could be because of the command changing which buffer is active,
+or changing the mode of the same buffer.
+They are given the previous mode as an argument, and can find the new one
+from major-mode.")
 
 (defun mode-selection-in-title-bar (&rest ignore)
   "Indicate the mode in the title bar."
