@@ -1,5 +1,5 @@
 ;;;; buffer-select-hooks.el -- do things when noticing that buffer or mode has changed
-;;; Time-stamp: <2004-02-26 17:29:40 john>
+;;; Time-stamp: <2004-02-27 10:18:04 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -31,6 +31,7 @@
 
 (defun buffer-selection-pre-command-hook ()
   "Function to run before each command, for detecting commands changing the current buffer."
+  ;; (message "In buffer-selection-pre-command-hook")
   (setq buffer-before-command (current-buffer)
 	mode-before-command major-mode)
   ;; to get round something that is meant to prevent danger -- should I be doing this?
@@ -40,11 +41,14 @@
 (defun buffer-selection-post-command-hook ()
   "Function to run after each command, for detecting commands changing the current buffer."
   ;; modes are less specific than buffers, so do them first
+  ;; (message "In buffer-selection-post-command-hook")
   (if (not (eq mode-before-command major-mode))
       (progn
+	;; (message "Running mode selection hook")
 	(run-hook-with-args 'mode-selection-hook mode-before-command)))
   (if (not (eq (current-buffer) buffer-before-command))
       (progn
+	;; (message "Running buffer selection hook")
 	(run-hook-with-args 'buffer-selection-hook buffer-before-command))))
 
 (add-hook 'pre-command-hook 'buffer-selection-pre-command-hook)
