@@ -1,5 +1,5 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <2004-05-07 17:28:02 john>
+;;; Time-stamp: <04/06/13 15:13:08 jcgs>
 ;;; old-Time-stamp: <03/06/11 12:15:47 jcgs>
 (message "loading flexi-choose")
 (if (fboundp 'backtrace) (with-output-to-temp-buffer "*loading flexi-choose*" (backtrace)))
@@ -74,7 +74,9 @@ You can give some extra possibilities for completion with the optional argument 
 For example, in the hierarchical chooser, this is used to pass in the original choices
 along with the hierarchical level chunks. It should be an alist."
   (if (and choose-singletons-silently
-	   (null (cdr choices)))
+	   (or
+	    (null (cdr choices))
+	    (string= (cadr choices) flexi-choose-upstring)))
       (car choices)
     (save-window-excursion
       (when (and choices-display-full helpstring)
@@ -83,12 +85,12 @@ along with the hierarchical level chunks. It should be an alist."
 	  ;; (shrink-window-if-larger-than-buffer (get-buffer-window (get-buffer " *Choices*")))
 	  ))
       (let ((result
-      (catch 'chosen
-	(completing-read-with-history-hack prompt 'choices-hack-history
-					   nil
-					   choices
-					   nil
-					   extras))))
+	     (catch 'chosen
+	       (completing-read-with-history-hack prompt 'choices-hack-history
+						  nil
+						  choices
+						  nil
+						  extras))))
 	;; (message "Chosen %S" result)
 	result))))
 
@@ -210,6 +212,12 @@ This makes most sense if SINGLE is sorted."
 	   (t max-per-step))))
     per-step))
 
+(defvar flexi-choose-upstring "[Up]"
+  "The label to indicate going back up the tree.")
+
+(defvar flexi-choose-topstring "[Top]"
+  "The label to indicate going straight back up to the top of the tree.")
+
 (defun choose-in-steps (prompt choices)
   "With PROMPT, get the user to choose one of CHOICES.
 At each stage, up to choices-per-step choices are presented."
@@ -219,8 +227,6 @@ At each stage, up to choices-per-step choices are presented."
 	 (previous-levels nil)
 	 (extras nil)
 	 (result nil)
-	 (upstring "[Up]")
-	 (topstring "[Top]")
 	 (originals-alist (mapcar 'list choices))
 	 )
     (while (null result)
@@ -250,11 +256,11 @@ At each stage, up to choices-per-step choices are presented."
 	  (cond
 	   ((member stepkey choices)
 	    (setq result stepkey))
-	   ((string= stepkey upstring)
+	   ((string= stepkey flexi-choose-upstring)
 	    (setq choices (car previous-levels)
 		  n (length choices)
 		  previous-levels (cdr previous-levels)))
-	   ((string= stepkey topstring)
+	   ((string= stepkey flexi-choose-topstring)
 	    (setq choices all-choices
 		  n (length choices)
 		  previous-levels nil))
@@ -272,7 +278,7 @@ At each stage, up to choices-per-step choices are presented."
 		  n (length choices)))
 	  ))
 	(if previous-levels
-	    (setq extras (list upstring topstring)))))
+	    (setq extras (list flexi-choose-upstring flexi-choose-topstring)))))
     result))
 
 (defun make-chunk-tree (single n)
