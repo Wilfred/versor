@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2004-05-24 14:31:38 john>
+;;; Time-stamp: <2004-05-24 15:55:20 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -22,7 +22,7 @@
 (provide 'pedals)
 
 (require 'versor)
-(require 'versor:menu)
+(require 'versor-menu)
 
 (require 'structure-edit)
 
