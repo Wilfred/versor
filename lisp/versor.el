@@ -1,5 +1,5 @@
-;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-04-20 09:19:39 john>
+;;; versor.el -- versatile cursor
+;;; Time-stamp: <2004-04-21 13:53:38 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -194,7 +194,9 @@ The arguments can be any (combination) of
   'keypad-misc   -- for keypad insert, delete etc
 to select which keys are set up to do versor commands."
   (interactive)
+
   (if (null keysets) (setq keysets '(arrows)))
+
   (when (memq 'arrows keysets)
     (global-set-key [ left ]    'versor:prev)
     (global-set-key [ right ]   'versor:next)
@@ -211,8 +213,9 @@ to select which keys are set up to do versor commands."
     (global-set-key [ M-down ]  'versor:next-meta-level)
     (global-set-key [ C-up ]    'versor:over-start)
     (global-set-key [ C-down ]  'versor:over-end)
-    (global-set-key [ C-home ]  'versor:over-start)
-    (global-set-key [ C-end ]   'versor:over-end))
+    (global-set-key [ C-home ]  'versor-start-of-item)
+    (global-set-key [ C-end ]   'versor-end-of-item)
+    )
 
   (when (memq 'arrows-misc keysets)
     (global-set-key [ prior ]   'versor:over-over-prev)
@@ -237,8 +240,11 @@ to select which keys are set up to do versor commands."
     (global-set-key [ M-kp-right ] 'versor:in)
     (global-set-key [ C-kp-left ]  'versor:start)
     (global-set-key [ C-kp-right ] 'versor:end)
-    (global-set-key [ home ]       'versor:start)
-    (global-set-key [ end ]        'versor:end)
+    (global-set-key [ kp-home ]    'versor:start)
+    (global-set-key [ kp-end ]     'versor:end)
+    (global-set-key [ C-kp-home ]  'versor-start-of-item)
+    (global-set-key [ C-kp-end ]   'versor-end-of-item)
+
   
     (global-set-key [ kp-up ]      'versor:over-prev)
     (global-set-key [ kp-down ]    'versor:over-next)
@@ -246,8 +252,6 @@ to select which keys are set up to do versor commands."
     (global-set-key [ M-kp-down ]  'versor:next-meta-level)
     (global-set-key [ C-kp-up ]    'versor:over-start)
     (global-set-key [ C-kp-down ]  'versor:over-end)
-    (global-set-key [ C-home ]     'versor:over-start)
-    (global-set-key [ C-end ]      'versor:over-end)
 
     (global-set-key [ kp-prior ]   'versor:over-over-prev)
     (global-set-key [ kp-next ]    'versor:over-over-next)
@@ -256,7 +260,8 @@ to select which keys are set up to do versor commands."
 
   (when (memq 'keypad-misc keysets)
     (global-set-key [ kp-enter ]  'versor:copy)
-    (define-key (current-global-map) [ kp-insert ] 'versor:insertion-placement-keymap)
+    (define-key (current-global-map)
+                    [ kp-insert ] 'versor:insertion-placement-keymap)
     (global-set-key [ kp-delete ] 'versor:kill)
     (global-set-key [ kp-add ]    'other-window)
 
@@ -275,6 +280,7 @@ to select which keys are set up to do versor commands."
 		    versor:current-meta-level-name ":"
 		    versor:current-level-name
 		    versor:mode-line-end-string))))
+  
   (versor:set-status-display))
 
 (mapcar 'makunbound '(versor:current-level-name moves-moves versor:meta-level versor:level))
@@ -634,7 +640,8 @@ buffer.")
       (make-versor-overlay start end))))
 
 (defvar versor:latest-items nil
-  "The items list as it was at the start of the current command.")
+  "The items list as it was at the start of the current command,
+but converted from overlays to conses, as the overlays get splatted.")
 
 (defun versor:make-item-from-region ()
   "Make a versor item from the current region.
@@ -650,27 +657,49 @@ Meant to be used by things that require an item, when there is none."
 (defun versor:valid-item-list-p (a)
   "Return whether A is a valid item list."
   (and (consp a)
-       (overlayp (car a))
-       (bufferp (overlay-buffer (car a)))))
+       (let ((cara (car a)))
+	 (or (and (consp cara)
+		  (integerp (car cara))
+		  (integerp (cdr cara)))
+	     (and (overlayp cara)
+		  (bufferp (overlay-buffer cara)))))))
 
 (defun versor:get-current-item ()
   "Return (start . end) for the current item."
-  ;; (message "versor:get-current-item: cur=%S latest=%S" (versor:current-item-valid) versor:latest-items)
   (if (or (versor:current-item-valid)
 	  (versor:valid-item-list-p versor:latest-items))
       (let ((olay (car (or versor-items versor:latest-items))))
-	(cons (overlay-start olay)
-	      (overlay-end olay)))
+	(if (consp olay)
+	    olay
+	  (cons (overlay-start olay)
+		(overlay-end olay))))
     (versor:make-item-from-region)))
 
+(defun versor:display-item-list (label il)
+  "With LABEL, display IL"
+  (message label)
+  (mapcar (lambda (item)
+	    (let ((start (versor-overlay-start item))
+		  (end (versor-overlay-end item)))
+	      (if (< (- end start) 16)
+		  (message "  %d..%d: %s" start end
+			   (buffer-substring start end))
+	      (message "  %d..%d: %s..%s" start end
+		       (buffer-substring start (+ start 8))
+		       (buffer-substring (- end 8) end)))))
+	  il))
+		       
 (defun versor:get-current-items ()
   "Return the current items."
-  (if (or (versor:current-item-valid)
-	  (versor:valid-item-list-p versor:latest-items))
-      (or versor-items versor:latest-items)
+  (cond 
+   ((versor:current-item-valid)
+    versor-items)
+   ((versor:valid-item-list-p versor:latest-items)
+    versor:latest-items)
+   (t
     (let ((pair (versor:make-item-from-region)))
       (make-versor-overlay (car pair) (cdr pair))
-      versor-items)))
+      versor-items))))
 
 (defun versor:current-item-valid ()
   "Return whether there is a valid current item."
@@ -744,7 +773,7 @@ Intended to be called at the end of all versor commands."
 	;; called by the as-versor-command macro
 
 	(unless (versor:current-item-valid)
-	  (versor:set-current-item (point) (versor-end-of-item)))
+	  (versor:set-current-item (point) (versor-end-of-item-position)))
 
 	(when versor:try-to-display-whole-item
 	  (let* ((item (versor:get-current-item))
@@ -771,10 +800,27 @@ Intended to be called at the end of all versor commands."
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
 Intended to go on pre-command-hook."
-  (if versor-items
-      (setq versor:latest-items versor-items))
-  ;; (message "starting command %S: versor:latest-items=%S" this-command versor:latest-items)
+  (setq versor:latest-items
+	(mapcar 
+	 (lambda (item)
+	   (cons (overlay-start item) (overlay-end item)))
+	 versor-items))
+  ;; (versor:display-item-list (format "starting command %S" this-command) versor:latest-items)
   (delete-versor-overlay))
+
+(defun versor-overlay-start (olay)
+  "Return the start of OLAY.
+OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
+  (if (consp olay)
+      (car olay)
+    (overlay-start olay)))
+
+(defun versor-overlay-end (olay)
+  "Return the end of OLAY.
+OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
+  (if (consp olay)
+      (cdr olay)
+    (overlay-end olay)))
 
 (defun versor-set-item-indication (arg)
   "Set whether item indication is done.
@@ -1014,7 +1060,7 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
   (interactive)
   (versor:end 2))
 
-(defun versor-end-of-item ()
+(defun versor-end-of-item-position ()
   "Return the end of the current item."
   (let ((mover (or (versor:get-action 'end-of-item)
 		   (versor:get-action 'next))))
@@ -1024,43 +1070,65 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	  (point))
       nil)))
 
+(defun versor-end-of-item ()
+  "Move to the end of the current item."
+  (interactive)
+  (let* ((items versor:latest-items)
+	 (item (car items)))
+    (as-versor-motion-command
+     (goto-char
+      (if (versor:current-item-valid)
+	  (cdr (versor:get-current-item))
+	(versor-end-of-item-position)))
+     (make-versor-overlay (car item) (cdr item)))))
+
+(defun versor-start-of-item ()
+  "Move to the start of the current item."
+  (interactive)
+  (as-versor-motion-command
+   (if (versor:current-item-valid)
+       (goto-char (car (versor:get-current-item)))
+     (versor:prev-action 1))))
+
 (defun versor:copy ()
   "Copy a unit of the current dimension."
   (interactive)
-  (mapcar
-   (lambda (item)
-	    (kill-new (buffer-substring
-		       (overlay-start item)
-		       (overlay-end item))))
-   (reverse (versor:get-current-items)))
-  (versor-indicate-current-item))
+  (as-versor-motion-command
+   ;; (versor:display-item-list "versor:copy" (versor:get-current-items))
+   (mapcar
+    (lambda (item)
+      (kill-new (buffer-substring
+		 (versor-overlay-start item)
+		 (versor-overlay-end item))))
+    (reverse (versor:get-current-items)))))
 
 (defun versor:mark ()
   "Mark a unit of the current dimension."
   (interactive)
-  (let ((ready-made (versor:get-action 'mark)))
-    (if ready-made
-	(call-interactively ready-made)
-      (let* ((item (versor:get-current-item)))
-	(let ((transient-mark-mode t))
-	  (set-mark (cdr item))
-	  (goto-char (car item))
-	  (sit-for 1))))))
+  (as-versor-motion-command
+   (let ((ready-made (versor:get-action 'mark)))
+     (if ready-made
+	 (call-interactively ready-made)
+       (let* ((item (versor:get-current-item)))
+	 (let ((transient-mark-mode t))
+	   (set-mark (cdr item))
+	   (goto-char (car item))
+	   (sit-for 1)))))))
 
 (defun versor:kill ()
   "Kill a unit of the current dimension."
   (interactive)
-  (let ((ready-made (versor:get-action 'delete)))
-    (if ready-made
-	(call-interactively ready-made)
-      (mapcar
-       (lambda (item)
-	 (let ((start (overlay-start item))
-	       (end (overlay-end item)))
-	   (kill-new (buffer-substring start end))
-	   (delete-region start end)))
-       (reverse (versor:get-current-items)))))
-  (versor-indicate-current-item))
+  (as-versor-motion-command
+   (let ((ready-made (versor:get-action 'delete)))
+     (if ready-made
+	 (call-interactively ready-made)
+       (mapcar
+	(lambda (item)
+	  (let ((start (versor-overlay-start item))
+		(end (versor-overlay-end item)))
+	    (kill-new (buffer-substring start end))
+	    (delete-region start end)))
+	(reverse (versor:get-current-items)))))))
 
 (defun versor:definesert (key fun)
   "Bind KEY to FUN in the map for choosing kinds of insertion."
