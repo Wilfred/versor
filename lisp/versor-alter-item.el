@@ -1,5 +1,5 @@
 ;;;; versor-alter-item.el -- choose possible value for the current item
-;;; Time-stamp: <2004-12-09 16:37:30 john>
+;;; Time-stamp: <2005-02-11 10:48:10 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
