@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-06 14:11:25 john>
+;;; Time-stamp: <2004-05-13 13:34:34 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -644,7 +644,7 @@ With optional LEVEL-OFFSET, add that to the level first."
 ;;;; underlining current item ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar versor-items nil
+(defvar versor-items (list 'not-yet-set)
   ;; what was this old value? see if it works ok without it!
   ;; (list (cons (cons nil nil) nil))
   "The current versor items.
@@ -661,14 +661,18 @@ get cancelled on the pre-command-hook versor-de-indicate-current-item,
 which we use to make sure we go away quietly when the user wants to type
 other emacs commands.")
 
-(mapcar 'make-variable-buffer-local '(versor-items versor:latest-items))
+(mapcar 'make-variable-buffer-local
+	'(versor-items
+	  versor:latest-items))
 
 (defun versor:set-current-item (start end)
   "Set the START and END of the current item, and get rid of any extra parts."
+  (mapcar 'delete-overlay (cdr versor-items))
   (rplacd versor-items nil)
-  (let ((item (car versor-items)))
+  (let ((item (and versor-items
+		   (car versor-items))))
     (if (and (overlayp item) (overlay-buffer item))
-	(move-overlay item start end)
+	(move-overlay item start end (current-buffer))
       (make-versor-overlay start end))))
 
 (defun versor:current-item-valid ()
@@ -789,9 +793,9 @@ You should normally call versor:set-current-item rather than this."
     (when (overlayp overlay)
       (delete-overlay overlay)))
   ;; get rid of any extras
-  (while (cdr versor-items)
-    (delete-overlay (car (cdr versor-items)))
-    (rplacd versor-items (cdr (cdr versor-items)))))
+  (when versor-items
+    (mapcar 'delete-overlay (cdr versor-items))
+    (rplacd versor-items nil)))
 
 (defun versor-clear-current-item-indication ()
   "Intended to go at the start of each versor motion command.
@@ -806,8 +810,6 @@ This is intended to be called at the end of all versor commands.
 See also the complementary function versor-de-indicate-current-item,
 which goes on the pre-command-hook up, to make sure that versor gets out of the way
 of ordinarily Emacs commands."
-
-  ;; It would be nice to make this try to get all of the item visible in the window
 
   (condition-case error-var
       (progn
@@ -1103,13 +1105,15 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 
 (defun versor-end-of-item-position ()
   "Return the end of the current item."
-  (let ((mover (or (versor:get-action 'end-of-item)
-		   (versor:get-action 'next))))
-    (if mover
-	(save-excursion
-	  (funcall mover 1)
-	  (point))
-      nil)))
+  (let ((result
+	 (let ((mover (or (versor:get-action 'end-of-item)
+			  (versor:get-action 'next))))
+	   (if mover
+	       (save-excursion
+		 (funcall mover 1)
+		 (point))
+	     nil))))
+    result))
 
 (defun versor-end-of-item ()
   "Move to the end of the current item."
