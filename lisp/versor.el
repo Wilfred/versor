@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-04-21 17:14:41 john>
+;;; Time-stamp: <04/04/22 18:01:00 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -167,9 +167,6 @@ Several such series (meta-dimensions) of dimensions are available. The
 vertical arrow keys are always for the more significant of the two
 dimensions, just as they are in the normal key bindings.
 
-Ctrl-arrow for each arrow takes you to the appropriate end of the
-appropriate dimension.
-
 Meta-arrows change the dimensions. M-left and M-right shift the pair
 of dimensions within the current series, and M-up and M-down change
 which series you are in. The cursor colour indicates which dimension
@@ -295,15 +292,36 @@ to select which keys are set up to do versor commands."
 
 (defun versor:make-movemap-set (name &rest movemaps)
   "Make a set of movemaps called NAME from the remaining arguments.
-The lowest-level (finest-grain) movemap should come first."
+The lowest-level (finest-grain) movemap should come first.
+A movemap-set represents a metalevel of movements.
+Also, all the movemap-sets are grouped together using another movemap-set,
+called moves-moves, which is the root variable of the versor system."
   (apply 'vector name movemaps))
 
 (defun versor:make-movemap (name)
-  "Make a movemap called NAME."
+  "Make a movemap called NAME.
+A move map is a list whose head is the name of the map,
+and whose tale is an alist of moves and the commands which execute them.
+Moves are named by the following symbols, and possibly others added since
+this documentation was written:
+  previous
+  next
+  first
+  last
+  mark
+  delete
+  end-of-item
+  color
+The pseudo-move \"color\" gives the cursor colour to use when this move map
+is current.
+you can fill in the contents of a move map by using versor:define-move and
+versor:define-moves.
+Move maps are grouped together by versor:make-movemap-set."
   (list name))
 
 (defun versor:define-move (movemap move command)
-  "In MOVEMAP define MOVE to do COMMAND. Analogous to define-key."
+  "In MOVEMAP define MOVE to do COMMAND. Analogous to define-key.
+See the definition of versor:make-movemap for details of move maps."
   (let ((pair (assoc move movemap)))
     (if pair
 	(rplacd pair command)
@@ -315,12 +333,11 @@ The lowest-level (finest-grain) movemap should come first."
 (defun versor:define-moves (movemap move-command-specs)
   "In MOVEMAP define each of MOVE-COMMAND-SPECS.
 We can't just splice MOVE-COMMAND-SPECS into the map because that would
-not interact properly with any existing definitions in the map."
-  ;; (message "Defining %S" move-command-specs)
+not interact properly with any existing definitions in the map.
+See the definition of versor:make-movemap for details of move maps."
   (mapcar 
    (function
     (lambda (k-c)
-      ;; (message "  Defining %S to be %S" (first k-c) (second k-c))
       (versor:define-move movemap (first k-c) (second k-c))))
    move-command-specs))
 
@@ -476,6 +493,9 @@ not interact properly with any existing definitions in the map."
 		       (previous versor:previous-row)
 		       (next versor:next-row)
 		       (last versor:last-row)))
+
+
+;; See versor:make-movemap-set for details of movemap-sets
 		       
 (setq moves-cartesian (versor:make-movemap-set "cartesian"
 					       movemap-chars
@@ -521,14 +541,16 @@ not interact properly with any existing definitions in the map."
 			   moves-structured-text
 			   moves-tables
 			   moves-program)
-  "The map of meta-moves.")
+  "The map of meta-moves.
+See versor:make-movemap-set for the description of move map sets.
+Note that this is a reuse of that data type at a different level. ")
 
 (defmacro versor:current-meta-level ()
   "The current meta-level, as an array."
   '(aref moves-moves versor:meta-level))
 
 (defun versor:current-level (&optional level-offset)
-  "The current level, as an array.
+  "Return the current level, as an array.
 With optional LEVEL-OFFSET, add that to the level first."
   (if (integerp level-offset)
       (let ((meta (versor:current-meta-level)))
@@ -537,7 +559,7 @@ With optional LEVEL-OFFSET, add that to the level first."
     (aref (versor:current-meta-level) versor:level)))
 
 (defun versor:action (level action)
-  "From LEVEL get ACTION."
+  "From LEVEL get ACTION, which will be a move such as next or previous."
   (cdr (assoc action level)))
 
 (defvar versor:current-level-name (first (versor:current-level))
@@ -558,26 +580,25 @@ With optional LEVEL-OFFSET, add that to the level first."
 
 (defun versor::trim-meta-level ()
   "Ensure that versor:meta-level is in range."
-  ;; (message "meta-level=%d, adjusting" versor:meta-level)
   (let ((max (1- (length moves-moves))))
     (when (> versor:meta-level max)
       (setq versor:meta-level
 	    (if versor:meta-level-wrap 1 max)))
     (when (< versor:meta-level 1)
       (setq versor:meta-level
-	    (if versor:meta-level-wrap max 1))))
-  ;; (message "adjusted meta-level=%d" versor:meta-level)
-  )
+	    (if versor:meta-level-wrap max 1)))))
 
 (defvar versor:item-face (make-face 'versor-item)
   "Face to use for versor items")
 
 ;; (copy-face 'region 'versor-item)
 
-;; these are conditional for the benefit of emacs 19
+;; These are conditional for the benefit of emacs 19, which this
+;; software will mostly run on, apart from having problems with some
+;; of the ways I use faces.
 
-(setq vern (string-to-int emacs-version))
-(when (>= vern 20)
+(when (and (boundp 'emacs-major-version)
+	   (>= emacs-major-version 20))
   (set-face-attribute 'versor-item nil :inherit 'region))
 
 (defun versor:set-status-display (&optional one of-these)
@@ -606,44 +627,113 @@ With optional LEVEL-OFFSET, add that to the level first."
 
 (defun versor:display-highlighted-choice (one of-these-choices)
   "Display, with ONE highlighted, the members of OF-THESE-CHOICES"
-  (let ((msg (mapconcat
-	      (lambda (string)
-		(if (string= string one)
-		    (if (>= vern 20)
-			(let ((strong (copy-sequence string)))
-			  (put-text-property 0 (length string)
-					     'face 'versor-item
-					     strong)
-			  strong)
-		      (format "[%s]" string))
-		  string))
-	      of-these-choices
-	      ", ")))
+  (let* ((use-faces (and (boundp 'emacs-major-version)
+			 (>= emacs-major-version 20)))
+	 (msg (mapconcat
+	       (lambda (string)
+		 (if (string= string one)
+		     (if use-faces
+			 (let ((strong (copy-sequence string)))
+			   (put-text-property 0 (length string)
+					      'face 'versor-item
+					      strong)
+			   strong)
+		       (format "[%s]" string))
+		   string))
+	       of-these-choices
+	       ", ")))
     (message msg)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; underlining current item ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar versor-items (list (cons (cons nil nil) nil))
+(defvar versor-items nil
+  ;; what was this old value? see if it works ok without it!
+  ;; (list (cons (cons nil nil) nil))
   "The current versor items.
 There is a separate value of this variable for each buffer.
 Each item is represented by an overlay.
 There is always at least one item in this list, to avoid churning
 overlays; if there is no current item, the top item has nil for its
 buffer.")
-(make-variable-buffer-local 'versor-items)
+
+(defvar versor:latest-items nil
+  "The items list as it was at the start of the current command,
+but converted from overlays to conses of start . end, as the overlays
+get cancelled on the pre-command-hook versor-de-indicate-current-item,
+which we use to make sure we go away quietly when the user wants to type
+other emacs commands.")
+
+(mapcar 'make-variable-buffer-local '(versor-items versor:latest-items))
 
 (defun versor:set-current-item (start end)
-  "Set the start and end of the current item."
+  "Set the START and END of the current item, and get rid of any extra parts."
+  (rplacd versor-items nil)
   (let ((item (car versor-items)))
     (if (and (overlayp item) (overlay-buffer item))
 	(move-overlay item start end)
       (make-versor-overlay start end))))
 
-(defvar versor:latest-items nil
-  "The items list as it was at the start of the current command,
-but converted from overlays to conses, as the overlays get splatted.")
+(defun versor:current-item-valid ()
+  "Return whether there is a valid current item."
+  (let ((item (car versor-items)))
+    (and (overlayp item)
+	 (overlay-buffer item))))
+
+(defun versor:get-current-item ()
+  "Return (start . end) for the current item.
+If there are multiple items, return only the first one."
+  (cond
+   ((versor:current-item-valid)
+    (let ((olay (car versor-items)))
+      (cons (overlay-start olay)
+	    (overlay-end olay))))
+   ((versor:valid-item-list-p versor:latest-items)
+    (car versor:latest-items))
+   (t
+    (versor:make-item-from-region))))
+
+(defun versor:get-current-items ()
+  "Return the current items."
+  (cond 
+   ((versor:current-item-valid)
+    versor-items)
+   ((versor:valid-item-list-p versor:latest-items)
+    versor:latest-items)
+   (t
+    (let ((pair (versor:make-item-from-region)))
+      (make-versor-overlay (car pair) (cdr pair))
+      versor-items))))
+
+(defun versor-overlay-start (olay)
+  "Return the start of OLAY.
+OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
+  (if (consp olay)
+      (car olay)
+    (overlay-start olay)))
+
+(defun versor-overlay-end (olay)
+  "Return the end of OLAY.
+OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
+  (if (consp olay)
+      (cdr olay)
+    (overlay-end olay)))
+
+(defun versor:display-item-list (label il)
+  "With LABEL, display IL.
+Meant for debugging versor itself."
+  (message label)
+  (mapcar (lambda (item)
+	    (let ((start (versor-overlay-start item))
+		  (end (versor-overlay-end item)))
+	      (if (< (- end start) 16)
+		  (message "  %d..%d: %s" start end
+			   (buffer-substring start end))
+	      (message "  %d..%d: %s..%s" start end
+		       (buffer-substring start (+ start 8))
+		       (buffer-substring (- end 8) end)))))
+	  il))
 
 (defun versor:make-item-from-region ()
   "Make a versor item from the current region.
@@ -666,62 +756,20 @@ Meant to be used by things that require an item, when there is none."
 	     (and (overlayp cara)
 		  (bufferp (overlay-buffer cara)))))))
 
-(defun versor:get-current-item ()
-  "Return (start . end) for the current item."
-  (cond
-   ((versor:current-item-valid)
-    (let ((olay (car versor-items)))
-      (cons (overlay-start olay)
-	    (overlay-end olay))))
-   ((versor:valid-item-list-p versor:latest-items)
-    (car versor:latest-items))
-   (t
-    (versor:make-item-from-region))))
-
-(defun versor:display-item-list (label il)
-  "With LABEL, display IL"
-  (message label)
-  (mapcar (lambda (item)
-	    (let ((start (versor-overlay-start item))
-		  (end (versor-overlay-end item)))
-	      (if (< (- end start) 16)
-		  (message "  %d..%d: %s" start end
-			   (buffer-substring start end))
-	      (message "  %d..%d: %s..%s" start end
-		       (buffer-substring start (+ start 8))
-		       (buffer-substring (- end 8) end)))))
-	  il))
-		       
-(defun versor:get-current-items ()
-  "Return the current items."
-  (cond 
-   ((versor:current-item-valid)
-    versor-items)
-   ((versor:valid-item-list-p versor:latest-items)
-    versor:latest-items)
-   (t
-    (let ((pair (versor:make-item-from-region)))
-      (make-versor-overlay (car pair) (cdr pair))
-      versor-items))))
-
-(defun versor:current-item-valid ()
-  "Return whether there is a valid current item."
-  (let ((item (car versor-items)))
-    (and (overlayp item)
-	 (overlay-buffer item))))
-
 (defun versor-item-overlay ()
   "The (primary) item indication overlay for this buffer."
   (car versor-items))
 
 (defun make-versor-overlay (start end)
   "Make a versor overlay at START END.
-If there is already a versor overlay for this buffer, reuse that."
+If there is already a versor overlay for this buffer, reuse that.
+You should normally call versor:set-current-item rather than this."
   (unless (overlayp (versor-item-overlay))
     (let ((overlay (make-overlay start end (current-buffer))))
       (setq versor-items (list overlay))
       (overlay-put overlay 'face
-		   (if (>= vern 20)
+		   (if (and (boundp 'emacs-major-version)
+			    (>= emacs-major-version 20))
 		       'versor-item
 		     'region)
 		   )))
@@ -731,7 +779,8 @@ If there is already a versor overlay for this buffer, reuse that."
   "Make an extra versor overlay between START and END."
   (let ((overlay (make-overlay start end (current-buffer))))
     (overlay-put overlay 'face
-		 (if (>= vern 20)
+		 (if (and (boundp 'emacs-major-version)
+			  (>= emacs-major-version 20))
 		     'versor-item
 		   'region))
     (rplacd versor-items
@@ -740,7 +789,8 @@ If there is already a versor overlay for this buffer, reuse that."
 
 (defun delete-versor-overlay ()
   "Delete the versor overlay for this buffer."
-  ;; in fact, we just disconnect it from the buffer
+  ;; in fact, we just disconnect it from the buffer,
+  ;; to avoid having to keep creating and destroying overlays
   (let ((overlay (versor-item-overlay)))
     (when (overlayp overlay)
       (delete-overlay overlay)))
@@ -757,13 +807,13 @@ up for itself only if the command didn't set them for it."
   (delete-versor-overlay))
 
 (defun versor-indicate-current-item ()
-  "Mark the current item.
-Intended to be called at the end of all versor commands."
+  "Make the current item distinctly visible.
+This is intended to be called at the end of all versor commands.
+See also the complementary function versor-de-indicate-current-item,
+which goes on the pre-command-hook up, to make sure that versor gets out of the way
+of ordinarily Emacs commands."
 
   ;; It would be nice to make this try to get all of the item visible in the window
-
-  ;; It makes me aware that many of the movements need redefining,
-  ;; to be consistent over quite where they end up!
 
   (condition-case error-var
       (progn
@@ -802,7 +852,10 @@ Intended to be called at the end of all versor commands."
 
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
-Intended to go on pre-command-hook."
+Intended to go on pre-command-hook, to make sure that versor gets out
+of the way of ordinarily Emacs commands. in case, however, the new
+command is itself a versor command, we save the item marking as a list
+of conses of start . end, in versor:latest-items."
   (setq versor:latest-items
 	(mapcar 
 	 (lambda (item)
@@ -810,35 +863,6 @@ Intended to go on pre-command-hook."
 	 versor-items))
   ;; (versor:display-item-list (format "starting command %S" this-command) versor:latest-items)
   (delete-versor-overlay))
-
-(defun versor-overlay-start (olay)
-  "Return the start of OLAY.
-OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
-  (if (consp olay)
-      (car olay)
-    (overlay-start olay)))
-
-(defun versor-overlay-end (olay)
-  "Return the end of OLAY.
-OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
-  (if (consp olay)
-      (cdr olay)
-    (overlay-end olay)))
-
-(defun versor-set-item-indication (arg)
-  "Set whether item indication is done.
-Positive argument means on, negative or zero is off."
-  (interactive "p")
-  (if (> arg 0)
-      (progn
-	(message "Item indication turned on")
-	(setq versor-indicate-items t)
-	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
-	(versor-indicate-current-item))
-    (message "Item indication turned off")
-    (setq versor-indicate-items nil)
-    (versor-de-indicate-current-item)
-    (remove-hook 'pre-command-hook 'versor-de-indicate-current-item)))
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;; reversing ;;;;
@@ -860,7 +884,7 @@ It is enabled by the variable versor:reversible, which see.")
 
 (defmacro as-versor-motion-command (&rest body)
   "Run BODY as a versor motion command.
-Various pre- and post-processing get done."
+Necessary pre- and post-processing get done."
   `(progn
      (versor-clear-current-item-indication)
      (progn
@@ -1075,6 +1099,7 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 
 (defun versor-end-of-item ()
   "Move to the end of the current item."
+  ;; perhaps this should change to move among the parts of a multipart item?
   (interactive)
   (let* ((items versor:latest-items)
 	 (item (car items)))
@@ -1093,8 +1118,12 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
        (goto-char (car (versor:get-current-item)))
      (versor:prev-action 1))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; kill-ring operations ;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun versor:copy ()
-  "Copy a unit of the current dimension."
+  "Copy the current item."
   (interactive)
   (as-versor-motion-command
    ;; (versor:display-item-list "versor:copy" (versor:get-current-items))
@@ -1106,7 +1135,12 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
     (reverse (versor:get-current-items)))))
 
 (defun versor:mark ()
-  "Mark a unit of the current dimension."
+  "Mark the current item.
+If there are multiple parts to the current item (for example, opening
+and closing brackets, when in the depth dimension), they go into
+successive elements of the kill ring, for maximum compatibility with
+normal Emacs commands. Our corresponding insertion commands understand
+this."
   (interactive)
   (as-versor-motion-command
    (let ((ready-made (versor:get-action 'mark)))
@@ -1119,7 +1153,12 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	   (sit-for 1)))))))
 
 (defun versor:kill ()
-  "Kill a unit of the current dimension."
+  "Kill the current item.
+If there are multiple parts to the current item (for example, opening
+and closing brackets, when in the depth dimension), they go into
+successive elements of the kill ring, for maximum compatibility with
+normal Emacs commands. Our corresponding insertion commands understand
+this."
   (interactive)
   (as-versor-motion-command
    (let ((ready-made (versor:get-action 'delete)))
@@ -1134,7 +1173,13 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	(reverse (versor:get-current-items)))))))
 
 (defun versor:definesert (key fun)
-  "Bind KEY to FUN in the map for choosing kinds of insertion."
+  "Bind KEY to FUN in the map for choosing kinds of insertion.
+This lets us have uniform insertion commands with various origins of
+things to insert. We want to this because of being able to insert
+multipart things, using the insert around command, which we want to
+work both with brackets and with things previously killed -- for
+example, the result of doing versor:kill in the depth dimension, which
+can delete an opening and closing bracket together."
   (if (or (stringp key) (vectorp key)) (setq key (aref key 0)))
   (let ((binding (assoc key versor:insertion-kind-alist)))
     (if binding
@@ -1162,7 +1207,8 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 (versor:definesert "<" (lambda (n) (list "<" ">")))
 
 (defun versor:get-insertable (n &optional prompt)
-  "Return N things to insert."
+  "Return N things to insert, having asked the user for what kind of insertion this is.
+This lets us do commands such as insert-around using a common framework."
   ;; should also be available for putting things into the search string --
   ;; in which case it ought to have a different name
   (let* ((key (read-char (if prompt prompt "Kind of insertion: ")))
@@ -1207,10 +1253,11 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
   (as-versor-motion-command
    (let* ((new-thing (versor:get-insertable 1))
 	  (current-item (versor:get-current-item)))
-    
+     ;; not yet sure what this really means
      )))
 
-;;;; some internal functions for operations that aren't typically there already
+;; some internal functions for operations that aren't typically there already,
+;; or that normal emacs does slightly differently from what we want
 
 (defun versor:forward-paragraph (&optional n)
   "Like forward-paragraph, but don't end up on a blank line."
@@ -1267,23 +1314,24 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
   (interactive "p")
   (apply 'backward-up-list args)
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
-  (make-versor-overlay (point) (1+ (point)))
+  (make-versor-overlay (point) (1+ (point))) ; should probably be versor:set-current-item
   (save-excursion
     (forward-sexp 1)
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-    (versor-extra-overlay (1- (point)) (point))))
+    (versor-extra-overlay (1- (point)) (point)))) ; should probably be versor:add-to-current-item when I've written one
 
 (defun versor-down-list (&rest args)
   (interactive "p")
   (apply 'down-list args)
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
-  (make-versor-overlay (point) (1+ (point)))
+  (make-versor-overlay (point) (1+ (point))) ; should probably be versor:set-current-item
   (when (looking-at "\\s(")
     (save-excursion
       (forward-sexp 1)
       ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-      (versor-extra-overlay (1- (point)) (point)))))
+      (versor-extra-overlay (1- (point)) (point))))) ; should probably be versor:add-to-current-item when I've written one
 
+;; left over from trying a window selection dimension
 ;; (defun other-window-backwards (n)
 ;;   "Select the -Nth window -- see other-window, this just negates the argument."
 ;;   (interactive "p")
@@ -1299,6 +1347,7 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 ;;   (interactive)
 ;;   (select-window (window-at (1- (frame-width)) (- (frame-height) 3))))
 
+;; left over from a bumping character values dimension
 ;; (defun zero-char ()
 ;;   "Make the character at point be zero."
 ;;   (save-excursion
@@ -1434,27 +1483,28 @@ Stay within the current sentence."
 	(setq n 0))
       (decf n))))
 
-(defun next-buffer ()
-  "Select the next buffer in this window."
-  (interactive)
-  (let ((this-buffer (current-buffer)))
-    (switch-to-buffer (other-buffer this-buffer))
-    (bury-buffer this-buffer)))
-
-(defun previous-buffer ()
-  "Select the previous buffer in this window."
-  (interactive)
-  (switch-to-buffer (car (last (buffer-list)))))
-
-(defun last-buffer ()
-  "Select the last buffer in this window."
-  (interactive)
-)
-
-(defun first-buffer ()
-  "Select the first buffer in this window."
-  (interactive)
-)
+;; left over from trying a buffer selection dimension
+;; (defun next-buffer ()
+;;   "Select the next buffer in this window."
+;;   (interactive)
+;;   (let ((this-buffer (current-buffer)))
+;;     (switch-to-buffer (other-buffer this-buffer))
+;;     (bury-buffer this-buffer)))
+;; 
+;; (defun previous-buffer ()
+;;   "Select the previous buffer in this window."
+;;   (interactive)
+;;   (switch-to-buffer (car (last (buffer-list)))))
+;; 
+;; (defun last-buffer ()
+;;   "Select the last buffer in this window."
+;;   (interactive)
+;; )
+;; 
+;; (defun first-buffer ()
+;;   "Select the first buffer in this window."
+;;   (interactive)
+;; )
 
 (defun tempo-first-mark ()
   "Go to the first tempo marker."
@@ -1470,6 +1520,7 @@ Stay within the current sentence."
 
 (defun versor:first-cell ()
   "Move to the first cell."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
   (if (and (search-backward "<tr" (point-min) t)
 	   (re-search-forward "<t[dh][^>]+" (point-max) t))
@@ -1478,6 +1529,7 @@ Stay within the current sentence."
 
 (defun versor:previous-cell (n)
   "Move to the previous cell."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive "p")
   (if (re-search-backward "</t[dh][^>]+" (point-min) t)
       (progn
@@ -1490,6 +1542,7 @@ Stay within the current sentence."
 
 (defun versor:next-cell (n)
   "Move to the next cell."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive "p")
   (while (> n 0)
     (if (not (re-search-forward "<t[dh][^>]+" (point-max) t))
@@ -1498,6 +1551,7 @@ Stay within the current sentence."
 
 (defun versor:last-cell ()
   "Move to the last cell."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
   (if (and (search-forward "</tr" (point-max) t)
 	   (re-search-backward "<t[dh][^>]+" (point-min) t))
@@ -1506,6 +1560,7 @@ Stay within the current sentence."
 
 (defun versor:first-row ()
   "Move to the first row."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
   (if (and (search-backward "<table" (point-min) t)
 	   (re-search-forward "<tr[^>]+" (point-max) t))
@@ -1514,6 +1569,7 @@ Stay within the current sentence."
 
 (defun versor:previous-row (n)
   "Move to the previous row."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive "p")
   (if (re-search-backward "</tr[^>]+" (point-min) t)
       (progn
@@ -1526,6 +1582,7 @@ Stay within the current sentence."
 
 (defun versor:next-row (n)
   "Move to the next row."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive "p")
   (while (> n 0)
     (if (not (re-search-forward "<tr[^>]+" (point-max) t))
@@ -1534,6 +1591,7 @@ Stay within the current sentence."
 
 (defun versor:last-row ()
   "Move to the last row."
+  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
   (if (and (search-forward "</table" (point-max) t)
 	   (re-search-backward "<tr[^>]+" (point-min) t))
@@ -1541,7 +1599,7 @@ Stay within the current sentence."
     (error "Could not locate last row")))
 
 (defun versor:first-defun ()
-  "Move to the start of the first function definition."
+  "Move to the start of the first function definition in the buffer."
   (interactive)
   (goto-char (point-min))
   (beginning-of-defun -1))
@@ -1557,7 +1615,7 @@ Stay within the current sentence."
   (beginning-of-defun (- n)))
 
 (defun versor:last-defun ()
-  "Move to the start of the last function definition."
+  "Move to the start of the last function definition in the buffer."
   (interactive)
   (goto-char (point-max))
   (beginning-of-defun 1))
