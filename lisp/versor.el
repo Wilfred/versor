@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-04-19 13:41:52 john>
+;;; Time-stamp: <2004-04-20 09:19:39 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -651,7 +651,7 @@ Meant to be used by things that require an item, when there is none."
   "Return whether A is a valid item list."
   (and (consp a)
        (overlayp (car a))
-       (bufferp (overlay-buffer (car a))))))
+       (bufferp (overlay-buffer (car a)))))
 
 (defun versor:get-current-item ()
   "Return (start . end) for the current item."
