@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-03-15 14:48:19 john>
+;;; Time-stamp: <2004-04-19 13:41:52 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -145,8 +145,13 @@ package to the end of an item."
 ;;   call versor-setup
 ;; If you want to use navigation by statements, you will need languide too.
 
-(defvar versor:insertion-keymap (make-sparse-keymap "Versor")
-  "Keymap for reading what kind of insertion to do.")
+(defvar versor:insertion-placement-keymap (make-sparse-keymap "Versor insert place")
+  "Keymap for reading what place to do insertion at.
+This is for choosing before, after, around or inside.")
+
+(defvar versor:insertion-kind-alist nil
+  "Alist for reading what kind of insertion to do.
+Almost a keymap, but the functions it contains are not commands.")
 
 (defun versor:setup (&rest keysets)
   "Set up the versor (versatile cursor) key system.
@@ -215,14 +220,14 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-prior ] 'versor:over-over-start)
     (global-set-key [ C-next ]  'versor:over-over-end)
     
-    (global-set-key [ insert ]   'versor:insertion-keymap)
+    (define-key (current-global-map) [ insert ]   'versor:insertion-placement-keymap)
     (global-set-key [ delete ]   'versor:kill)
     (global-set-key [ M-delete ] 'versor:copy)
 
-    (define-key versor:insertion-keymap [ left ]  'versor:insert-before)
-    (define-key versor:insertion-keymap [ right ] 'versor:insert-after)
-    (define-key versor:insertion-keymap [ up ]    'versor:insert-around)
-    (define-key versor:insertion-keymap [ down ]  'versor:insert-within)
+    (define-key versor:insertion-placement-keymap [ left ]  'versor:insert-before)
+    (define-key versor:insertion-placement-keymap [ right ] 'versor:insert-after)
+    (define-key versor:insertion-placement-keymap [ up ]    'versor:insert-around)
+    (define-key versor:insertion-placement-keymap [ down ]  'versor:insert-within)
     )
 
   (when (memq 'keypad keysets)
@@ -251,14 +256,14 @@ to select which keys are set up to do versor commands."
 
   (when (memq 'keypad-misc keysets)
     (global-set-key [ kp-enter ]  'versor:copy)
-    (global-set-key [ kp-insert ] 'versor:insertion-keymap)
+    (define-key (current-global-map) [ kp-insert ] 'versor:insertion-placement-keymap)
     (global-set-key [ kp-delete ] 'versor:kill)
     (global-set-key [ kp-add ]    'other-window)
 
-    (define-key versor:insertion-keymap [ kp-left ]  'versor:insert-before)
-    (define-key versor:insertion-keymap [ kp-right ] 'versor:insert-after)
-    (define-key versor:insertion-keymap [ kp-up ]    'versor:insert-around)
-    (define-key versor:insertion-keymap [ kp-down ]  'versor:insert-within)
+    (define-key versor:insertion-placement-keymap [ kp-left ]  'versor:insert-before)
+    (define-key versor:insertion-placement-keymap [ kp-right ] 'versor:insert-after)
+    (define-key versor:insertion-placement-keymap [ kp-up ]    'versor:insert-around)
+    (define-key versor:insertion-placement-keymap [ kp-down ]  'versor:insert-within)
     )
   
   (unless (memq 'versor:current-level-name global-mode-string)
@@ -386,8 +391,8 @@ not interact properly with any existing definitions in the map."
 (versor:define-moves movemap-statements
 		     '((color "cyan")
 		       (first beginning-of-defun)
-		       (previous beginning-of-statement)
-		       (next end-of-statement)
+		       (previous previous-statement)
+		       (next next-statement)
 		       (last end-of-defun)
 		       (end-of-item latest-statement-navigation-end)))
 
@@ -596,12 +601,13 @@ With optional LEVEL-OFFSET, add that to the level first."
   (let ((msg (mapconcat
 	      (lambda (string)
 		(if (string= string one)
-		    (let ((strong (copy-sequence string)))
-		      (put-text-property 0 (length string)
-					 'face (if (>= vern 20) 'versor-item 'region)
-					 strong)
-		      strong)
-		  ;; (format "[%s]" string)
+		    (if (>= vern 20)
+			(let ((strong (copy-sequence string)))
+			  (put-text-property 0 (length string)
+					     'face 'versor-item
+					     strong)
+			  strong)
+		      (format "[%s]" string))
 		  string))
 	      of-these-choices
 	      ", ")))
@@ -630,24 +636,41 @@ buffer.")
 (defvar versor:latest-items nil
   "The items list as it was at the start of the current command.")
 
+(defun versor:make-item-from-region ()
+  "Make a versor item from the current region.
+Meant to be used by things that require an item, when there is none."
+  (let* ((end (progn (funcall (or (versor:get-action 'end-of-item)
+				  (versor:get-action 'next))
+			      1)
+		     (point)))
+	 (start (progn (funcall (versor:get-action 'previous) 1)
+		       (point))))
+    (cons start end)))
+
+(defun versor:valid-item-list-p (a)
+  "Return whether A is a valid item list."
+  (and (consp a)
+       (overlayp (car a))
+       (bufferp (overlay-buffer (car a))))))
+
 (defun versor:get-current-item ()
   "Return (start . end) for the current item."
-  ;;;;;;;;;;;;;;;; this should have some way of getting to what the
-  ;;;;;;;;;;;;;;;; item was at the start of the command (just before
-  ;;;;;;;;;;;;;;;; the pre-command-hook got rid of it);
-  ;;;;;;;;;;;;;;;; we will use versor:latest-items for this
+  ;; (message "versor:get-current-item: cur=%S latest=%S" (versor:current-item-valid) versor:latest-items)
   (if (or (versor:current-item-valid)
-	  versor:latest-items)
+	  (versor:valid-item-list-p versor:latest-items))
       (let ((olay (car (or versor-items versor:latest-items))))
 	(cons (overlay-start olay)
 	      (overlay-end olay)))
-    (let* ((end (progn (funcall (or (versor:get-action 'end-of-item)
-				    (versor:get-action 'next))
-				1)
-		       (point)))
-	   (start (progn (funcall (versor:get-action 'previous) 1)
-			 (point))))
-      (cons start end))))
+    (versor:make-item-from-region)))
+
+(defun versor:get-current-items ()
+  "Return the current items."
+  (if (or (versor:current-item-valid)
+	  (versor:valid-item-list-p versor:latest-items))
+      (or versor-items versor:latest-items)
+    (let ((pair (versor:make-item-from-region)))
+      (make-versor-overlay (car pair) (cdr pair))
+      versor-items)))
 
 (defun versor:current-item-valid ()
   "Return whether there is a valid current item."
@@ -1004,8 +1027,12 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 (defun versor:copy ()
   "Copy a unit of the current dimension."
   (interactive)
-  (let* ((item (versor:get-current-item)))
-    (copy-region-as-kill (car item) (cdr item)))
+  (mapcar
+   (lambda (item)
+	    (kill-new (buffer-substring
+		       (overlay-start item)
+		       (overlay-end item))))
+   (reverse (versor:get-current-items)))
   (versor-indicate-current-item))
 
 (defun versor:mark ()
@@ -1026,16 +1053,41 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
   (let ((ready-made (versor:get-action 'delete)))
     (if ready-made
 	(call-interactively ready-made)
-      (let* ((item (versor:get-current-item)))
-	(kill-region (car item) (cdr item)))))
+      (mapcar
+       (lambda (item)
+	 (let ((start (overlay-start item))
+	       (end (overlay-end item)))
+	   (kill-new (buffer-substring start end))
+	   (delete-region start end)))
+       (reverse (versor:get-current-items)))))
   (versor-indicate-current-item))
 
-(defun versor:get-insertable ()
+(defun versor:definesert (key fun)
+  "Bind KEY to FUN in the map for choosing kinds of insertion."
+  (if (or (stringp key) (vectorp key)) (setq key (aref key 0)))
+  (let ((binding (assoc key versor:insertion-kind-alist)))
+    (if binding
+	(rplacd binding fun)
+      (setq versor:insertion-kind-alist
+	    (cons
+	     (cons key fun)
+	     versor:insertion-kind-alist)))))
+
+(versor:definesert "\d" 'current-kill)
+(versor:definesert "(" (lambda () (list "(" ")")))
+(versor:definesert "[" (lambda () (list "[" "]")))
+(versor:definesert "{" (lambda () (list "{" "}")))
+(versor:definesert "<" (lambda () (list "<" ">")))
+
+(defun versor:get-insertable (&optional prompt)
   "Return a thing to insert."
-  ;; should prompt for whether to use kill ring or whatever the user wants
   ;; should also be available for putting things into the search string --
   ;; in which case it ought to have a different name
-  "testing")
+  (let* ((key (read-char prompt))
+	 (command (assoc key versor:insertion-kind-alist)))
+    (if (consp command)
+	(funcall (cdr command))
+      (error "Not a valid kind of insertion"))))
 
 (defun versor:insert-before ()
   "Insert something before the current versor item."
@@ -1134,22 +1186,23 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 (defun versor-backward-up-list (&rest args)
   (interactive "p")
   (apply 'backward-up-list args)
-  (message "main overlay at %d..%d" (point) (1+ (point)))
+  ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (make-versor-overlay (point) (1+ (point)))
   (save-excursion
     (forward-sexp 1)
-    (message "extra overlay at %d..%d" (point) (1+ (point)))
-    (versor-extra-overlay (point) (1+ (point)))))
+    ;; (message "extra overlay at %d..%d" (1- (point)) (point))
+    (versor-extra-overlay (1- (point)) (point))))
 
 (defun versor-down-list (&rest args)
   (interactive "p")
   (apply 'down-list args)
-  (message "main overlay at %d..%d" (point) (1+ (point)))
+  ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (make-versor-overlay (point) (1+ (point)))
-  (save-excursion
-    (forward-sexp 1)
-    (message "extra overlay at %d..%d" (point) (1+ (point)))
-    (versor-extra-overlay (point) (1+ (point)))))
+  (when (looking-at "\\s(")
+    (save-excursion
+      (forward-sexp 1)
+      ;; (message "extra overlay at %d..%d" (1- (point)) (point))
+      (versor-extra-overlay (1- (point)) (point)))))
 
 ;; (defun other-window-backwards (n)
 ;;   "Select the -Nth window -- see other-window, this just negates the argument."
