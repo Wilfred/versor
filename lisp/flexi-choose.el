@@ -1,5 +1,5 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <04/06/13 15:13:08 jcgs>
+;;; Time-stamp: <2005-02-07 15:53:50 John.Sturdy>
 ;;; old-Time-stamp: <03/06/11 12:15:47 jcgs>
 (message "loading flexi-choose")
 (if (fboundp 'backtrace) (with-output-to-temp-buffer "*loading flexi-choose*" (backtrace)))
@@ -343,6 +343,16 @@ With optional LIMIT argument, only looking recently used buffers."
   (interactive (list (choose-library "Find library file: ")))
   (find-file (elisp-file-more-readable-version (cdr (assoc library (el-lib-list))))))
 
+(defun choose-paper (prompt)
+  "Flexi selection of paper."
+  (choose-in-steps prompt (sort (mapcar 'car (papers-list))
+				'string-lessp)))
+
+(defun flexi-choose-paper (paper)
+  "Find PAPER."
+  (interactive (list (choose-paper "Paper: ")))
+  (find-paper paper))
+
 (defun flexi-switch-to-buffer (buffer)
   "Switch buffers"
   (interactive (list (choose-buffer "Switch to buffer: " nil t)))
@@ -484,6 +494,9 @@ With optional LIMIT argument, only looking recently used buffers."
 (if (featurep 'sensible-languages)
     (define-key flexi-choose-menu [statement-type]
       '("Statement type" . statement-type)))
+
+(define-key flexi-choose-menu [flexi-choose-paper]
+  '("Find paper" . flexi-choose-paper))
 
 (define-key flexi-choose-menu [flexi-load-context]
   '("Load context" . flexi-load-context))
