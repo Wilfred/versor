@@ -1,5 +1,5 @@
 ;;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-02-19 10:42:46 john>
+;;; Time-stamp: <2004-02-23 11:37:54 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -54,6 +54,11 @@ You can only use this from Emacs 20 onwards.")
 (defcustom versor-indicate-items nil
   "*Whether to indicate the current item after each versor movement.
 The indication is cancelled at the start of the next command."
+  :group 'versor
+  :type 'boolean)
+
+(defcustom versor:try-to-display-whole-item t
+  "*Whether to try to display the whole item after each movement."
   :group 'versor
   :type 'boolean)
 
@@ -376,10 +381,10 @@ not interact properly with any existing definitions in the map."
 
 (versor:define-moves movemap-statement-parts
 		     '((color "blue")
-		       (first navigate-head)
+		       (first navigate-this-head)
 		       (previous statement-navigate-parts-previous)
 		       (next statement-navigate-parts-next)
-		       (last navigate-body)
+		       (last navigate-this-body)
 		       (end-of-item latest-statement-navigation-end)))
 
 (versor:define-moves movemap-statements
@@ -608,7 +613,7 @@ buffer.")
 (defun versor:get-current-item ()
   "Return (start . end) for the current item."
   (if (versor:current-item-valid)
-      (let ((olay (car (car versor-items))))
+      (let ((olay (car versor-items)))
 	(cons (overlay-start olay)
 	      (overlay-end olay)))
     (let* ((end (progn (funcall (or (versor:get-action 'end-of-item)
@@ -693,6 +698,19 @@ Intended to be called at the end of all versor commands."
 
 	  (unless (versor:current-item-valid)
 	    (versor:set-current-item (point) (versor-end-of-item)))
+
+	  (when versor:try-to-display-whole-item
+	    (let* ((item (versor:get-current-item))
+		   (end (cdr item)))
+	      ;; try to get the whole item on-screen
+	      (when (> end (window-end))
+		  (let* ((start (car item))
+			 (lines-needed (count-lines start end))
+			 (lines-available (- (window-height (selected-window)) 2)))
+		    (if (<= lines-needed lines-available)
+			(recenter (/ (- lines-available lines-needed) 2))
+		      (recenter 0)
+		      (message "%d more lines" (- lines-needed lines-available 1)))))))
 
 	  ;; re-do this because it somehow gets taken off from time to time
 	  (add-hook 'pre-command-hook 'versor-de-indicate-current-item))
