@@ -1,5 +1,5 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2004-01-23 16:43:42 john>
+;;; Time-stamp: <2004-05-24 14:29:55 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -24,10 +24,10 @@
 (provide 'versor-voice)
 (require 'versor)
 
-(defvar vr-versor-dimension-command-list nil
+(defvar vr-versor:dimension-command-list nil
   "Vocal commands for versor")
 
-(defun define-versor-vocal ()
+(defun define-versor:vocal ()
   "Define the vocal commands."
   (interactive)
   (dolist (level (versor:all-level-names))
@@ -39,11 +39,11 @@
 	   )
       ;; (message "Defining %S to be %S" name body)
       (fset name body)
-      (pushnew (cons level name) vr-versor-dimension-command-list :test 'equal))))
+      (pushnew (cons level name) vr-versor:dimension-command-list :test 'equal))))
 
-(if (null vr-versor-dimension-command-list) (define-versor-vocal))
+(if (null vr-versor:dimension-command-list) (define-versor:vocal))
 
-(defvar vr-versor-command-list
+(defvar vr-versor:command-list
   '(
     ("next" . versor:next)
     ("onwards" . versor:next)

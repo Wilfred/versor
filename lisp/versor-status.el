@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 09:59:11 john>
+;;; Time-stamp: <2004-05-24 14:29:23 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -47,13 +47,13 @@
     (setq versor:mode-line-begin-string " <"
 	  versor:mode-line-end-string ">"))
   (force-mode-line-update t)
-  (when versor-change-cursor-color 
+  (when versor:change-cursor-color 
     (set-cursor-color (versor:action (versor:current-level) 'color)))
-  (when (and versor-item-attribute (fboundp 'set-face-attribute))
-    (set-face-attribute 'versor-item nil
-			versor-item-attribute
+  (when (and versor:item-attribute (fboundp 'set-face-attribute))
+    (set-face-attribute 'versor:item nil
+			versor:item-attribute
 			(versor:action (versor:current-level)
-				       versor-item-attribute)))
+				       versor:item-attribute)))
   (let ((old-pair (assoc major-mode versor:mode-current-levels)))
     (if (null old-pair)
 	(push (cons major-mode (cons versor:meta-level versor:level))
@@ -66,7 +66,7 @@
   (if versor:use-face-attributes
       (let ((strong (copy-sequence string)))
 	(put-text-property 0 (length string)
-			   'face 'versor-item
+			   'face 'versor:item
 			   strong)
 	strong)
     (format "[%s]" string)))

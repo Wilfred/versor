@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 10:01:53 john>
+;;; Time-stamp: <2004-05-24 14:30:32 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -34,7 +34,7 @@
   "Switch cursor keys between different sorts of movement."
   :version "0.1"
   :group 'editing
-  :prefix "versor-")
+  :prefix "versor:")
 
 (defcustom versor:level-wrap t
   "*Whether to wrap the level changes"
@@ -46,12 +46,12 @@
   :group 'versor
   :type 'boolean)
 
-(defcustom versor-change-cursor-color t
+(defcustom versor:change-cursor-color t
   "*Whether to use the cursor color to indicate the level."
   :group 'versor
   :type 'boolean)
 
-(defcustom versor-item-attribute nil
+(defcustom versor:item-attribute nil
   "*An attribute to use to indicate the current item.
 This is looked up in the current item, to get the value to set it to.
 You can only use this from Emacs 21 onwards.")
@@ -147,7 +147,7 @@ package to the end of an item."
 ;; To use versor:
 ;;   add the directory containing this elisp file, and its companions, to your load-path
 ;;   load this file (or autoload versor:setup)
-;;   call versor-setup
+;;   call versor:setup
 ;; If you want to use navigation by statements, you will need languide too.
 
 (defvar versor:insertion-placement-keymap (make-sparse-keymap "Versor insert place")
@@ -206,8 +206,8 @@ to select which keys are set up to do versor commands."
     (global-set-key [ right ]   'versor:next)
     (global-set-key [ M-left ]  'versor:out)
     (global-set-key [ M-right ] 'versor:in)
-    (global-set-key [ C-left ]  'versor-extend-item-backwards)
-    (global-set-key [ C-right ] 'versor-extend-item-forwards)
+    (global-set-key [ C-left ]  'versor:extend-item-backwards)
+    (global-set-key [ C-right ] 'versor:extend-item-forwards)
     (global-set-key [ home ]    'versor:start)
     (global-set-key [ end ]     'versor:end)
   
@@ -217,8 +217,8 @@ to select which keys are set up to do versor commands."
     (global-set-key [ M-down ]  'versor:next-meta-level)
     (global-set-key [ C-up ]    'versor:over-start)
     (global-set-key [ C-down ]  'versor:over-end)
-    (global-set-key [ C-home ]  'versor-start-of-item)
-    (global-set-key [ C-end ]   'versor-end-of-item)
+    (global-set-key [ C-home ]  'versor:start-of-item)
+    (global-set-key [ C-end ]   'versor:end-of-item)
     )
 
   (when (memq 'arrows-misc keysets)
@@ -246,8 +246,8 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-kp-right ] 'versor:end)
     (global-set-key [ kp-home ]    'versor:start)
     (global-set-key [ kp-end ]     'versor:end)
-    (global-set-key [ C-kp-home ]  'versor-start-of-item)
-    (global-set-key [ C-kp-end ]   'versor-end-of-item)
+    (global-set-key [ C-kp-home ]  'versor:start-of-item)
+    (global-set-key [ C-kp-end ]   'versor:end-of-item)
 
   
     (global-set-key [ kp-up ]      'versor:over-prev)
@@ -287,7 +287,7 @@ to select which keys are set up to do versor commands."
   
   (versor:set-status-display))
 
-(defvar versor:item-face (make-face 'versor-item)
+(defvar versor:item-face (make-face 'versor:item)
   "Face to use for versor items")
 
 (defvar versor:use-face-attributes
@@ -296,10 +296,6 @@ to select which keys are set up to do versor commands."
   "*Whether to use face attributes, as provided from Emacs 21 onwards.")
 
 (when versor:use-face-attributes
-  (set-face-attribute 'versor-item nil :inherit 'region))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;; underlining current item ;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (set-face-attribute 'versor:item nil :inherit 'region))
 
 ;;;; end of versor.el
