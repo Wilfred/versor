@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 14:04:07 john>
+;;; Time-stamp: <2004-09-16 11:35:46 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -75,19 +75,27 @@ If there are multiple items, return only the first one."
    ((versor:valid-item-list-p versor:latest-items)
     (car versor:latest-items))
    (t
-    (versor:make-item-from-region))))
+    (versor:invent-item))))
 
 (defun versor:get-current-items ()
   "Return the current items."
-  (cond 
-   ((versor:current-item-valid)
-    versor:items)
-   ((versor:valid-item-list-p versor:latest-items)
-    versor:latest-items)
-   (t
-    (let ((pair (versor:make-item-from-region)))
-      (make-versor:overlay (car pair) (cdr pair))
-      versor:items))))
+  (let ((result
+	 (cond 
+	  ((versor:current-item-valid)
+	   ;; (message "versor:get-current-items: current item valid")
+	   versor:items)
+	  ((versor:valid-item-list-p versor:latest-items)
+	   ;; (message "versor:get-current-items: latest item valid")
+	   versor:latest-items)
+	  (t
+	   ;; (message "versor:get-current-items: constructing item")
+	   (let ((pair (versor:invent-item)))
+	     (make-versor:overlay (car pair) (cdr pair))
+	     versor:items
+	     )))
+	 ))
+    (message "%S" result)
+    result))
 
 (defun versor:overlay-start (olay)
   "Return the start of OLAY.
@@ -118,15 +126,20 @@ Meant for debugging versor itself."
 		       (buffer-substring (- end 8) end)))))
 	  il))
 
-(defun versor:make-item-from-region ()
-  "Make a versor item from the current region.
-Meant to be used by things that require an item, when there is none."
+(defun versor:invent-item ()
+  "Invent a versor item around the current point.
+Meant to be used by things that require an item, when there is none.
+Leaves point in a position compatible with what has just been returned."
+  ;; (message "Using %S in inventing item" (versor:current-level))
   (let* ((end (progn (funcall (or (versor:get-action 'end-of-item)
 				  (versor:get-action 'next))
 			      1)
+		     ;; (message "invented end") (sit-for 2)
 		     (point)))
 	 (start (progn (funcall (versor:get-action 'previous) 1)
+		       ;; (message "invented start") (sit-for 2)
 		       (point))))
+    ;; (message "Invented item %d..%d" start end)
     (cons start end)))
 
 (defun versor:valid-item-list-p (a)
@@ -235,13 +248,23 @@ Intended to go on pre-command-hook, to make sure that versor gets out
 of the way of ordinarily Emacs commands. in case, however, the new
 command is itself a versor command, we save the item marking as a list
 of conses of start . end, in versor:latest-items."
-  (setq versor:latest-items
-	(mapcar 
-	 (lambda (item)
-	   (cons (overlay-start item) (overlay-end item)))
-	 versor:items))
-  ;; (versor:display-item-list (format "starting command %S" this-command) versor:latest-items)
-  (delete-versor:overlay))
+  (unless (eq (car versor:items) 'not-yet-set)
+    (setq versor:latest-items
+	  (catch 'no-region
+	    (mapcar 
+	     (lambda (item)
+	       (if (overlayp item)
+		   (cons (overlay-start item) (overlay-end item))
+		 (if (condition-case error
+			 (progn
+			   (region-beginning)
+			   nil)
+		       (error t))
+		     (throw 'no-region nil)
+		   (cons (region-beginning) (region-end)))))
+	     versor:items)))
+    ;; (versor:display-item-list (format "starting command %S" this-command) versor:latest-items)
+    (delete-versor:overlay)))
 
 (defun versor:set-item-indication (arg)
   "Set whether item indication is done.
