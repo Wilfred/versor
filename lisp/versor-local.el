@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2004-02-27 12:09:37 john>
+;;; Time-stamp: <2004-03-01 09:02:17 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
