@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-05-17 17:45:23 john>
+;;; Time-stamp: <2004-05-17 17:46:43 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -173,20 +173,27 @@ With non-nil arg, include meta-level names."
       (incf versor:meta-level))))
   versor:all-names-grid)
 
+(defvar versor:all-names-grid-widths nil
+  "The column widths needed for versor:all-names-grid")
+
 (defun versor:all-names-grid-widths ()
-  (let* ((grid (versor:all-names-grid))
-	 (grid-width (apply 'max (mapcar 'length grid)))
-	 (widths (make-vector grid-width 0))
-	 (i 0)
-	 )
-    (while (< i grid-width)
-      (aset widths i
-	    (apply 'max
-	    (mapcar (lambda (row)
-		      (length (car (nth i row))))
-	    grid))
-	    )
-      (incf i))
-    widths))
+  "Return the column widths needed for versor:all-names-grid"
+  (if versor:all-names-grid-widths
+      versor:all-names-grid-widths
+    (setq versor:all-names-grid-widths
+	  (let* ((grid (versor:all-names-grid))
+		 (grid-width (apply 'max (mapcar 'length grid)))
+		 (widths (make-vector grid-width 0))
+		 (i 0)
+		 )
+	    (while (< i grid-width)
+	      (aset widths i
+		    (apply 'max
+			   (mapcar (lambda (row)
+				     (length (car (nth i row))))
+				   grid))
+		    )
+	      (incf i))
+	    widths))))
 
 ;;; end of versor-names.el
