@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-04-28 14:35:17 john>
+;;; Time-stamp: <2004-05-06 14:11:25 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -49,7 +49,7 @@
 (defcustom versor-item-attribute nil
   "*An attribute to use to indicate the current item.
 This is looked up in the current item, to get the value to set it to.
-You can only use this from Emacs 20 onwards.")
+You can only use this from Emacs 21 onwards.")
 
 (defcustom versor:try-to-display-whole-item t
   "*Whether to try to display the whole item after each movement."
@@ -591,14 +591,12 @@ With optional LEVEL-OFFSET, add that to the level first."
 (defvar versor:item-face (make-face 'versor-item)
   "Face to use for versor items")
 
-;; (copy-face 'region 'versor-item)
+(defvar versor:use-face-attributes
+  (and (boundp 'emacs-major-version)
+	   (>= emacs-major-version 21))
+  "Whether to use face attributes, as provided from Emacs 21 onwards.")
 
-;; These are conditional for the benefit of emacs 19, which this
-;; software will mostly run on, apart from having problems with some
-;; of the ways I use faces.
-
-(when (and (boundp 'emacs-major-version)
-	   (>= emacs-major-version 20))
+(when versor:use-face-attributes
   (set-face-attribute 'versor-item nil :inherit 'region))
 
 (defun versor:set-status-display (&optional one of-these)
@@ -627,12 +625,10 @@ With optional LEVEL-OFFSET, add that to the level first."
 
 (defun versor:display-highlighted-choice (one of-these-choices)
   "Display, with ONE highlighted, the members of OF-THESE-CHOICES"
-  (let* ((use-faces (and (boundp 'emacs-major-version)
-			 (>= emacs-major-version 20)))
-	 (msg (mapconcat
+  (let* ((msg (mapconcat
 	       (lambda (string)
 		 (if (string= string one)
-		     (if use-faces
+		     (if versor:use-face-attributes
 			 (let ((strong (copy-sequence string)))
 			   (put-text-property 0 (length string)
 					      'face 'versor-item
@@ -768,8 +764,7 @@ You should normally call versor:set-current-item rather than this."
     (let ((overlay (make-overlay start end (current-buffer))))
       (setq versor-items (list overlay))
       (overlay-put overlay 'face
-		   (if (and (boundp 'emacs-major-version)
-			    (>= emacs-major-version 20))
+		   (if versor:use-face-attributes
 		       'versor-item
 		     'region)
 		   )))
@@ -779,8 +774,7 @@ You should normally call versor:set-current-item rather than this."
   "Make an extra versor overlay between START and END."
   (let ((overlay (make-overlay start end (current-buffer))))
     (overlay-put overlay 'face
-		 (if (and (boundp 'emacs-major-version)
-			  (>= emacs-major-version 20))
+		 (if versor:use-face-attributes
 		     'versor-item
 		   'region))
     (rplacd versor-items
