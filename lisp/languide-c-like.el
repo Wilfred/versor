@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2004-03-01 16:52:12 john>
+;;; Time-stamp: <2004-03-02 15:08:33 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -274,7 +274,24 @@ is liable to return the wrong result."
 	  (skip-to-actual-code)
 	  (looking-at "else"))
 	(message "Found ELSE")
-	(forward-sexp 2)))
+	(forward-sexp 2)		; NB assumes using { } -- should change this
+	)
+       ((save-excursion
+	  (skip-to-actual-code)
+	  (looking-at "while"))
+	;; now look around to see whether this is part of "do {} while ()"
+	;; avert your eyes when reading this code, or re-write it for me!
+	(when (save-excursion
+		(skip-to-actual-code)
+		(forward-sexp 2)
+		(if (looking-at "[ \t\r\n]")
+		    (skip-to-actual-code))
+		(looking-at "[;}]"))
+	  (message "That WHILE is part of a DO")
+	  (skip-to-actual-code)
+	  (forward-sexp 2)
+	  (if (looking-at "[ \t\r\n]")
+	      (skip-to-actual-code)))))
       (decf n)))
   (skip-to-actual-code))
 
