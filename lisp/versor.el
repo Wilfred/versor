@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-04-21 13:53:38 john>
+;;; Time-stamp: <2004-04-21 17:14:41 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -148,6 +148,8 @@ package to the end of an item."
 (defvar versor:insertion-placement-keymap (make-sparse-keymap "Versor insert place")
   "Keymap for reading what place to do insertion at.
 This is for choosing before, after, around or inside.")
+
+(fset 'versor:insertion-placement-keymap versor:insertion-placement-keymap)
 
 (defvar versor:insertion-kind-alist nil
   "Alist for reading what kind of insertion to do.
@@ -666,14 +668,15 @@ Meant to be used by things that require an item, when there is none."
 
 (defun versor:get-current-item ()
   "Return (start . end) for the current item."
-  (if (or (versor:current-item-valid)
-	  (versor:valid-item-list-p versor:latest-items))
-      (let ((olay (car (or versor-items versor:latest-items))))
-	(if (consp olay)
-	    olay
-	  (cons (overlay-start olay)
-		(overlay-end olay))))
-    (versor:make-item-from-region)))
+  (cond
+   ((versor:current-item-valid)
+    (let ((olay (car versor-items)))
+      (cons (overlay-start olay)
+	    (overlay-end olay))))
+   ((versor:valid-item-list-p versor:latest-items)
+    (car versor:latest-items))
+   (t
+    (versor:make-item-from-region))))
 
 (defun versor:display-item-list (label il)
   "With LABEL, display IL"
@@ -1141,62 +1144,71 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	     (cons key fun)
 	     versor:insertion-kind-alist)))))
 
-(versor:definesert "\d" 'current-kill)
-(versor:definesert "(" (lambda () (list "(" ")")))
-(versor:definesert "[" (lambda () (list "[" "]")))
-(versor:definesert "{" (lambda () (list "{" "}")))
-(versor:definesert "<" (lambda () (list "<" ">")))
+(defun versor:top-n-kills (n)
+  "Return the top N entries in the kill ring."
+  (let ((result nil))
+    (while (> n 0)
+      (decf n)
+      (push (current-kill n t) result))
+    result))
 
-(defun versor:get-insertable (&optional prompt)
-  "Return a thing to insert."
+(versor:definesert "\d" 'versor:top-n-kills)
+(versor:definesert [ kp-delete ] 'versor:top-n-kills)
+(versor:definesert [ del ] 'versor:top-n-kills)
+(versor:definesert "\C-y" 'versor:top-n-kills)
+(versor:definesert "(" (lambda (n) (list "(" ")")))
+(versor:definesert "[" (lambda (n) (list "[" "]")))
+(versor:definesert "{" (lambda (n) (list "{" "}")))
+(versor:definesert "<" (lambda (n) (list "<" ">")))
+
+(defun versor:get-insertable (n &optional prompt)
+  "Return N things to insert."
   ;; should also be available for putting things into the search string --
   ;; in which case it ought to have a different name
-  (let* ((key (read-char prompt))
+  (let* ((key (read-char (if prompt prompt "Kind of insertion: ")))
 	 (command (assoc key versor:insertion-kind-alist)))
     (if (consp command)
-	(funcall (cdr command))
+	(funcall (cdr command) n)
       (error "Not a valid kind of insertion"))))
 
 (defun versor:insert-before ()
   "Insert something before the current versor item."
   (interactive)
-  (let* ((new-thing (versor:get-insertable))
-	 (current-item (versor:get-current-item)))
-    (goto-char (car current-item))
-    (insert new-thing)
-    (versor-indicate-current-item)))
+  (as-versor-motion-command
+   (let* ((new-thing (versor:get-insertable 1))
+	  (current-item (versor:get-current-item)))
+     (goto-char (car current-item))
+     (insert new-thing))))
 
 (defun versor:insert-after ()
   "Insert something after the current versor item."
   (interactive)
-  (let* ((new-thing (versor:get-insertable))
-	 (current-item (versor:get-current-item)))
-    (goto-char (cdr current-item))
-    (insert new-thing)
-    (versor-indicate-current-item)))
+  (as-versor-motion-command
+   (let* ((new-thing (versor:get-insertable 1))
+	  (current-item (versor:get-current-item)))
+     (goto-char (cdr current-item))
+     (insert new-thing))))
 
 (defun versor:insert-around ()
   "Insert something around to the current versor item."
   (interactive)
-  (let* ((new-thing (versor:get-insertable))
-	 (current-item (versor:get-current-item)))
-    (if (and (consp new-thing)
-	     (= (length new-thing) 2))
-	(progn
-	  (goto-char (cdr current-item))
-	  (insert (second new-thing))
-	  (goto-char (car current-item))
-	  (insert (first new-thing)))
-      (error "Not suitable for inserting around"))
-    (versor-indicate-current-item)))
+  (as-versor-motion-command
+   (let ((current-item (versor:get-current-item))
+	 (new-thing (versor:get-insertable 2 "Type of insertion around item: ")))
+     (message "insert-around: current-item=%S" current-item)
+     (goto-char (versor-overlay-end current-item))
+     (insert (second new-thing))
+     (goto-char (versor-overlay-start current-item))
+     (insert (first new-thing)))))
 
 (defun versor:insert-within ()
   "Insert something within the current versor item."
   (interactive)
-  (let* ((new-thing (versor:get-insertable))
-	 (current-item (versor:get-current-item)))
+  (as-versor-motion-command
+   (let* ((new-thing (versor:get-insertable 1))
+	  (current-item (versor:get-current-item)))
     
-    (versor-indicate-current-item)))
+     )))
 
 ;;;; some internal functions for operations that aren't typically there already
 
