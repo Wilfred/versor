@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 09:39:41 john>
+;;; Time-stamp: <2004-05-24 14:01:16 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -145,8 +145,8 @@ See the definition of versor:make-movemap for details of move maps."
 (versor:define-moves movemap-depth
 		     '((color "orange")
 		       (first beginning-of-defun)
-		       (previous versor-backward-up-list)
-		       (next versor-down-list)
+		       (previous versor:backward-up-list)
+		       (next versor:down-list)
 		       (last innermost-list)))
 
 (versor:define-moves movemap-statement-parts
@@ -179,7 +179,7 @@ See the definition of versor:make-movemap for details of move maps."
 		       (:underline "dark slate gray")
 		       ;; things like this (notionally the wrong
 		       ;; dimension) still work OK, because of how
-		       ;; versor-indicate-current-item works when the
+		       ;; versor:indicate-current-item works when the
 		       ;; things it calls don't explicitly set the item
 		       ;; boundaries for it:
 		       (first backward-phrase) 
@@ -334,8 +334,8 @@ With optional LEVEL-OFFSET, add that to the level first."
 
 (defvar versor:mode-current-levels nil
   "Alist of mode name symbols to the current meta-level and level for that mode.
-Used by versor-local, but set here."
-  ;; I tried getting versor-local's versor:mode-change-function to remember the
+Used by versor:local, but set here."
+  ;; I tried getting versor:local's versor:mode-change-function to remember the
   ;; levels for the mode, but couldn't get it to work -- something about the
   ;; mode being set strangely in the minibuffer, I think
 )

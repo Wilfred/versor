@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-05-18 10:09:07 john>
+;;; Time-stamp: <2004-05-24 14:03:35 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -22,7 +22,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ;;; This is not needed for using versor just through the cursor keys
-;;; or pedals, but is used by versor-voice and versor-menu
+;;; or pedals, but is used by versor:voice and versor:menu
 
 (provide 'versor-names)
 (require 'versor)
@@ -111,10 +111,10 @@ in the caurrent one."
       nil)))
 
 
-(defvar versor-meta-history-hack-var nil
+(defvar versor:meta-history-hack-var nil
   "History hack.")
 
-(defvar versor-history-hack-var nil
+(defvar versor:history-hack-var nil
   "History hack.")
 
 (defun versor:select-named-meta-level (name)
@@ -123,7 +123,7 @@ in the caurrent one."
    (list
     (completing-read-with-history-hack
      "Meta-level: "
-     'versor-meta-history-hack-var
+     'versor:meta-history-hack-var
      versor:current-meta-level-name
      (mapcar 'car (versor:meta-level-names)))))
   (setq versor:meta-level (versor:find-meta-level-by-name name))
@@ -137,7 +137,7 @@ in the caurrent one."
    (list
     (completing-read-with-history-hack
      "Level: "
-     'versor-history-hack-var
+     'versor:history-hack-var
      versor:current-level-name
      (mapcar 'car (versor:level-names)))))
   (let ((level-pair (versor:find-level-by-single-name name)))

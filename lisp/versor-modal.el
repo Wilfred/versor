@@ -1,5 +1,5 @@
 ;;;; versor-modal.el -- part of versatile cursor
-;;; Time-stamp: <2004-01-23 16:43:42 john>
+;;; Time-stamp: <2004-05-24 14:03:08 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;

@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2004-05-07 14:00:05 john>
+;;; Time-stamp: <2004-05-24 14:02:43 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -23,7 +23,7 @@
 
 ;;; If you have even fewer keys than normal available for versor (for
 ;;; example, a more restricted set of input than that arranged by
-;;; versor-pedals) you may need a menu for some of the actions -- for
+;;; versor:pedals) you may need a menu for some of the actions -- for
 ;;; example, reversing motion if you only have a "move" key rather
 ;;; than a "next" and "previous" pair
 
@@ -31,7 +31,7 @@
 (require 'versor)
 (require 'versor-names)
 
-(defvar versor-control-menu-items
+(defvar versor:control-menu-items
   `(["Out briefly" versor:out-briefly-only t]
     ["Backwards" versor:reverse [ :included (and versor:reversible (not versor:reversed))]]
     ["Forwards" versor:reverse [ :included (and versor:reversible versor:reversed)]]
@@ -43,13 +43,13 @@
     )
   "Control of versor.")
 
-(easy-menu-define versor-control-menu nil
-                  "Versor Control Menu" (cons "Versor control" versor-control-menu-items))
+(easy-menu-define versor:control-menu nil
+                  "Versor Control Menu" (cons "Versor control" versor:control-menu-items))
 
 (defun versor:control-menu ()
   "Run the versor control menu."
   (interactive)
-  (tmm-prompt versor-control-menu)
+  (tmm-prompt versor:control-menu)
   ;; return t because we can be used in aux-pedal (pedals.el) as a hook
   t)
 
