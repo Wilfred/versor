@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2004-05-24 15:55:20 john>
+;;; Time-stamp: <2004-09-16 11:31:31 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
@@ -354,6 +354,8 @@ See handsfree-menus.el for menus."
   (define-key isearch-mode-map pedal-onward 'isearch-repeat-forward)
   (define-key isearch-mode-map pedal-aux 'isearch-yank-word)
   (define-key isearch-mode-map pedal-S-onward 'isearch-repeat-backward)
+  (define-key isearch-mode-map pedal-menu 'isearch-exit)
+  (define-key isearch-mode-map pedal-S-menu 'isearch-cancel)
 
   (if (and (boundp 'Buffer-menu-mode-map)
 	   (keymapp Buffer-menu-mode-map))
