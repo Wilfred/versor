@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-10-07 10:41:11 guest05>
+;;; Time-stamp: <2005-02-02 14:24:43 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -30,6 +30,11 @@
 (require 'versor-selection)
 (require 'versor-base-moves)
 (require 'versor-commands)
+(require 'versor-alter-item)
+
+;; todo: command to move to end of container (possibly improved semantics for versor:end)
+;; todo: command to toggle between code and string literals
+;; todo: fix change of dimensions that happens after type-break uses the minibuffer (probably more general than this)
 
 ;;;;;;;;;;;;;;;
 ;;;; hooks ;;;;
@@ -113,6 +118,11 @@ This is for choosing before, after, around or inside.")
 
 (fset 'versor:insertion-placement-keymap versor:insertion-placement-keymap)
 
+(defvar versor:altering-map (make-sparse-keymap "Versor alter item")
+  "Keymap for altering the selected item.")
+
+(fset 'versor:altering-map versor:altering-map)
+
 (defun versor:setup (&rest keysets)
   "Set up the versor (versatile cursor) key system.
 
@@ -163,6 +173,9 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-right ] 'versor:extend-item-forwards)
     (global-set-key [ home ]    'versor:start)
     (global-set-key [ end ]     'versor:end)
+
+    (define-key versor:altering-map [ left ] 'versor:alter-item-prev)
+    (define-key versor:altering-map [ right ] 'versor:alter-item-next)
   
     (global-set-key [ up ]      'versor:over-prev)
     (global-set-key [ down ]    'versor:over-next)
@@ -172,6 +185,9 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-down ]  'versor:over-end)
     (global-set-key [ C-home ]  'versor:start-of-item)
     (global-set-key [ C-end ]   'versor:end-of-item)
+
+    (define-key versor:altering-map [ up ] 'versor:alter-item-over-prev)
+    (define-key versor:altering-map [ down ] 'versor:alter-item-over-next)
     )
 
   (when (memq 'arrows-misc keysets)
@@ -183,6 +199,8 @@ to select which keys are set up to do versor commands."
     (define-key (current-global-map) [ insert ]   'versor:insertion-placement-keymap)
     (global-set-key [ delete ]   'versor:kill)
     (global-set-key [ M-delete ] 'versor:copy)
+
+    (define-key (current-global-map) [ C-delete ]   'versor:begin-altering-item)
 
     (define-key versor:insertion-placement-keymap [ left ]  'versor:insert-before)
     (define-key versor:insertion-placement-keymap [ right ] 'versor:insert-after)
@@ -202,6 +220,8 @@ to select which keys are set up to do versor commands."
     (global-set-key [ C-kp-home ]  'versor:start-of-item)
     (global-set-key [ C-kp-end ]   'versor:end-of-item)
 
+    (define-key versor:altering-map [ kp-left ] 'versor:alter-item-prev)
+    (define-key versor:altering-map [ kp-right ] 'versor:alter-item-next)
   
     (global-set-key [ kp-up ]      'versor:over-prev)
     (global-set-key [ kp-down ]    'versor:over-next)
@@ -209,6 +229,9 @@ to select which keys are set up to do versor commands."
     (global-set-key [ M-kp-down ]  'versor:next-meta-level)
     (global-set-key [ C-kp-up ]    'versor:over-start)
     (global-set-key [ C-kp-down ]  'versor:over-end)
+
+    (define-key versor:altering-map [ kp-up ] 'versor:alter-item-over-prev)
+    (define-key versor:altering-map [ kp-down ] 'versor:alter-item-over-next)
 
     (global-set-key [ kp-prior ]   'versor:over-over-prev)
     (global-set-key [ kp-next ]    'versor:over-over-next)
@@ -221,6 +244,8 @@ to select which keys are set up to do versor commands."
                     [ kp-insert ] 'versor:insertion-placement-keymap)
     (global-set-key [ kp-delete ] 'versor:kill)
     (global-set-key [ kp-add ]    'other-window)
+
+    (define-key (current-global-map) [ C-kp-delete ]   'versor:begin-altering-item)
 
     (define-key versor:insertion-placement-keymap [ kp-left ]  'versor:insert-before)
     (define-key versor:insertion-placement-keymap [ kp-right ] 'versor:insert-after)
