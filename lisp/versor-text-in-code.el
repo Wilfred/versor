@@ -1,5 +1,5 @@
 ;;; versor-text-in-code.el -- versatile cursor handling of strings and comments
-;;; Time-stamp: <2004-05-27 09:36:40 john>
+;;; Time-stamp: <2004-06-14 09:46:58 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -14,7 +14,7 @@
 ;; 
 ;; emacs-versor is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+`;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 ;; 
 ;; You should have received a copy of the GNU General Public License
@@ -32,13 +32,13 @@ Local to each buffer.")
 (defvar versor:non-text-meta-level (versor:find-meta-level-by-name "cartesian")
   "The meta-level used when last not in a comment or string.")
 
-(defvar versor:non-text-level (versor:find-level-by-double-name "cartesian" "chars")
+(defvar versor:non-text-level (cdr (versor:find-level-by-double-name "cartesian" "chars"))
   "The level used when last not in a comment or string.")
 
 (defvar versor:text-meta-level (versor:find-meta-level-by-name "text")
   "The meta-level used when last in a comment or string.")
 
-(defvar versor:text-level (versor:find-level-by-double-name "text" "chars")
+(defvar versor:text-level (cdr (versor:find-level-by-double-name "text" "chars"))
   "The level used when last in a comment or string.")
 
 (mapcar 'make-variable-buffer-local
@@ -79,3 +79,5 @@ Meant to go on post-command-hook."
     (error (message "Error in versor-text-in-code"))))
 
 (add-hook 'post-command-hook 'versor:text-in-code-function)
+
+(provide 'versor-text-in-code)
