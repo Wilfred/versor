@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 14:30:32 john>
+;;; Time-stamp: <2004-05-24 15:45:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -24,55 +24,12 @@
 (provide 'versor)
 (require 'tempo)
 (require 'cl)
+(require 'versor-custom)
 (require 'versor-dimensions)
 (require 'versor-status)
 (require 'versor-selection)
 (require 'versor-base-moves)
 (require 'versor-commands)
-
-(defgroup versor nil
-  "Switch cursor keys between different sorts of movement."
-  :version "0.1"
-  :group 'editing
-  :prefix "versor:")
-
-(defcustom versor:level-wrap t
-  "*Whether to wrap the level changes"
-  :group 'versor
-  :type 'boolean)
-
-(defcustom versor:meta-level-wrap t
-  "*Whether to wrap the meta-level changes"
-  :group 'versor
-  :type 'boolean)
-
-(defcustom versor:change-cursor-color t
-  "*Whether to use the cursor color to indicate the level."
-  :group 'versor
-  :type 'boolean)
-
-(defcustom versor:item-attribute nil
-  "*An attribute to use to indicate the current item.
-This is looked up in the current item, to get the value to set it to.
-You can only use this from Emacs 21 onwards.")
-
-(defcustom versor:try-to-display-whole-item t
-  "*Whether to try to display the whole item after each movement."
-  :group 'versor
-  :type 'boolean)
-
-(defcustom versor:reversible (not (eq window-system 'x))
-  "*Whether we allow reversing.
-This is useful if you cannot use \"shift-next\" for \"previous\".
-These seem to work OK on X but not on Windows; not sure about
-other platforms/terminals yet."
-  :group 'versor
-  :type 'boolean)
-
-(defcustom phrase-end "[,;:] *"
-  "*Regexp describing the end of a phrase."
-  :group 'versor
-  :type 'string)
 
 ;;;;;;;;;;;;;;;
 ;;;; hooks ;;;;
