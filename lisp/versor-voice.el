@@ -1,5 +1,5 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2004-11-12 18:01:36 John.Sturdy>
+;;; Time-stamp: <2005-02-09 16:34:14 John.Sturdy>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -48,8 +48,8 @@
     ("next" . versor:next)
     ("onwards" . versor:next)
     ("back" . versor:prev)
-    ("out" . versor:out)
-    ("in" . versor:in)
+    ;; ("out" . versor:out)
+    ;; ("in" . versor:in)
     ("first" . versor:start)
     ("initial" . versor:start)
     ("last" . versor:end)
@@ -57,10 +57,12 @@
     ("over" . versor:out-briefly)
     ("depth" . versor:select-in/out)
     ("expressions" . versor:select-exprs)
+    ("characters" . versor:select-chars)
     ("other end" . versor:other-end-of-item)
     ("copy this" . versor:copy)
     ("cut this" . versor:kill)
     ("mark this" . versor:mark)
+    ("transpose" . versor:transpose)
     ("valof" . wander-yank)
     ("result is" . pick-up-sexp-at-point)
     ("return" . exit-recursive-edit)
