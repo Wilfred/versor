@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2004-03-02 10:01:36 john>
+;;; Time-stamp: <2004-03-02 10:07:12 john>
 ;;
 ;; Copyright (C) 2004  John C. G. Sturdy
 ;;
