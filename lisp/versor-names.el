@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-05-17 17:46:43 john>
+;;; Time-stamp: <2004-05-18 10:09:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -195,5 +195,16 @@ With non-nil arg, include meta-level names."
 		    )
 	      (incf i))
 	    widths))))
+
+(defvar versor:all-names-grid-formats nil
+  "The column formats needed for versor:all-names-grid")
+
+(defun versor:all-names-grid-formats ()
+  "Return the column formats needed for versor:all-names-grid"
+  (if versor:all-names-grid-formats
+      versor:all-names-grid-formats
+    (setq versor:all-names-grid-formats
+	  (mapcar (lambda (w) (format "%% %ds" (- 0 w 1)))
+		  (versor:all-names-grid-widths)))))
 
 ;;; end of versor-names.el
