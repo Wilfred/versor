@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2004-05-24 15:54:00 john>
+;;; Time-stamp: <2004-09-16 11:02:34 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -47,6 +47,10 @@ Necessary pre- and post-processing get done."
   `(progn
      (versor:clear-current-item-indication)
      (progn
+       ;; The body may call versor:set-current-item to show us where
+       ;; it has decided the item is to be; otherwise we fiddle around
+       ;; with calling the end-of-item of the dimension, or the next
+       ;; if there is no end-of-item
        ,@body)
      ;; the few commands that want to do otherwise, must re-set this
      ;; one just after using this macro
@@ -418,6 +422,27 @@ this."
 	    (kill-new (buffer-substring start end))
 	    (delete-region start end)))
 	(reverse (versor:get-current-items)))))))
+
+(defvar versor:isearch-string nil
+  "A string that we pass to isearch, via versor:isearch-mode-hook-function")
+
+(defun versor:isearch-mode-hook-function ()
+  "A hook to pass a search string in to isearch"
+  (when (stringp versor:isearch-string)
+      (isearch-yank-string versor:isearch-string)))
+
+(defun versor:search ()
+  "Search for the next occurrence of the current item."
+  (interactive)
+  (versor:as-motion-command
+   (let* ((item (versor:get-current-item))
+	  (start (versor:overlay-start item))
+	  (end (versor:overlay-end item))
+	  (versor:isearch-string (buffer-substring start end)))
+     (add-hook 'isearch-mode-hook 'versor:isearch-mode-hook-function)
+     (let ((result (isearch-forward)))
+       (when result
+	 (goto-char (min result isearch-other-end)))))))
 
 (defvar versor:insertion-kind-alist nil
   "Alist for reading what kind of insertion to do.
