@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-04-23 11:56:07 john>
+;;; Time-stamp: <2004-04-23 12:17:18 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -161,5 +161,16 @@ With non-nil arg, include meta-level names."
 		  (when include-meta (pushnew (aref meta-level 0) names :test 'string=))
 		(pushnew (car (aref meta-level level-index)) names :test 'string=))))))
     (sort names 'string<)))
+
+(defvar versor:all-names-grid nil)
+
+(defun versor:all-names-grid ()
+  (when (null versor:all-names-grid)
+  (let ((n (length moves-moves))
+	(versor:meta-level 1))
+    (while (< versor:meta-level n)
+      (push (versor:level-names) versor:all-names-grid)
+      (incf versor:meta-level))))
+  versor:all-names-grid)
 
 ;;; end of versor-names.el
