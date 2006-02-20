@@ -1,9 +1,9 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2004-10-07 10:28:43 guest05>
+;;; Time-stamp: <2005-10-18 14:22:38 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -204,9 +204,9 @@ up for itself only if the command didn't set them for it."
   "Make the current item distinctly visible.
 This is intended to be called at the end of all versor commands.
 See also the complementary function versor:de-indicate-current-item,
-which goes on the pre-command-hook up, to make sure that versor gets out of the way
-of ordinarily Emacs commands."
-
+which goes on the pre-command-hook, to make sure that versor gets out
+of the way of ordinary Emacs commands.
+We assume point to be at the start of the item."
   (condition-case error-var
       (progn
 
