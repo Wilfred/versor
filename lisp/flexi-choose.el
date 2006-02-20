@@ -1,8 +1,6 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <2005-02-07 15:53:50 John.Sturdy>
-;;; old-Time-stamp: <03/06/11 12:15:47 jcgs>
-(message "loading flexi-choose")
-(if (fboundp 'backtrace) (with-output-to-temp-buffer "*loading flexi-choose*" (backtrace)))
+;;; Time-stamp: <2006-02-09 18:07:39 jcgs>
+
 (provide 'flexi-choose)
 ;; if this is loaded before we are, put it into our menu
 (require 'languide)
@@ -193,11 +191,29 @@ This makes most sense if SINGLE is sorted."
 	(minibuffer-completion-help)
       (erase-buffer))))
 
+(defun voice-seems-active ()
+  "Return whether we seem to have a voice system, and it is on."
+  (and (boundp 'vr-mode)
+       vr-mode
+       (string= vr-mic-state "on")))
+
+(defun words-present-in-strings (strings)
+  "Return the words present in STRINGS."
+  (require 'cl)
+  (let ((result nil))
+    (while strings
+      (let ((words (split-string (car strings) "[-.*_ <>]")))
+	(while words
+	  (let ((word (downcase (car words))))
+	    (unless (member word result)
+	    (setq result (cons word result))))
+	  (setq words (cdr words))))
+      (setq strings (cdr strings)))
+    result))
+
 (defun choose-step-size (n)
   "Return a chunk size for choosing amongst N choices."
-  (let* ((max-per-step (if (and (boundp 'vr-mode)
-				vr-mode
-				(string= vr-mic-state "on"))
+  (let* ((max-per-step (if (voice-seems-active)
 			   (if (and (boundp 'vr-choices-per-step)
 				    (integerp vr-choices-per-step))
 			       vr-choices-per-step
@@ -222,6 +238,10 @@ This makes most sense if SINGLE is sorted."
   "With PROMPT, get the user to choose one of CHOICES.
 At each stage, up to choices-per-step choices are presented."
   (let* ((all-choices choices)
+	 (interesting-words (if (voice-seems-active)
+				;; expensive to compute; used only by voice
+				(words-present-in-strings all-choices)
+			      nil))
 	 (n (length choices))
 	 (per-step (choose-step-size n))
 	 (previous-levels nil)
@@ -229,6 +249,7 @@ At each stage, up to choices-per-step choices are presented."
 	 (result nil)
 	 (originals-alist (mapcar 'list choices))
 	 )
+    (setq iw interesting-words)
     (while (null result)
       (let* ((last-step (<= n per-step))
 	     (chunks (make-chunk-list choices per-step))
@@ -365,7 +386,7 @@ With optional LIMIT argument, only looking recently used buffers."
 					     (integerp vr-choices-per-step-limit))
 					vr-choices-per-step-limit
 				      choices-per-step)
-				    nil)))
+				    t)))
   (switch-to-buffer buffer))
 
 (defun flexi-find-file (file)
@@ -477,7 +498,8 @@ With optional LIMIT argument, only looking recently used buffers."
 
 (pushnew 'flexi-choose-menu menu-bar-final-items)
 (defvar flexi-choose-menu (make-sparse-keymap "Flexi choose"))
-(define-key global-map [menu-bar flexi-choose] (cons "Flexi choose" flexi-choose-menu))
+(fset 'flexi-choose-menu flexi-choose-menu)
+(define-key global-map [menu-bar flexi-choose] '(menu-item "Flexi choose" flexi-choose-menu))
 
 (define-key flexi-choose-menu [find-file]
   '("Find File" . flexi-find-file))
