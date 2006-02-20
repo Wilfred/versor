@@ -44,7 +44,10 @@
   :group 'versor
   :type 'boolean)
 
-(defcustom versor:item-attribute nil
+(defcustom versor:item-attribute
+  (if (< emacs-major-version 21)
+      nil
+    :background)
   "*An attribute to use to indicate the current item.
 This is looked up in the current item, to get the value to set it to.
 You can only use this from Emacs 21 onwards.")
@@ -66,5 +69,12 @@ other platforms/terminals yet."
   "*Regexp describing the end of a phrase."
   :group 'versor
   :type 'string)
+
+;;;; some other variables
+
+(defvar versor:use-face-attributes
+  (and (boundp 'emacs-major-version)
+	   (>= emacs-major-version 21))
+  "*Whether to use face attributes, as provided from Emacs 21 onwards.")
 
 ;;;; end of versor-custom.el

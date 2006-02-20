@@ -19,6 +19,8 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+(provide 'languide-html-like)
+
 (defstatement comment (html-helper-mode html-mode)
   "Comment"
   (head "<!-- *")

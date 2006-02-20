@@ -1,7 +1,7 @@
 ;;;; languide-insertions.el
-;;; Time-stamp: <2004-01-26 16:15:10 john>
+;;; Time-stamp: <2006-01-17 18:58:33 jcgs>
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -47,4 +47,29 @@ It offers completion on possibilities drawn from a variety of sources."
   (let ((poss (languide-possible-insertions)))
 ))
 
-(global-set-key [ insert ] 'languide-insert)
+;; (global-set-key [ insert ] 'languide-insert)
+
+(defvar languide-statement-choose-history-hack nil)
+
+(defun languide-select-statement-type (&optional prompt)
+  "Select a statement type interactively, offering PROMPT."
+  (let* ((type-names (mapcar 'symbol-name (mapcar 'car (statement-types))))
+	 (types (mapcar 'list type-names))
+	 )
+    (setq languide-statement-choose-history-hack type-names)
+    (completing-read (or prompt "Statement type: ")
+		     types
+		     nil
+		     t
+		     nil
+		     'languide-statement-choose-history-hack)))
+
+(defun languide-get-statement-insertion (&optional return-as-n-parts)
+  "Choose a statement type, and return something usable for inserting the statement.
+Designed to be called from versor:insert-around etc."
+  (let* ((statement-type (languide-select-statement-type "Insert statement: "))
+	 (statement-description (assoc (intern statement-type) (statement-types)))
+	 (creator (assoc 'create statement-description)))
+    creator))
+
+;;; end of languide-insertions.el

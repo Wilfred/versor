@@ -1,9 +1,9 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2005-02-11 11:36:38 john>
+;;; Time-stamp: <2006-02-14 12:13:04 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -33,10 +33,14 @@
 (require 'versor-alter-item)		; should probably autoload
 (require 'versor-containers)		; should probably autoload
 (require 'versor-chop-chop)		; should probably autoload
+(require 'versor-code-comments-strings) ; should probably autoload
 
 ;; todo: command to move to end of container (possibly improved semantics for versor:end)
 ;; todo: command to toggle between code and string literals
 ;; todo: fix change of dimensions that happens after type-break uses the minibuffer (probably more general than this)
+;; todo: make mouse clicks and drags select and extend using the current versor dimensions
+;; todo: use custom
+;; todo: use Info-file-list-for-emacs
 
 ;;;;;;;;;;;;;;;
 ;;;; hooks ;;;;
@@ -120,10 +124,22 @@ This is for choosing before, after, around or inside.")
 
 (fset 'versor:insertion-placement-keymap versor:insertion-placement-keymap)
 
+(defvar versor:statement-up-to-next nil
+  "Whether to make a statement extend all the way to the start of the next one.")
+
 (defvar versor:altering-map (make-sparse-keymap "Versor alter item")
   "Keymap for altering the selected item.")
 
 (fset 'versor:altering-map versor:altering-map)
+
+(defvar versor:item-face (make-face 'versor:item)
+  "Face to use for versor items")
+
+(when versor:use-face-attributes
+  (set-face-attribute 'versor:item nil :inherit 'region))
+
+(unless window-system
+  (set-face-attribute 'versor:item nil :underline t))
 
 (defun versor:setup (&rest keysets)
   "Set up the versor (versatile cursor) key system.
@@ -161,10 +177,38 @@ The arguments can be any (combination) of
   'arrows-misc   -- for insert, delete etc
   'keypad        -- for the keypad cursor keys
   'keypad-misc   -- for keypad insert, delete etc
-to select which keys are set up to do versor commands."
+to select which keys are set up to do versor commands.
+
+You can turn on further facilities by including the following symbols
+amongst the arguments:
+  'modal         -- remember a different dimension for each mode
+  'local         -- remember a different dimension for each buffer
+  'text-in-code  -- switch dimensions for string literals and comments,
+                    allowing code-oriented movement in actual code, and
+                    text-oriented movement in embedded natural language text
+  'menu          -- define a menu of versor commands
+"
   (interactive)
 
-  (if (null keysets) (setq keysets '(arrows)))
+  (when (null keysets) (setq keysets '(arrows arrows-misc)))
+
+  ;; todo: add setting of versor:meta-dimensions-valid-for-modes, and add to info file, and document this
+
+  (when (memq 'modal keysets)
+    ;; (require 'versor-modal)
+    (require 'versor-local)
+    (setq versor:auto-change-for-modes t))
+
+  (when (memq 'local keysets)
+    (require 'versor-local)
+    (setq versor:per-buffer t))
+
+  (when (memq 'text-in-code keysets)
+    (require 'versor-text-in-code)
+    (setq versor:text-in-code t))
+
+  (when (memq 'menu keysets)
+    (require 'versor-menu))
 
   (when (memq 'arrows keysets)
     (global-set-key [ left ]    'versor:prev)
@@ -173,36 +217,44 @@ to select which keys are set up to do versor commands."
     (global-set-key [ M-right ] 'versor:in)
     (global-set-key [ C-left ]  'versor:extend-item-backwards)
     (global-set-key [ C-right ] 'versor:extend-item-forwards)
-    (global-set-key [ home ]    'versor:start)
-    (global-set-key [ end ]     'versor:end)
 
-    (define-key versor:altering-map [ left ] 'versor:alter-item-prev)
-    (define-key versor:altering-map [ right ] 'versor:alter-item-next)
-  
     (global-set-key [ up ]      'versor:over-prev)
     (global-set-key [ down ]    'versor:over-next)
     (global-set-key [ M-up ]    'versor:prev-meta-level)
     (global-set-key [ M-down ]  'versor:next-meta-level)
     (global-set-key [ C-up ]    'versor:over-start)
     (global-set-key [ C-down ]  'versor:over-end)
-    (global-set-key [ C-home ]  'versor:start-of-item)
-    (global-set-key [ C-end ]   'versor:end-of-item)
 
+    (define-key versor:altering-map [ left ] 'versor:alter-item-prev)
+    (define-key versor:altering-map [ right ] 'versor:alter-item-next)
     (define-key versor:altering-map [ up ] 'versor:alter-item-over-prev)
     (define-key versor:altering-map [ down ] 'versor:alter-item-over-next)
     )
 
   (when (memq 'arrows-misc keysets)
+    ;; todo: I think I can make better use of these -- perhaps put versor:begin-altering-item and versor:dwim on them?
+    (require 'languide-keymap)		; I don't think you can autoload keymaps, but perhaps I should try?
     (global-set-key [ prior ]   'versor:over-over-prev)
     (global-set-key [ next ]    'versor:over-over-next)
     (global-set-key [ C-prior ] 'versor:over-over-start)
     (global-set-key [ C-next ]  'versor:over-over-end)
-    
+
+    (global-set-key [ home ]    'versor:start)
+    (global-set-key [ end ]     'versor:end)
+    (global-set-key [ C-home ]  'versor:start-of-item)
+    (global-set-key [ C-end ]   'versor:end-of-item)
+
+    (global-set-key [ M-home ] 'versor:dwim)    
+
+    ;; todo: why isn't this a normal global-set-key?
     (define-key (current-global-map) [ insert ]   'versor:insertion-placement-keymap)
+    (global-set-key [ M-insert ] 'versor:begin-altering-item)
+    (define-key global-map [ C-insert ] 'languide-map)
+    (define-key versor:altering-map [ insert ] 'versor:end-altering-item)
+
     (global-set-key [ delete ]   'versor:kill)
     (global-set-key [ M-delete ] 'versor:copy)
-
-    (define-key (current-global-map) [ C-delete ]   'versor:begin-altering-item)
+    (define-key versor:altering-map [ delete ] 'versor:abandon-altering-item)
 
     (define-key versor:insertion-placement-keymap [ left ]  'versor:insert-before)
     (define-key versor:insertion-placement-keymap [ right ] 'versor:insert-after)
@@ -221,6 +273,7 @@ to select which keys are set up to do versor commands."
     (global-set-key [ kp-end ]     'versor:end)
     (global-set-key [ C-kp-home ]  'versor:start-of-item)
     (global-set-key [ C-kp-end ]   'versor:end-of-item)
+    (global-set-key [ M-kp-home ] 'versor:dwim)
 
     (define-key versor:altering-map [ kp-left ] 'versor:alter-item-prev)
     (define-key versor:altering-map [ kp-right ] 'versor:alter-item-next)
@@ -248,6 +301,7 @@ to select which keys are set up to do versor commands."
     (global-set-key [ kp-add ]    'other-window)
 
     (define-key (current-global-map) [ C-kp-delete ]   'versor:begin-altering-item)
+    (define-key global-map [ C-kp-insert ] 'languide-map)
 
     (define-key versor:insertion-placement-keymap [ kp-left ]  'versor:insert-before)
     (define-key versor:insertion-placement-keymap [ kp-right ] 'versor:insert-after)
@@ -266,19 +320,5 @@ to select which keys are set up to do versor commands."
 		    versor:mode-line-end-string))))
   
   (versor:set-status-display))
-
-(defvar versor:item-face (make-face 'versor:item)
-  "Face to use for versor items")
-
-(defvar versor:use-face-attributes
-  (and (boundp 'emacs-major-version)
-	   (>= emacs-major-version 21))
-  "*Whether to use face attributes, as provided from Emacs 21 onwards.")
-
-(when versor:use-face-attributes
-  (set-face-attribute 'versor:item nil :inherit 'region))
-
-(unless window-system
-  (set-face-attribute 'versor:item nil :underline t))
 
 ;;;; end of versor.el

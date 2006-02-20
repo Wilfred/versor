@@ -1,9 +1,9 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2005-01-13 11:12:49 jcgs>
+;;; Time-stamp: <2006-02-10 09:54:56 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -30,6 +30,8 @@
 (provide 'versor-menu)
 (require 'versor)
 (require 'versor-names)
+(require 'versor-language-edits)
+(require 'languide-keymap)
 
 (defvar versor:control-menu-items
   `(["Out briefly" versor:out-briefly-only t]
@@ -44,7 +46,7 @@
   "Control of versor.")
 
 (easy-menu-define versor:control-menu nil
-                  "Versor Control Menu" (cons "Versor control" versor:control-menu-items))
+  "Versor Control Menu" (cons "Versor control" versor:control-menu-items))
 
 (defun versor:control-menu ()
   "Run the versor control menu."
@@ -77,6 +79,7 @@ Allows various actions that depend on the current fine movement dimension."
 	      ("versor control" . versor:control-menu)
 	      ;; cannibalize ~/open-projects/emacs-pedals/handsfree-tools-menus.el for
 	      ;; more to go here -- stuff like tag lookup
+	      ("language operations" . versor:languide-menu)
 	      ("find" . dwim-find)
 	      ("describe" . dwim-help)
 	      ("search for next %s" . versor:search)
@@ -93,7 +96,6 @@ Allows various actions that depend on the current fine movement dimension."
   (let ((versor:level-shadow versor:level)
 	(versor:meta-level-shadow versor:meta-level))
     (tmm-prompt (versor:generate-dynamic-menu))))
-
 
 ;;;;experimental!!!!!!!!!!!!!!!!
 

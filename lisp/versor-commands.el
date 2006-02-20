@@ -1,9 +1,9 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2005-02-07 16:36:57 John.Sturdy>
+;;; Time-stamp: <2006-02-15 18:29:58 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -102,11 +102,19 @@ Necessary pre- and post-processing get done."
        (decf versor:meta-level)
      (incf versor:meta-level))
    (versor::trim-meta-level)
+   (while (not (versor:meta-dimension-valid-for-mode
+		(aref (aref moves-moves versor:meta-level) 0)
+		major-mode))
+     (if (and (interactive-p)
+	      versor:reversed)
+	 (decf versor:meta-level)
+       (incf versor:meta-level))
+     (versor::trim-meta-level))
    (versor::trim-level)
    (versor:set-status-display
-     (aref (versor:current-meta-level) 0)
-     (mapcar 'first (versor:meta-level-names))
-     t)))
+    (aref (versor:current-meta-level) 0)
+    (mapcar 'first (versor:meta-level-names))
+    t)))
 
 (defun versor:prev-meta-level ()
   "Move to the previous meta-level."
@@ -117,6 +125,14 @@ Necessary pre- and post-processing get done."
        (incf versor:meta-level)
      (decf versor:meta-level))
    (versor::trim-meta-level)
+   (while (not (versor:meta-dimension-valid-for-mode
+		(aref (aref moves-moves versor:meta-level) 0)
+		major-mode))
+     (if (and (interactive-p)
+	      versor:reversed)
+	 (decf versor:meta-level)
+       (incf versor:meta-level))
+     (versor::trim-meta-level))
    (versor::trim-level)
    (versor:set-status-display
      (aref (versor:current-meta-level) 0)
@@ -142,6 +158,33 @@ Modal bindings are made by versor:bind-modal, which is in versor-modal.el"
 	modal-binding
       (versor:action level-data action))))
 
+(defvar versor:display-underlying-commands t
+  "*Whether to display the underlying commands that versor executes.")
+
+(defvar versor:last-vicarious-command nil
+  "The last interactive command that versor executed.")
+
+(defvar versor:commands
+  '(versor:start
+    versor:prev
+    versor:next
+    versor:end
+    versor:over-start
+    versor:over-prev
+    versor:over-next
+    versor:over-end
+    versor:other-end-of-item
+    versor:dwim)
+  "List of versor movement commands.
+If last-command is one of these, we assume we made the last move.")
+
+(defun versor:call-interactively (command)
+  "Call COMMAND, as though it had been bound and typed directly."
+  (when versor:display-underlying-commands
+    (message "Versor using command %S" command))
+  (setq versor:last-vicarious-command command)
+  (call-interactively command))
+
 (defvar versor:point-before-move nil
   "The value of point before the latest versor move.")
 
@@ -161,7 +204,7 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	   (goto-char versor:point-before-move))
        (progn
 	 (setq versor:point-before-move (point))
-	 (call-interactively
+	 (versor:call-interactively
 	  (versor:get-action (if versor:reversed 'last 'first) level-offset)))))))
 
 (defun versor:prev-action (&optional level-offset)
@@ -169,14 +212,14 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 With optional LEVEL-OFFSET, add that to the level first."
   (unless (run-hook-with-args-until-success 'versor:prev-hooks)
     (setq versor:point-before-move (point))
-    (call-interactively (versor:get-action 'previous level-offset))))
+    (versor:call-interactively (versor:get-action 'previous level-offset))))
 
 (defun versor:next-action (&optional level-offset)
   "Internal action code to move forward within the current dimension.
 With optional LEVEL-OFFSET, add that to the level first."
   (unless (run-hook-with-args-until-success 'versor:next-hooks)
     (setq versor:point-before-move (point))
-    (call-interactively (versor:get-action 'next level-offset))))
+    (versor:call-interactively (versor:get-action 'next level-offset))))
 
 (defun versor:prev (&optional level-offset)
   "Move backward within the current dimension.
@@ -212,7 +255,7 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 	   (goto-char versor:point-before-move))
        (progn
 	 (setq versor:point-before-move (point))
-	 (call-interactively
+	 (versor:call-interactively
 	  (versor:get-action (if versor:reversed 'first 'last) level-offset)))))))
 
 (defun versor:over-start ()
@@ -381,10 +424,15 @@ With optional LEVEL-OFFSET, add that to the level first."
    ;; (versor:display-item-list "versor:copy" (versor:get-current-items))
    (mapcar
     (lambda (item)
-      (kill-new (buffer-substring
-		 (versor:overlay-start item)
-		 (versor:overlay-end item))))
-    (reverse (versor:get-current-items)))))
+      (let* ((start (versor:overlay-start item))
+	     (end (versor:overlay-end item))
+	     (copy-string (buffer-substring start end)))
+	(when (boundp 'label-with-adjacent-whitespace)
+	  (label-with-adjacent-whitespace start end copy-string))
+	(kill-new copy-string)))
+    (reverse (versor:get-current-items)))
+   (when (fboundp 'update-shown-stacks)	; from rpn-edit.el
+     (update-shown-stacks))))
 
 (defun versor:mark ()
   "Mark the current item.
@@ -397,7 +445,7 @@ this."
   (versor:as-motion-command
    (let ((ready-made (versor:get-action 'mark)))
      (if ready-made
-	 (call-interactively ready-made)
+	 (versor:call-interactively ready-made)
        (let* ((item (versor:get-current-item)))
 	 (let ((transient-mark-mode t))
 	   (set-mark (cdr item))
@@ -415,23 +463,46 @@ this."
   (versor:as-motion-command
    (let ((ready-made (versor:get-action 'delete)))
      (if ready-made
-	 (call-interactively ready-made)
-       (mapcar
+	 (versor:call-interactively ready-made)
+      (mapcar
 	(lambda (item)
-	  (let ((start (versor:overlay-start item))
-		(end (versor:overlay-end item)))
-	    (kill-new (buffer-substring start end))
+	  (let* ((start (versor:overlay-start item))
+		 (end (versor:overlay-end item))
+		 (cut-string (buffer-substring start end)))
+	    (when (boundp 'label-with-adjacent-whitespace)
+	      (label-with-adjacent-whitespace start end cut-string))
+	    (message "Killing %s" (subst-char-in-string
+				   ?\t ? 
+				   (subst-char-in-string
+				    ?\n ?  
+				    (if (< (length cut-string) (frame-width))
+					cut-string
+				      (let ((w (/ (- (frame-width) 13 ) 2)))
+					(concat (substring cut-string 0 w)
+						" ... "
+						(substring cut-string (- w))))
+				      )) t))
+	    (kill-new cut-string)
 	    (delete-region start end)))
-	(reverse (versor:get-current-items)))))))
+	(reverse (versor:get-current-items)))))
+   (if (fboundp 'update-shown-stacks)	; from rpn-edit.el
+       (update-shown-stacks))))
 
 (defun versor:transpose ()
   "Transpose this item with the following one."
   (interactive)
   (versor:as-motion-command
-   (let ((ready-made (versor:get-action 'transpoe)))
+   (let ((ready-made (versor:get-action 'transpose)))
      (if ready-made
-	 (call-interactively ready-made)
-       (error "awaiting slightly labourious general implementation of versor:transpose")
+	 (versor:call-interactively ready-made)
+       (error "using undertested general implementation of versor:transpose")
+       (let ((starting (point)))
+	 (versor:end-of-item)
+	 (let ((latter (buffer-substring starting (point))))
+	   (delete-region starting (point))
+	   (goto-char starting)
+	   (versor:start-of-item)
+	   (insert latter)))
        )
      )))
 
@@ -467,7 +538,11 @@ things to insert. We want to this because of being able to insert
 multipart things, using the insert around command, which we want to
 work both with brackets and with things previously killed -- for
 example, the result of doing versor:kill in the depth dimension, which
-can delete an opening and closing bracket together."
+can delete an opening and closing bracket together.
+FUN should take one argument, the number of items to return.
+It should return a list of that many items.
+For insert-around, the first thing in the list is inserted before the selection,
+and the second is inserted after it."
   (if (or (stringp key) (vectorp key)) (setq key (aref key 0)))
   (let ((binding (assoc key versor:insertion-kind-alist)))
     (if binding
@@ -477,33 +552,87 @@ can delete an opening and closing bracket together."
 	     (cons key fun)
 	     versor:insertion-kind-alist)))))
 
-(defun versor:top-n-kills (n)
-  "Return the top N entries in the kill ring."
+(defun versor:top-n-kills (n &optional offset)
+  "Return the top N entries in the kill ring.
+With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
+  (if (null offset) (setq offset 0))
   (let ((result nil))
     (while (> n 0)
       (decf n)
-      (push (current-kill n t) result))
+      (push (current-kill (+ n offset) t) result))
     (nreverse result)))
+
+(defun versor:top-n-searches (n)
+  "Return the N most recent searches."
+  (subseq search-ring 0 n))
 
 (versor:definesert "\d" 'versor:top-n-kills)
 (versor:definesert [ kp-delete ] 'versor:top-n-kills)
-(versor:definesert [ del ] 'versor:top-n-kills)
+(versor:definesert [ delete ] 'versor:top-n-kills)
+(versor:definesert [ DEL ] 'versor:top-n-kills)
+(versor:definesert [ backspace ] 'versor:top-n-kills)
 (versor:definesert "\C-y" 'versor:top-n-kills)
+(versor:definesert "1" (lambda (n) (versor:top-n-kills n 1)))
+(versor:definesert "2" (lambda (n) (versor:top-n-kills n 2)))
+(versor:definesert "3" (lambda (n) (versor:top-n-kills n 3)))
+(versor:definesert "4" (lambda (n) (versor:top-n-kills n 4)))
+(versor:definesert "5" (lambda (n) (versor:top-n-kills n 5)))
+(versor:definesert "6" (lambda (n) (versor:top-n-kills n 6)))
+(versor:definesert "7" (lambda (n) (versor:top-n-kills n 7)))
+(versor:definesert "8" (lambda (n) (versor:top-n-kills n 8)))
+(versor:definesert "9" (lambda (n) (versor:top-n-kills n 9)))
+(versor:definesert "f" (lambda (n) (list (save-window-excursion (buffer-file-name (window-buffer (other-window 1)))))))
+(versor:definesert "\C-s" 'versor:top-n-searches)
 (versor:definesert "(" (lambda (n) (list "(" ")")))
 (versor:definesert "[" (lambda (n) (list "[" "]")))
 (versor:definesert "{" (lambda (n) (list "{" "}")))
 (versor:definesert "<" (lambda (n) (list "<" ">")))
+(versor:definesert "?" (lambda (n) (versor:statement-insertion-strings 'if-then)))
+(versor:definesert "@" (lambda (n) (versor:statement-insertion-strings 'while-do)))
+(versor:definesert "&" (lambda (n) (versor:statement-insertion-strings 'and)))
+(versor:definesert "|" (lambda (n) (versor:statement-insertion-strings 'or)))
+(versor:definesert "!" (lambda (n) (versor:statement-insertion-strings 'not)))
+(versor:definesert "=" (lambda (n) (versor:statement-insertion-strings 'variable-declaration)))
+
+(defun versor:statement-insertion-strings (statement)
+  "Return the insertion strings for STATEMENT in the current language."
+  (cdr (assoc 'begin-end
+	      (cdr (assoc statement
+			  (get major-mode 'statements))))))
+
+;; todo: we could also do some using something similar to tempo-insert-template (set tempo-region-stop etc first) to insert specific constructs?
+
+;; now some fancy ones
+(versor:definesert "s" 'languide-get-statement-insertion)
+;; (versor:definesert "v" 'languide-get-variable-insertion)
+;; (versor:definesert "f" 'languide-get-function-insertion)
+;; (versor:definesert "t" 'versor:get-tag-insertion)
 
 (defun versor:get-insertable (n &optional prompt)
   "Return N things to insert, having asked the user for what kind of insertion this is.
 This lets us do commands such as insert-around using a common framework."
   ;; should also be available for putting things into the search string --
   ;; in which case it ought to have a different name
-  (let* ((key (read-char (if prompt prompt "Kind of insertion: ")))
+  (let* ((key (read-event (if prompt prompt "Kind of insertion: ")))
 	 (command (assoc key versor:insertion-kind-alist)))
     (if (consp command)
 	(funcall (cdr command) n)
-      (error "Not a valid kind of insertion"))))
+      (error "%S in not bound to a kind of insertion" key))))
+
+(defun insert-active (insertion)
+  "If INSERTION is a string, insert it; if a function, call it.
+Various other dwim things, too -- evaluate evaluable forms, etc."
+  (cond
+   ((stringp insertion) (insert insertion))
+   ((functionp insertion) (funcall insertion))
+   ((symbolp insertion)			; but not a function
+    (insert (symbol-name insertion)))
+   ((and (consp insertion)
+	 (functionp (car insertion)))
+    (eval insertion))
+   ((consp insertion)			; but not an evaluable form
+    (mapcar 'insert-active insertion))
+   ((integerp insertion) (insert insertion))))
 
 (defun versor:insert-before ()
   "Insert something before the current versor item."
@@ -512,7 +641,7 @@ This lets us do commands such as insert-around using a common framework."
    (let* ((new-thing (versor:get-insertable 1))
 	  (current-item (versor:get-current-item)))
      (goto-char (car current-item))
-     (insert new-thing))))
+     (mapcar 'insert-active new-thing))))
 
 (defun versor:insert-after ()
   "Insert something after the current versor item."
@@ -521,7 +650,7 @@ This lets us do commands such as insert-around using a common framework."
    (let* ((new-thing (versor:get-insertable 1))
 	  (current-item (versor:get-current-item)))
      (goto-char (cdr current-item))
-     (insert new-thing))))
+     (mapcar 'insert-active new-thing))))
 
 (defun versor:insert-around ()
   "Insert something around to the current versor item."
@@ -529,15 +658,28 @@ This lets us do commands such as insert-around using a common framework."
   (versor:as-motion-command
    (let ((current-item (versor:get-current-item))
 	 (new-thing (versor:get-insertable 2 "Type of insertion around item: ")))
-     (message "insert-around: current-item=%S" current-item)
-     (goto-char (versor:overlay-end current-item))
-     (insert (second new-thing))
-     (let ((end (make-marker))
-	   (start (versor:overlay-start current-item)))
-       (set-marker end (point))
-       (goto-char start)
-       (insert (first new-thing))
-       (versor:set-current-item start end)))))
+     (message "insert-around: current-item=%S new-thing=%S" current-item new-thing)
+     ;; todo: clever interface to skeletons and tempo templates
+     (cond
+      ((eq (car new-thing) 'template)
+       ;; insert a tempo template
+       ;; prepare region from versor data
+       ;; (tempo-insert-template (cdr new-thing) t)
+       )
+      ((eq (car new-thing) 'skeleton)
+       ;; insert a skeleton
+       ;; prepare interregions from versor data
+       ;; (skeleton-insert (cdr new-thing) regions str)
+       )
+      (t
+       (goto-char (versor:overlay-end current-item))
+       (insert (second new-thing))
+       (let ((end (make-marker))
+	     (start (versor:overlay-start current-item)))
+	 (set-marker end (point))
+	 (goto-char start)
+	 (insert (first new-thing))
+	 (versor:set-current-item start end)))))))
 
 (defun versor:insert-within ()
   "Insert something within the current versor item."

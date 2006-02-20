@@ -1,9 +1,9 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2004-10-07 10:37:09 guest05>
+;;; Time-stamp: <2006-02-10 15:26:11 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -30,6 +30,21 @@
 					     (>= emacs-major-version 21))
   "*Whether to use multi-line indication of the current meta-level and level.")
 
+(defun versor:gather-level-attributes (level attributes)
+  "For LEVEL, gather the ATTRIBUTES.
+The result is in the form of a property list."
+  (let ((result nil))
+    (while attributes
+      (let* ((attr (car attributes))
+	     (value (versor:action level attr)))
+	(when value
+	  (setq result
+		(cons attr
+		      (cons value
+			    result)))))
+      (setq attributes (cdr attributes)))
+    result))
+
 (defun versor:set-status-display (&optional one of-these explicit)
   "Indicate the state of the versor system."
   (setq versor:current-level-name (versor:level-name versor:level)
@@ -48,16 +63,28 @@
     (setq versor:mode-line-begin-string " <"
 	  versor:mode-line-end-string ">"))
   (force-mode-line-update t)
-  (when versor:change-cursor-color 
-    (set-cursor-color (versor:action (versor:current-level) 'color)))
-  (if window-system
-      (when (and versor:item-attribute (fboundp 'set-face-attribute))
-	(set-face-attribute 'versor:item nil
-			    versor:item-attribute
-			    (versor:action (versor:current-level)
-					   versor:item-attribute)))
-    ;; (set-face-attribute 'versor-item nil :underline t)
-    )
+  (when versor:change-cursor-color
+    ;; done: allow for a second choice of colour, to be used if the main one is the same as the background colour
+    (let ((color (versor:action (versor:current-level) 'color)))
+      (when (and (eq color (frame-parameter nil 'foreground-color))
+		 (versor:action (versor:current-level) 'other-color))
+	(setq color (versor:action (versor:current-level) 'other-color)))
+      (set-cursor-color color)))
+  (when (and window-system
+	     versor:item-attribute
+	     (fboundp 'set-face-attribute))
+    (cond
+     ((symbolp versor:item-attribute)
+      (let ((attr-value (versor:action (versor:current-level)
+				       versor:item-attribute)))
+	(when attr-value
+	  (set-face-attribute 'versor:item nil
+			      versor:item-attribute
+			      attr-value))))
+     ((consp versor:item-attribute)
+      (apply 'set-face-attribute 'versor:item nil
+	     (versor:gather-level-attributes (versor:current-level)
+					     versor:item-attribute)))))
   (let ((old-pair (assoc major-mode versor:mode-current-levels)))
     (if (null old-pair)
 	(push (cons major-mode (cons versor:meta-level versor:level))
@@ -65,15 +92,30 @@
       (rplaca (cdr old-pair) versor:meta-level)
       (rplacd (cdr old-pair) versor:level))))
 
+(defvar versor:highlight-with-brackets (not versor:use-face-attributes)
+  "*Whether to use brackets around highlighted items in status feedback.")
+
 (defun versor:highlighted-string (string)
   "Return a highlighted version of STRING."
   (if versor:use-face-attributes
-      (let ((strong (copy-sequence string)))
-	(put-text-property 0 (length string)
+      (let ((strong
+	     (if versor:highlight-with-brackets
+		 (format "[%s]" string)
+	       (copy-sequence string))))
+	(put-text-property 0 (length strong)
 			   'face 'versor:item
 			   strong)
 	strong)
-    (format "[%s]" string)))
+    (if versor:highlight-with-brackets
+	(format "[%s]" string)
+      string)))
+
+(defun versor:unhighlighted-string (string)
+  "Return an unhighlighted version of STRING."
+  (if versor:highlight-with-brackets
+      string
+    ;; allow space where the brackets would go in the highlighted version
+    (format " %s " string)))
 
 (defun versor:display-highlighted-choice (one of-these-choices)
   "Display, with ONE highlighted, the members of OF-THESE-CHOICES"
@@ -81,7 +123,7 @@
 	       (lambda (string)
 		 (if (string= string one)
 		     (versor:highlighted-string string)
-		   string))
+		   (versor:unhighlighted-string string)))
 	       of-these-choices
 	       ", ")))
     (message msg)))
@@ -113,29 +155,32 @@ Used for display purposes, and cached here.")
 		 (row-formats formats)
 		 (level 1)
 		 (n-level (length meta-data)))
-	    (while row-formats
-	      (let* ((level-name-raw 
-		      (if (< level n-level)
-			  (first (aref meta-data level))
-			""))
-		     (level-name (format (car row-formats) level-name-raw)))
-		(push
-		 (if (and (= meta versor:meta-level)
-			  (= level versor:level))
-		     (versor:highlighted-string level-name)
-		   level-name)
-		 inner-result)
-		(setq row-formats (cdr row-formats))
-		(incf level)))
-	    (push
-	     (concat
-	      (format meta-levels-name-format-string
-		      (if (= meta versor:meta-level)
-			  (versor:highlighted-string meta-name)
-			meta-name))
-	      ": "
-	      (mapconcat 'identity inner-result " "))
-	     result)
+	    (when (or (eq meta-name
+			  (aref (aref moves-moves versor:meta-level) 0))
+		      (versor:meta-dimension-valid-for-mode meta-name major-mode))
+	      (while row-formats
+		(let* ((level-name-raw 
+			(if (< level n-level)
+			    (first (aref meta-data level))
+			  ""))
+		       (level-name (format (car row-formats) level-name-raw)))
+		  (push
+		   (if (and (= meta versor:meta-level)
+			    (= level versor:level))
+		       (versor:highlighted-string level-name)
+		     level-name)
+		   inner-result)
+		  (setq row-formats (cdr row-formats))
+		  (incf level)))
+	      (push
+	       (concat
+		(format meta-levels-name-format-string
+			(if (= meta versor:meta-level)
+			    (versor:highlighted-string meta-name)
+			  meta-name))
+		": "
+		(mapconcat 'identity inner-result " "))
+	       result))
 	    (decf meta)))
 	result)
       "\n"))))

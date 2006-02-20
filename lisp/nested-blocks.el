@@ -1,9 +1,9 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2005-02-02 15:19:21 john>
+;;; Time-stamp: <2006-02-15 16:10:50 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -26,32 +26,33 @@
 (provide 'nested-blocks)
 
 (defvar nested-blocks-mode-starts
-  ;; todo: update to include TeX and LaTeX
-  '((latex-mode . "\\(\\\\begin{\\([a-z]+\\)}\\)")
+  ;; todo: update to include TeX family and sh
+  '((latex-mode . "\\(\\\\begin{\\([a-z]+\\)}\\)\\|{")
     (html-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
     (html-helper-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
-    (c-mode . "{")
-    (java-mode . "{")
-    (perl-mode . "{")
+    (c-mode . "[{(]")
+    (java-mode . "[{(]")
+    (perl-mode . "[{(]")
     (bcpl-mode . "\\$(")
     (t . "[[{(]"))
   "Alist showing how nested blocks start in each mode")
 
 (defvar nested-blocks-mode-ends
-  ;; todo: update to include TeX and LaTeX
-  '((latex-mode . "\\(\\\\end{\\([a-z]+\\)}\\)")
+  ;; todo: update to include TeX family and sh
+  '((latex-mode . "\\(\\\\end{\\([a-z]+\\)}\\)\\|}")
     (html-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
     (html-helper-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
-    (c-mode . "}")
-    (java-mode . "}")
-    (perl-mode . "}")
+    (c-mode . "[})]")
+    (java-mode . "[})]")
+    (perl-mode . "[})]")
     (bcpl-mode . "\\$)")
     (t . "[]})]"))
   "Alist showing how nested blocks finish in each mode")
 
 (defvar nested-blocks-mode-starts-or-ends
-  ;; todo: update to include TeX and LaTeX
+  ;; todo: update to include TeX family and sh
   '((latex-mode . "\\(\\\\\\(begin\\|end\\){\\([a-z]+\\)}\\)")
+    (c-mode . "[({})]")
     (html-mode . "</?\\([^>]+\\)>")
     (html-helper-mode . "</?\\([^>]+\\)>")
     (bcpl-mode . "\\$[()]")
@@ -63,7 +64,8 @@ but the performance should be a lot better than combining them
 automatically, given the nature, for example, of HTML blocks.")
 
 (defvar nested-blocks-mode-ignorables
-  ;; todo: update to include TeX and LaTeX
+  ;; todo: update to include TeX family and sh
+  ;; todo: should have a way of saying that something is a start and an implicit end, like <li> in HTML and @section in LaTeX
   '((html-mode . "</?\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)")
     (html-helper-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\)")
     (t .  ";"))
@@ -110,6 +112,11 @@ A sensible default is provided if no mode-specific value is available."
   "Move forwards out of current nested block."
   (interactive)
   (re-search-forward (nested-blocks-end)))
+
+(defun nested-blocks-leave-backwards ()
+  "Move backwards out of current nested block."
+  (interactive)
+  (re-search-backward (nested-blocks-start)))
 
 (defun nested-blocks-another ()
   "Use the nested block behind point as a template to insert a new one."
@@ -178,6 +185,7 @@ A sensible default is provided if no mode-specific value is available."
 (defun nested-blocks-template (start end)
   "Make a nested block template from the buffer between START and END.
 This is a list of strings."
+  ;; todo: have the option of preserving the kind of white space around each template element, such as whether it was at the start of the line; see yank-whitespace.el for code for this
   (save-excursion
     (goto-char start)
     (let ((either (nested-blocks-start-or-end))

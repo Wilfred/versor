@@ -1,7 +1,7 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2005-02-05 16:57:01 jcgs>
+;;; Time-stamp: <2006-02-03 12:03:27 jcgs>
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -203,7 +203,7 @@ This symbol may be given inside a vector to define-key etc")
 
 		  pedal-S-onward [ down ]
 		  pedal-C-S-onward [ C-down ]
-		  pedal-M-S-onward [ M-kp-down ]
+		  pedal-M-S-onward [ M-down ]
 
 		  pedal-M-S-menu [ M-next ]))
 	(progn
@@ -326,7 +326,7 @@ which are most suitable for duplicating onto pedals."
 	(define-key vm-summary-mode-map pedal-S-menu 'vm-delete-message)
 	(define-key vm-summary-mode-map pedal-C-S-menu 'vm-expunge-folder)
 	(define-key vm-summary-mode-map pedal-M-menu 'handsfree-main-menu)
-	(define-key vm-summary-mode-map pedal-M-S-menu 'handsfree-popup-tools-menu))))
+	(define-key vm-summary-mode-map pedal-M-S-menu 'vm-delete-as-spam))))
 
 (defun w3-define-pedals ()
   "Set up pedal definitions for w3"
@@ -399,6 +399,15 @@ which are most suitable for duplicating onto pedals."
     (define-key view-mode-map pedal-S-onward 'View-scroll-page-backward)
     (define-key view-mode-map pedal-menu 'View-quit)))
 
+(defun sidebrain-browse-tasks-mode-define-pedals ()
+  "Set up pedals for sidebrain-browse-mode"
+  (define-key sidebrain-browse-tasks-mode-keymap pedal-aux 'sidebrain-browse-tasks-mark)
+  (define-key sidebrain-browse-tasks-mode-keymap pedal-S-aux 'sidebrain-browse-tasks-unmark)
+  (define-key sidebrain-browse-tasks-mode-keymap pedal-onward 'sidebrain-browse-tasks-next)
+  (define-key sidebrain-browse-tasks-mode-keymap pedal-S-onward 'sidebrain-browse-tasks-previous)
+  (define-key sidebrain-browse-tasks-mode-keymap pedal-S-menu 'sidebrain-browse-tasks-delete)
+  (define-key sidebrain-browse-tasks-mode-keymap pedal-menu 'sidebrain-browse-tasks-select))
+
 (defvar pedal:versor-change-dimension-ctrl nil
   "*Whether the control pedal should make versor movements switch dimension.
 This is the function normally assigned to meta and a versor movement, but
@@ -424,13 +433,14 @@ See handsfree-menus.el for menus."
 
   (global-set-key pedal-C-aux (if pedal:versor-change-dimension-ctrl
 				  'versor:next-meta-level
-				'versor:other-end-of-item))
+				'versor:dwim ; 'versor:other-end-of-item
+				))
   (global-set-key pedal-C-S-aux (if pedal:versor-change-dimension-ctrl
 				    'versor:prev-meta-level
 				  'wander-yank-dwim))
 
   (global-set-key pedal-M-aux (if pedal:versor-change-dimension-ctrl
-				  'versor:other-end-of-item
+				  'versor:dwim ; 'versor:other-end-of-item
 				'versor:next-meta-level))
   (global-set-key pedal-M-S-aux (if pedal:versor-change-dimension-ctrl
 				    'wander-yank-dwim
@@ -505,6 +515,16 @@ See handsfree-menus.el for menus."
   (define-key isearch-mode-map pedal-menu 'isearch-exit)
   (define-key isearch-mode-map pedal-S-menu 'isearch-cancel)
 
+  (if (and (boundp 'versor:altering-map)
+	   (keymapp versor:altering-map))
+      (progn
+	(define-key versor:altering-map pedal-onward 'versor:alter-item-next)
+	(define-key versor:altering-map pedal-S-onward 'versor:alter-item-prev)
+	(define-key versor:altering-map pedal-aux 'versor:alter-item-over-next)
+	(define-key versor:altering-map pedal-S-aux 'versor:alter-item-over-prev)
+	(define-key versor:altering-map pedal-menu 'versor:end-altering-item)
+	(define-key versor:altering-map pedal-S-menu 'versor:abandon-altering-item)))
+
   (if (and (boundp 'Buffer-menu-mode-map)
 	   (keymapp Buffer-menu-mode-map))
       (progn
@@ -576,7 +596,13 @@ See handsfree-menus.el for menus."
   (if (and (boundp 'view-mode-map)
 	   (keymapp view-mode-map))
       (view-mode-define-pedals)
-    (add-hook 'view-mode-hook 'view-mode-define-pedals)))
+    (add-hook 'view-mode-hook 'view-mode-define-pedals))
+  
+
+  (if (and (boundp 'sidebrain-browse-tasks-mode-keymap)
+	   (keymapp sidebrain-browse-tasks-mode-keymap))
+      (sidebrain-browse-tasks-mode-define-pedals)
+    (add-hook 'sidebrain-browse-mode-hook 'sidebrain-browse-tasks-mode-define-pedals)))
 
 (defun pedals-draw-bindings (&optional keymap)
   "Draw the pedal bindings, in the main keymap or (from a program) the one given."

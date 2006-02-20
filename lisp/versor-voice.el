@@ -1,9 +1,9 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2005-02-09 16:34:14 John.Sturdy>
+;;; Time-stamp: <2006-02-01 18:55:36 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -25,7 +25,8 @@
 (require 'versor)
 
 (defvar vr-versor:dimension-command-list nil
-  "Vocal commands for versor")
+  "Vocal movement commands for versor.
+Generated automatically from the movement dimensions table, moves-moves.")
 
 (defun define-versor:vocal ()
   "Define the vocal commands."
@@ -39,7 +40,23 @@
 	   )
       ;; (message "Defining %S to be %S" name body)
       (fset name body)
-      (pushnew (cons level name) vr-versor:dimension-command-list :test 'equal))))
+      (pushnew (cons level name)
+	       vr-versor:dimension-command-list
+	       :test 'equal)
+            (pushnew (cons (format "move by %s" level) name)
+	       vr-versor:dimension-command-list
+	       :test 'equal)))
+  (dolist (meta-level (versor:meta-level-names))
+    (let* ((name (car meta-level))
+	   (symbol (intern (concat "versor:select-meta-" name)))
+	   (body `(lambda ()
+		    ,(format "Set the versor meta-dimension to %s." name)
+		    (interactive)
+		    (versor:select-named-meta-level ,name))))
+      (fset symbol body)
+      (pushnew (cons (format "%s movements" name) symbol)
+	       vr-versor:dimension-command-list
+	       :test 'equal))))
 
 (if (null vr-versor:dimension-command-list) (define-versor:vocal))
 
@@ -48,8 +65,17 @@
     ("next" . versor:next)
     ("onwards" . versor:next)
     ("back" . versor:prev)
+    ("previous" . versor:prev)
+    ("extend" . versor:extend-item-forwards)
+    ("retract" . versor:extend-item-backwards)
     ;; ("out" . versor:out)
     ;; ("in" . versor:in)
+    ("dimension in" . versor:in)
+    ("dimension out" . versor:out)
+    ("zoom movements in" . versor:in)
+    ("zoom movements out" . versor:out)
+    ("meta dimension in" . versor:prev-meta-level)
+    ("meta dimension out" . versor:next-meta-level)
     ("first" . versor:start)
     ("initial" . versor:start)
     ("last" . versor:end)
@@ -58,6 +84,8 @@
     ("depth" . versor:select-in/out)
     ("expressions" . versor:select-exprs)
     ("characters" . versor:select-chars)
+    ("end" . versor:end-of-item)
+    ("beginning" . versor:start-of-item)
     ("other end" . versor:other-end-of-item)
     ("copy this" . versor:copy)
     ("cut this" . versor:kill)
@@ -66,6 +94,11 @@
     ("valof" . wander-yank)
     ("result is" . pick-up-sexp-at-point)
     ("return" . exit-recursive-edit)
+    ("alter this" . versor:begin-altering-item)
+    ("that's it" . versor:end-altering-item)
+    ("bingo" . versor:end-altering-item)
+    ("revert to original" . versor:abandon-altering-item)
+    ("container" . versor:select-container-contents)
     )
   "Individually defined versor voice commands (and friends).")
 

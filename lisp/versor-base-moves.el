@@ -1,9 +1,9 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2005-02-07 16:23:21 John.Sturdy>
+;;; Time-stamp: <2006-02-17 19:19:23 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -31,23 +31,27 @@
   "Like forward-paragraph, but don't end up on a blank line."
   (interactive "p")
   (forward-paragraph n)
-  (message "forward-paragraph %d" n)
+  (message "forward-paragraph %d; then forward over blank lines" n)
   (if (> n 0)
       (while (looking-at "^$")
+	(message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
 (defun versor:backward-paragraph (&optional n)
   "Like backward-paragraph, but don't end up on a blank line."
   (interactive "p")
   (backward-paragraph (1+ n))
-  (message "backward-paragraph %d" n)
+  (message "backward-paragraph %d; then forward over blank lines" n)
   (if (> n 0)
       (while (looking-at "^$")
+	(message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
-(defun versor:end-of-paragraph ()
+(defun versor:end-of-paragraph (&optional arg)
   "Move to the end of the paragraph."
   (end-of-paragraph-text))
+
+;; todo: add tex, latex, bibtex ideas of paragraphs, perhaps going via generic-text, or building on the built-in ones in-place?
 
 (defun versor:start-of-line (n)
   "Move to first non-space on line, or to start of Nth line from here."
@@ -82,19 +86,46 @@
   (interactive "p")
   (versor:following-margins (next-line n)))
 
+(defun safe-backward-up-list (&rest args)
+  "Like backward-up-list, but returns nil on error."
+  (condition-case error-var
+      (apply 'backward-up-list args)
+    (error nil)))
+
+(defun safe-down-list (&rest args)
+  "Like down-list, but returns nil on error."
+  (condition-case error-var
+      (progn
+	(apply 'down-list args)
+	t)
+    (error nil)))
+
+(defvar versor:reformat-automatically t
+  "If non-nil, some versor movements call reformatting commands.")
+
 (defun versor:backward-up-list (&rest args)
   (interactive "p")
-  (apply 'backward-up-list args)
+  (apply 'safe-backward-up-list args)
+  (when versor:reformat-automatically
+    (condition-case evar
+	(indent-sexp)
+      (error nil)))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
-  (make-versor:overlay (point) (1+ (point))) ; TODO: should probably be versor:set-current-item
-  (save-excursion
-    (forward-sexp 1)
+  (let ((start (point))
+	(end (save-excursion (forward-sexp 1) (point))))
+    ;; TODO: should probably be versor:set-current-item
+    (make-versor:overlay start (1+ start))
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-    (versor:extra-overlay (1- (point)) (point)))) ; TODO: should probably be versor:add-to-current-item when I've written one
+    ;; TODO: should probably be versor:add-to-current-item when I've written one
+    (versor:extra-overlay (1- end) end)
+    (cons start end)))
 
 (defun versor:down-list (&rest args)
   (interactive "p")
-  (apply 'down-list args)
+  (unless (apply 'safe-down-list args)
+    ;; if we were at the end of the last expression, try going to the start of it
+    (previous-sexp 1)
+    (safe-down-list args))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (make-versor:overlay (point) (1+ (point))) ; TODO: should probably be versor:set-current-item
   (when (looking-at "\\s(")
@@ -183,27 +214,65 @@
     (parse-partial-sexp prevprev prev
 			0 t)))
 
+(defvar versor:allow-move-to-end-of-last 'dwim
+  "*Whether to allow moving to the end of the last sexp in a list.
+Otherwise, versor:next stops at the start of it, and refuses to do
+another forward move.
+Setting this non-nil does what you probably want in practice, although
+setting it nil is probably cleaner in some abstract sort of way.
+Setting it non-nil and not t will make the last move within a list
+go to just before the closing syntax of the list, which is where you
+typically want to be to type the next sexp in.")
+
+(defvar versor:move-out-when-at-end t
+  "If non-nil, trying to move further on when already at the end of
+the last thing in a container (see versor:allow-move-to-end-of-last)
+will move to just after the end of the container. Can be convenient in
+practice, although it breaks the symmetry of the next<-->previous
+operations.")
+
 (defun next-sexp (n)
   "Move forward N sexps.
 Like forward-sexp but moves to the start of the next sexp rather than the
-end of the current one, and so skips leading whitespace etc."
+end of the current one, and so skips leading whitespace etc.
+See versor:allow-move-to-end-of-last for some finer control."
   (interactive "p")
   (let* ((where (safe-scan-sexps (point) n))
 	 (one-more (safe-scan-sexps where 1)))
     ;; (message "where=%S one-more=%S" where one-more)
-    (if (and where
-	     ;; one-more
-	     )
+    (if where
 	(progn
 	  (goto-char where)
 	  (let ((limit (save-excursion (last-sexp) (point))))
 	    (when (> n 0)
 	      (parse-partial-sexp where limit
-				  0 t)))
-	  (unless one-more
-	    (versor:set-current-item where
-				     (safe-scan-sexps (point) -1))))
-      (message "No more sexps"))))
+				  0	; targetdepth
+				  t	; stopbefore
+				  )))
+	  (when (and (not one-more) versor:allow-move-to-end-of-last)
+	    (message "not one-more; where=%d, point=%d" where (point))
+	    ;; This is the special case where we move to the end of
+	    ;; the last regexp in a list. (The normal case is that
+	    ;; we move to the start of a regexp, and let the surrounding
+	    ;; macro versor:as-motion-command in versor:next call
+	    ;; versor:set-current-item for us.
+	    (versor:set-current-item (safe-scan-sexps (point) -1)
+				     ;; where
+				     (if (eq versor:allow-move-to-end-of-last t)
+					 where
+				       (progn
+					 (goto-char where)
+					 (message "Looking forward from %d" where)
+					 ;; (skip-to-actual-code)
+					 (skip-syntax-forward "^)")
+					 (point)
+					 ))
+				     )))
+      (if versor:move-out-when-at-end
+	  (progn
+	    (up-list)
+	    (skip-to-actual-code))
+	(message "No more sexps")))))
 
 (defun previous-sexp (n)
   "Move backward N sexps.
@@ -211,8 +280,10 @@ Like backward-sexp but stops without error on reaching the start."
   (interactive "p")
   (let ((where (safe-scan-sexps (point) (- n))))
     (if where
-      (goto-char where)
-      (message "No more previous sexps"))))
+	(goto-char where)
+      (if versor:move-out-when-at-end
+	  (safe-backward-up-list)
+	(message "No more previous sexps")))))
 
 (defun innermost-list ()
   "Move in by sexps until you can go in no more."
@@ -306,83 +377,178 @@ Stay within the current sentence."
   (let ((last-mark (last tempo-marks)))
     (when last-mark (goto-char last-mark))))
 
+(defvar versor:table-starters
+  '((html-helper-mode . "<table[^>]*>")
+    (html-mode . "<table[^>]*>")
+    (texinfo-mode . "@multitable"))
+  "Alist of table starter regexps for each major mode.")
+
+(defvar versor:table-enders
+  '((html-helper-mode . "</table[^>]*>")
+    (html-mode . "</table[^>]*>")
+    (texinfo-mode . "@end multitable"))
+  "Alist of table ender regexps for each major mode.")
+
+(defvar versor:row-starters
+  '((html-helper-mode . "<tr[^>]*>")
+    (html-mode . "<tr[^>]*>")
+    (texinfo-mode . "@item"))
+  "Alist of row starter regexps for each major mode.")
+
+(defvar versor:row-enders
+  '((html-helper-mode . "</tr[^>]*>")
+    (html-mode . "</tr[^>]*>"))
+  "Alist of row ender regexps for each major mode.")
+
+(defvar versor:cell-starters
+  '((html-helper-mode . "<t[dh][^>]*>")
+    (html-mode . "<t[dh][^>]*>")
+    (texinfo-mode . "@tab"))
+  "Alist of cell starter regexps for each major mode.")
+
+(defvar versor:cell-enders
+  '((html-helper-mode . "</t[dh][^>]*>")
+    (html-mode . "</t[dh][^>]*>"))
+  "Alist of cell ender regexps for each major mode.")
+
+(defun versor:table-starter ()
+  "Return the table starter regexp for the current major mode."
+  (or (cdr (assoc major-mode versor:table-starters))
+      (error "No table starter for %S") major-mode))
+
+(defun versor:table-ender ()
+  "Return the table ender regexp for the current major mode."
+  (or (cdr (assoc major-mode versor:table-enders))
+      (error "No table ender for %S") major-mode))
+
+(defun versor:row-starter ()
+  "Return the row starter regexp for the current major mode."
+  (or (cdr (assoc major-mode versor:row-starters))
+      (error "No row starter for %S") major-mode))
+
+(defun versor:row-ender ()
+  "Return the row ender regexp for the current major mode."
+   (cdr (assoc major-mode versor:row-enders)))
+
+(defun versor:cell-starter ()
+  "Return the cell starter regexp for the current major mode."
+  (or (cdr (assoc major-mode versor:cell-starters))
+      (error "No cell starter for %S") major-mode))
+
+(defun versor:cell-ender ()
+  "Return the cell ender regexp for the current major mode."
+  (cdr (assoc major-mode versor:cell-enders)))
+
 (defun versor:first-cell ()
   "Move to the first cell."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
-  (if (and (search-backward "<tr" (point-min) t)
-	   (re-search-forward "<t[dh][^>]+" (point-max) t))
+  (if (and (search-backward (versor:row-starter) (point-min) t)
+	   (re-search-forward (versor:cell-starter) (point-max) t))
       t
     (error "Could not locate first cell.")))
 
 (defun versor:previous-cell (n)
   "Move to the previous cell."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
+  ;; todo: limit to within this row? or at least not include the row markup line
   (interactive "p")
-  (if (re-search-backward "</t[dh][^>]+" (point-min) t)
-      (progn
-	(while (> n 0)
-	  (if (not (re-search-backward "<t[dh][^>]+" (point-min) t))
-	      (error "No more previous cells")
-	    (decf n)))
-	(goto-char (match-end 0)))
-    (error "Could not end of previous locate cell")))
+  (while (> n 0)
+    (backward-char 1)
+    (re-search-backward (versor:cell-starter) (point-min) t)
+    (setq n (1- n)))
+  (save-excursion
+    (let ((start (point))
+	  (ender (versor:cell-ender)))
+      (if ender
+	  (re-search-forward ender (point-max) t)
+	(forward-char 1)
+	(re-search-forward (versor:cell-starter) (point-max) t)
+	(goto-char (1- (match-beginning 0))))
+      (versor:set-current-item start (point)))))
 
 (defun versor:next-cell (n)
   "Move to the next cell."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
+  ;; todo: limit to within this row? or at least not include the row markup line
   (interactive "p")
+  (forward-char 1)
   (while (> n 0)
-    (if (not (re-search-forward "<t[dh][^>]+" (point-max) t))
+    (if (not (re-search-forward (versor:cell-starter) (point-max) t))
 	(error "No more next cells")
-      (decf n))))
+      (decf n)))
+  (goto-char (match-beginning 0))
+  (let ((start (point)))
+    (save-excursion
+      (let ((ender (versor:cell-ender)))
+	(if ender
+	    (re-search-forward ender (point-max) t)
+	  (forward-char 1)
+	  (re-search-forward (versor:cell-starter) (point-max) t)
+	  (goto-char (1- (match-beginning 0)))))
+      (versor:set-current-item start (point)))))
 
 (defun versor:last-cell ()
   "Move to the last cell."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
-  (if (and (search-forward "</tr" (point-max) t)
-	   (re-search-backward "<t[dh][^>]+" (point-min) t))
+  (if (and (re-search-forward (versor:row-ender) (point-max) t)
+	   (re-search-backward (versor:cell-starter) (point-min) t))
       (goto-char (match-end 0))
     (error "Could not locate last cell")))
 
 (defun versor:first-row ()
   "Move to the first row."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
-  (if (and (search-backward "<table" (point-min) t)
-	   (re-search-forward "<tr[^>]+" (point-max) t))
+  (if (and (search-backward (versor:table-starter) (point-min) t)
+	   (re-search-forward (versor:row-starter) (point-max) t))
       t
     (error "Could not locate first row")))
 
 (defun versor:previous-row (n)
   "Move to the previous row."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive "p")
-  (if (re-search-backward "</tr[^>]+" (point-min) t)
-      (progn
-	(while (> n 0)
-	  (if (not (re-search-backward "<tr[^>]+" (point-min) t))
-	      (error "No more previous rows")
-	    (decf n)))
-	(goto-char (match-end 0)))
-    (error "Could not end of previous locate row")))
+  (let ((limit (save-excursion
+		 (re-search-backward (versor:table-starter) (point-min) t)
+		 (match-end 0))))
+    (while (> n 0)
+      (backward-char 1)
+      (re-search-backward (versor:row-starter) limit t)
+      (setq n (1- n)))
+    (save-excursion
+      (let ((start (point))
+	    (ender (versor:row-ender)))
+	(if ender
+	    (re-search-forward ender (point-max) t)
+	  (forward-char 1)
+	  (re-search-forward (versor:row-starter) (point-max) t)
+	  (goto-char (1- (match-beginning 0))))
+	(versor:set-current-item start (point))))))
 
 (defun versor:next-row (n)
   "Move to the next row."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
+  ;; todo: handling of last row isn't right yet
   (interactive "p")
-  (while (> n 0)
-    (if (not (re-search-forward "<tr[^>]+" (point-max) t))
-	(error "No more next rows")
-      (decf n))))
+  (forward-char 1)
+  (let ((limit (save-excursion
+		 (re-search-forward (versor:table-ender) (point-max) t)
+		 (match-beginning 0))))
+    (while (> n 0)
+      (if (not (re-search-forward (versor:row-starter) limit t))
+	  (error "No more next rows")
+	(decf n)))
+    (goto-char (match-beginning 0))
+    (let ((start (point)))
+      (save-excursion
+	(let ((ender (versor:row-ender)))
+	  (if ender
+	      (re-search-forward ender limit t)
+	    (forward-char 1)
+	    (re-search-forward (versor:row-starter) limit t)
+	    (goto-char (1- (match-beginning 0)))))
+	(versor:set-current-item start (point))))))
 
 (defun versor:last-row ()
   "Move to the last row."
-  ;;;;;;;;;;;;;;;; make this understand TeX and LaTeX too!!!!!!!!!!!!!!!!"
   (interactive)
-  (if (and (search-forward "</table" (point-max) t)
-	   (re-search-backward "<tr[^>]+" (point-min) t))
+  (if (and (search-forward (versor:table-ender) (point-max) t)
+	   (re-search-backward (versor:row-starter) (point-min) t))
       (goto-char (match-end 0))
     (error "Could not locate last row")))
 

@@ -1,7 +1,7 @@
 ;;;; modal-functions.el -- make a function which despatches on current major mode
-;;; Time-stamp: <2005-01-14 16:10:28 john>
+;;; Time-stamp: <2006-01-17 13:04:22 jcgs>
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -92,6 +92,7 @@ MODE may be a symbol naming a mode, or a list of such symbols."
 (defun defmodalalias0 (fun mode def)
   "Define the implementation of symbol FUNCTION for MODE to be DEF.
 For use inside defmodalalias."
+  ;; todo: change this to use defmodal0, so we get the before and after forms
   (put mode fun (symbol-function def)))
 
 (defmacro defmodalalias (fun mode def)

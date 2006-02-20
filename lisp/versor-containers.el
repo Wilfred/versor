@@ -1,5 +1,5 @@
 ;;;; versor-containers.el -- Delimit the container of the current selection
-;;; Time-stamp: <2005-02-11 11:37:34 john>
+;;; Time-stamp: <2005-08-05 17:40:56 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -17,6 +17,20 @@
 
 (provide 'versor-containers)
 
+(defun versor:select-container-contents ()
+  "Select the container of the current selection."
+  (interactive)
+  (versor:as-motion-command
+   (unless (run-hook-with-args-until-success 'versor:end-hooks)
+     (message "Using %S to get end of container" (versor:get-action 'last))
+     (call-interactively (versor:get-action 'last)))
+   (let ((end (versor:end-of-item-position)))
+     (unless (run-hook-with-args-until-success 'versor:start-hooks)
+       (message "Using %S to get start of container" (versor:get-action 'first))
+       (call-interactively (versor:get-action 'first)))
+     (versor:set-current-item (point) end))))
 
+;; for debugging:
+;; (global-set-key [ kp-subtract ] 'versor:select-container-contents)
 
-;;; end of versor-containers.el
+;;;; end of versor-containers.el
