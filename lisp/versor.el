@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-02-14 12:13:04 john>
+;;; Time-stamp: <2006-02-20 14:41:09 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -33,7 +33,7 @@
 (require 'versor-alter-item)		; should probably autoload
 (require 'versor-containers)		; should probably autoload
 (require 'versor-chop-chop)		; should probably autoload
-(require 'versor-code-comments-strings) ; should probably autoload
+(require 'versor-dwim)			; should probably autoload
 
 ;; todo: command to move to end of container (possibly improved semantics for versor:end)
 ;; todo: command to toggle between code and string literals
