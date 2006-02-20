@@ -1,9 +1,9 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2005-02-07 16:40:18 John.Sturdy>
+;;; Time-stamp: <2006-02-20 11:53:56 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -135,6 +135,9 @@ See the definition of versor:make-movemap for details of move maps."
 
 (versor:define-moves movemap-lines
 		     '((color "black")
+		       (other-color "gray")
+		       (:background "black")
+		       (:foreground "white")
 		       (first beginning-of-buffer)
 		       (previous versor:previous-line)
 		       (next versor:next-line)
@@ -146,6 +149,7 @@ See the definition of versor:make-movemap for details of move maps."
 
 (versor:define-moves movemap-pages
 		     '((color "white")
+		       (other-color "gray")
 		       (first beginning-of-buffer)
 		       (previous scroll-down)
 		       (next scroll-up)
@@ -163,44 +167,59 @@ See the definition of versor:make-movemap for details of move maps."
 		       (mark mark-sexp)
 		       ;; (delete kill-sexp)
 		       (transpose transpose-sexps)
+		       (dwim versor:dwim-lispishly)
 		       ))
 
 (versor:define-moves movemap-depth
 		     '((color "orange")
+		       (:background "orange")
+		       (:foreground "green")
 		       (first beginning-of-defun)
 		       (previous versor:backward-up-list)
 		       (next versor:down-list)
-		       (last innermost-list)))
+		       (last innermost-list)
+		       (dwim versor:dwim-lispishly)))
 
 (versor:define-moves movemap-statement-parts
 		     '((color "blue")
+		       (:background "blue")
+		       (:foreground "white")
 		       (first navigate-this-head)
 		       (previous statement-navigate-parts-previous)
 		       (next statement-navigate-parts-next)
 		       (last navigate-this-body)
-		       (end-of-item latest-statement-navigation-end)))
+		       (end-of-item latest-statement-navigation-end)
+		       (dwim versor:dwim-lispishly)))
 
 (versor:define-moves movemap-statements
 		     '((color "cyan")
+		       (:background "cyan")
+		       (:foreground "green")
 		       (first beginning-of-defun)
 		       (previous previous-statement)
 		       (next next-statement)
 		       (last end-of-defun) ;;;;;;;;;;;;;;;; make this go back one statement from the end of the defun
-		       (end-of-item latest-statement-navigation-end)))
+		       (end-of-item latest-statement-navigation-end)
+		       (dwim versor:dwim-lispishly)))
 
 (versor:define-moves movemap-defuns
 		     '((color "yellow")
+		       (:background "yellow")
+		       (:foreground "black")
 		       (first versor:first-defun)
 		       (previous versor:previous-defun)
 		       (next versor:next-defun)
 		       (end-of-item end-of-defun)
 		       (last versor:last-defun)
 		       ;; (transpose transpose-sexps); would only work for lisp?
+		       (dwim versor:dwim-lispishly)
 		       ))
 
 (versor:define-moves movemap-words
 		     '((color "grey")
+		       (other-color "green")
 		       (:background "light gray")
+		       (:foreground "black")
 		       (:underline "dark slate gray")
 		       ;; things like this (notionally the wrong
 		       ;; dimension) still work OK, because of how
@@ -213,48 +232,60 @@ See the definition of versor:make-movemap for details of move maps."
 		       (end-of-item versor:end-of-word)
 		       (last forward-phrase)
 		       (delete versor:delete-word)
-		       (transpose transpose-words)))
+		       (transpose transpose-words)
+		       (dwim versor:dwim-textually)))
 
 (versor:define-moves movemap-phrases
 		     '((color "blue")
 		       (:background "cornflower blue")
+		       (:foreground "black")
 		       (first backward-sentence)
 		       (previous backward-phrase)
 		       (next forward-phrase)
-		       (last forward-sentence)))
+		       (last forward-sentence)
+		       (dwim versor:dwim-textually)))
 
 (versor:define-moves movemap-sentences
 		     '((color "cyan")
 		       (:background "light sky blue")
+		       (:foreground "black")
 		       (first versor:backward-paragraph)
 		       (previous backward-sentence)
 		       (next forward-sentence)
 		       (last versor:forward-paragraph)
-		       (transpose transpose-sentences)))
+		       (transpose transpose-sentences)
+		       (dwim versor:dwim-textually)))
 
 (versor:define-moves movemap-paragraphs
 		     '((color "yellow")
+		       (:background "yellow")
+		       (:foreground "red")
 		       (first beginning-of-buffer)
 		       (previous versor:backward-paragraph)
 		       (next versor:forward-paragraph)
 		       (end-of-item versor:end-of-paragraph)
 		       (last end-of-buffer)
-		       (transpose transpose-paragraphs)))
+		       (transpose transpose-paragraphs)
+		       (dwim versor:dwim-textually)))
 
 (versor:define-moves movemap-blocks
 		     '((color "green")
 		       (:underline "dark green")
+		       (:foreground "white")
 		       (:background "pale green")
 		       (previous nested-blocks-backward)
 		       (next nested-blocks-forward)))
 
 (versor:define-moves movemap-block-depth
 		     '((color "orange")
-		       (previous nested-blocks-leave)
+		       (:foreground "black")
+		       (:background "orange")
+		       (previous nested-blocks-leave-backwards)
 		       (next nested-blocks-enter)))
 
 (versor:define-moves movemap-cells
 		     '((color "blue")
+		       (:background "cyan")
 		       (first versor:first-cell)
 		       (previous versor:previous-cell)
 		       (next versor:next-cell)
@@ -262,6 +293,8 @@ See the definition of versor:make-movemap for details of move maps."
 
 (versor:define-moves movemap-rows
 		     '((color "cyan")
+		       (:background "light sky blue")
+		       (:foreground "black")
 		       (first versor:first-row)
 		       (previous versor:previous-row)
 		       (next versor:next-row)
@@ -361,6 +394,54 @@ With optional LEVEL-OFFSET, add that to the level first."
     (when (< versor:meta-level 1)
       (setq versor:meta-level
 	    (if versor:meta-level-wrap max 1)))))
+
+(defvar versor:meta-dimensions-valid-for-modes
+  '(((emacs-lisp-mode lisp-mode scheme-mode lisp-interaction-mode)
+     t "cartesian" "structural" "text")
+    ((texinfo-mode tex-mode latex-mode html-mode html-helper-mode)
+     t "cartesian" "text" "structured text" "tables")
+    ((c-mode perl-mode java-mode)
+     t "cartesian" "structural" "program" "text")
+    (t nil))				; allow any
+  "*Controls which meta-dimensions are valid for which major modes.
+If t, all meta-dimensions are allowed in all major modes.
+Otherwise, it is an alist mapping modes to sublists describing the
+meta-dimensions allowed in that mode.
+Each sublist (beyond the mode) should begin with t, to indicate that
+only the meta-dimensions listed are to be allowed, or nil, to indicate
+that all meta-dimensions except those listed are allowed.
+The rest of the sublist is the meta-dimensions allowed or blocked for that mode.
+The head of the node may also be a list of major modes for which this
+rule applies.
+A sublist for a major mode t gives the defaults.")
+
+(defun assoc-multi-key (key list)
+  "Look for KEY in the cars of LIST.
+Like assoc, return the element of list for which it matches."
+  (catch 'found
+    (while list
+      (if (if (consp (caar list))
+	      (member key (caar list))
+	    (equal key (caar list)))
+	  (throw 'found (car list))
+	(setq list (cdr list))))
+    nil))
+
+(defun versor:meta-dimension-valid-for-mode (meta-name mode)
+  "Return whether the meta-dimension called META-NAME is allowed in MODE."
+  ;; smug -- worked first time
+  (cond
+   ((eq versor:meta-dimensions-valid-for-modes t)
+    t)
+   ((consp versor:meta-dimensions-valid-for-modes)
+    (let* ((descr (cdr (or (assoc major-mode versor:meta-dimensions-valid-for-modes)
+			   (assoc-multi-key major-mode versor:meta-dimensions-valid-for-modes)
+			   (assoc t versor:meta-dimensions-valid-for-modes))))
+	   (allowing (car descr))
+	   (mentioned (member meta-name (cdr descr))))
+      (or (and allowing mentioned)
+	  (and (not allowing) (not mentioned)))))
+   (t t)))
 
 (defvar versor:mode-current-levels nil
   "Alist of mode name symbols to the current meta-level and level for that mode.
