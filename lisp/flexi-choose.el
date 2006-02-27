@@ -1,5 +1,5 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <2006-02-09 18:07:39 jcgs>
+;;; Time-stamp: <2006-02-24 10:07:54 jcgs>
 
 (provide 'flexi-choose)
 ;; if this is loaded before we are, put it into our menu
@@ -234,9 +234,13 @@ This makes most sense if SINGLE is sorted."
 (defvar flexi-choose-topstring "[Top]"
   "The label to indicate going straight back up to the top of the tree.")
 
-(defun choose-in-steps (prompt choices)
+(defun choose-in-steps (prompt choices &optional display-modifier)
   "With PROMPT, get the user to choose one of CHOICES.
-At each stage, up to choices-per-step choices are presented."
+At each stage, up to choices-per-step choices are presented,
+and are displayed in the help buffer.
+If the optional extra argument DISPLAY-MODIFIER is given, apply it to
+each line of the help buffer if this is the last step, that is, if
+the choices are leaf choices."
   (let* ((all-choices choices)
 	 (interesting-words (if (voice-seems-active)
 				;; expensive to compute; used only by voice
@@ -266,7 +270,11 @@ At each stage, up to choices-per-step choices are presented."
 			 (mapconcat 'identity
 				    (append (number-items
 					     (if last-step
-						 choices
+						 (if display-modifier
+						     (let ((max-choice-length
+							    (apply 'max (mapcar 'length choices))))
+						       (mapcar display-modifier choices))
+						   choices)
 					       (mapcar 'make-full-chunk-descr chunks)))
 					    extras)
 				    "\n")
@@ -356,8 +364,15 @@ With optional LIMIT argument, only looking recently used buffers."
 
 (defun choose-library (prompt)
   "Flexi selection of files on emacs load-path."
-  (choose-in-steps prompt (sort (mapcar 'car (el-lib-list))
-				'string-lessp)))
+  (let ((elibs (el-lib-list)))
+    (choose-in-steps prompt
+		     (sort (mapcar 'car elibs)
+			   'string-lessp)
+		     (function
+		      (lambda (choice)
+			(format (format "%%%ds: %%s" max-choice-length)
+				choice
+				(cdr (assoc choice elibs))))))))
 
 (defun flexi-choose-library (library)
   "Find an elisp file on your path."
@@ -514,6 +529,7 @@ With optional LIMIT argument, only looking recently used buffers."
   '("Select screen setup" . flexi-select-screen-setup))
 
 (if (featurep 'sensible-languages)
+    ;; todo: find whether this is really part of languide
     (define-key flexi-choose-menu [statement-type]
       '("Statement type" . statement-type)))
 
@@ -529,7 +545,8 @@ With optional LIMIT argument, only looking recently used buffers."
 (define-key flexi-choose-menu [switch-to-buffer]
   '("Switch to buffer" . flexi-switch-to-buffer))
 
-(define-key flexi-choose-menu [switch-to-recent-buffer]
-  '("Switch to recent buffer" . flexi-switch-to-recent-buffer))
+;; I don't find this one useful, although it seemed like a good idea at first
+;;(define-key flexi-choose-menu [switch-to-recent-buffer]
+;;  '("Switch to recent buffer" . flexi-switch-to-recent-buffer))
 
 ;;;; end of flexi-choose.el
