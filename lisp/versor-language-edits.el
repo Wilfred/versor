@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-02-10 10:07:56 jcgs>
+;;; Time-stamp: <2006-02-21 14:11:37 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,7 @@ The variable name is left at the top of the kill ring."
   (interactive "sVariable name: ")
   (versor:as-motion-command
    (let* ((item (versor:get-current-item)))
-     (convert-region-to-variable (car item) (cdr item) name))))
+     (languide-convert-region-to-variable (car item) (cdr item) name))))
 
 (defun versor:convert-selection-to-function (name)
   "Take the selected code, and make it into a function, substituting a call to it.
@@ -33,21 +33,21 @@ The function name is left at the top of the kill ring."
   (interactive "sFunction name: ")
   (versor:as-motion-command
    (let* ((item (versor:get-current-item)))
-     (convert-region-to-function (car item) (cdr item) name))))
+     (languide-convert-region-to-function (car item) (cdr item) name))))
 
 (defun versor:surround-selection-with-call (name)
   "Surround the selection with a function call."
   (interactive "sFunction name: ")
   (versor:as-motion-command
    (let* ((item (versor:get-current-item)))
-     (surround-region-with-call (car item) (cdr item) name))))
+     (languide-surround-region-with-call (car item) (cdr item) name))))
 
 (defun versor:remove-function-call (name)
   "Remove the selected function call."
   (interactive)
   (versor:as-motion-command
    (let* ((item (versor:get-current-item)))
-     (remove-surrounding-call (car item) (cdr item)))))
+     (languide-remove-surrounding-call (car item) (cdr item)))))
 
 (defun versor:unify-statements ()
   "Unify statements"
