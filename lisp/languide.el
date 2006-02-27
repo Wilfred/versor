@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-02-14 12:13:04 john>
+;;; Time-stamp: <2006-02-21 15:17:24 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -113,8 +113,21 @@ Returns point, if there was a bracket to go out of, else nil."
 	  (goto-char where)
 	  where)
       (progn
-	(goto-char (point-min))
+	;; todo: find why I thought I wanted to do this
+	;; (goto-char (point-min))
 	nil))))
+
+(defun all-variables-in-scope-p (where variables)
+  "Return whether at WHERE, all of VARIABLES are in scope."
+  (let ((variables-in-scope (variables-in-scope where)))
+    (message "Looking for whether %S are all in scope; variables in scope are %S" variables variables-in-scope)
+    (catch 'done
+      (while variables
+	(if (assoc (car variables) variables-in-scope)
+	    (setq variables (cdr variables))
+	  (message "%s was not in scope" (car variables))
+	  (throw 'done nil)))
+      t)))
 
 (defmodel insert-compound-statement-open ()
   "Insert the start of a compound statement")
