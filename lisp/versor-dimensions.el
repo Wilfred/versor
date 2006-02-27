@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-02-20 11:53:56 john>
+;;; Time-stamp: <2006-02-24 18:20:34 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -151,8 +151,14 @@ See the definition of versor:make-movemap for details of move maps."
 		     '((color "white")
 		       (other-color "gray")
 		       (first beginning-of-buffer)
-		       (previous scroll-down)
-		       (next scroll-up)
+		       (previous
+			;; scroll-down
+			forward-page
+			)
+		       (next
+			;; scroll-up
+			forward-page
+			)
 		       (last end-of-buffer)))
 
 (versor:define-moves movemap-exprs
@@ -181,9 +187,9 @@ See the definition of versor:make-movemap for details of move maps."
 		       (dwim versor:dwim-lispishly)))
 
 (versor:define-moves movemap-statement-parts
-		     '((color "blue")
-		       (:background "blue")
-		       (:foreground "white")
+		     '((color "cyan")
+		       (:background "cyan")
+		       (:foreground "red")
 		       (first navigate-this-head)
 		       (previous statement-navigate-parts-previous)
 		       (next statement-navigate-parts-next)
@@ -324,7 +330,7 @@ See the definition of versor:make-movemap for details of move maps."
       moves-structured-text (versor:make-movemap-set "structured text"
 						     movemap-chars
 						     movemap-words
-						     movemap-paragraphs
+						     ;; movemap-paragraphs
 						     movemap-blocks
 						     movemap-block-depth)
 
