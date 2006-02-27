@@ -1,5 +1,5 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2005-08-11 17:45:14 jcgs>
+;;; Time-stamp: <2006-02-24 13:51:53 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -80,8 +80,10 @@ Where types are not declared, as in Lisp, nil can be given as the type.")
 This is the place at which you would naturally insert a new
 variable, allowing for its initial value referring to any
 variable already declared.
-Optional arguments list names of variables needed in the definition of the new one.
-This lets clever implementations put the definition as far out as possible.")
+Optional argument lists names of variables needed in the definition of the new one.
+This lets clever implementations put the definition as far out as possible.
+It may create a suitable place if there is none; for example, in Lisp it
+could wrap the outermost forms of a \"defun\" with a \"let\".")
 
 (defmodel insert-variable-declaration (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
