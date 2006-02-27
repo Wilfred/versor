@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-02-15 19:09:44 jcgs>
+;;; Time-stamp: <2006-02-24 14:46:14 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -87,15 +87,15 @@ counts as a potential scoping point, and gets converted to
   "Take the region between FROM and TO, and make it into a variable called NAME."
   (interactive "r
 sVariable name: ")
-  (let ((value-text (buffer-substring-no-properties from to))
-	(variables-needed (free-variables-in-region from to)))
-    (delete-region from to)
-    (goto-char from)
-    (insert name)
-    (move-to-enclosing-scope-last-variable-definition variables-needed)
-    (message "New variables go here") (sit-for 2)
-    (insert-variable-declaration name (deduce-expression-type value-text) value-text)
-    (kill-new name)))
+  (save-excursion
+    (let ((value-text (buffer-substring-no-properties from to))
+	  (variables-needed (free-variables-in-region from to)))
+      (delete-region from to)
+      (goto-char from)
+      (insert name)
+      (move-to-enclosing-scope-last-variable-definition variables-needed)
+      (insert-variable-declaration name (deduce-expression-type value-text) value-text)
+      (kill-new name))))
 
 (defun languide-convert-region-to-function (begin end name &optional docstring)
   "Take the code between BEGIN and END, and make it into a function called NAME.
@@ -117,25 +117,29 @@ sDocumentation: ")
     (goto-char begin-marker)
     (kill-new name)))
 
-(defun surround-region-with-call (from to name)
+(defun languide-surround-region-with-call (from to name)
   "Surround the region between FROM and TO with a call to NAME."
   (interactive "r
 sFunction name: ")
-  ;; todo: complete surround-region-with-call
+  ;; todo: complete languide-surround-region-with-call
   )
 
-(defun remove-surrounding-call (from to)
+(defun languide-remove-surrounding-call (from to)
   "Remove the function call around FROM and TO, leaving just the argument(s) to the function."
   (interactive "r")
-  ;; todo: complete remove-surrounding-call
+  ;; todo: complete languide-remove-surrounding-call
   )
 
-(defun versor:make-conditional ()
-  ;; todo: write versor:make-conditional
+(defun languide-make-conditional ()
+  ;; todo: write languide-make-conditional
   )
 
-(defun versor:make-repeating ()
-  ;; todo: write versor:make-repeating
+(defun languide-make-repeating ()
+  ;; todo: write languide-make-repeating
 )
+
+(defun languide-remove-control ()
+  ;; todo: write languide-remove-control
+  )
 
 ;;; end of languide-edits.el

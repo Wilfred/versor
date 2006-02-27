@@ -1,5 +1,5 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2006-02-15 16:10:50 jcgs>
+;;; Time-stamp: <2006-02-24 17:27:52 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -128,59 +128,65 @@ A sensible default is provided if no mode-specific value is available."
 		      (nested-blocks-template start (point))))))
     (apply 'insert template)))
 
-(defun nested-blocks-forward ()
+(defun nested-blocks-forward (&optional n)
   "Move forward over a nested block. Like forward-sexp but more general."
   ;; ought to make this handle things in comments and strings
-  (interactive)
+  (interactive "p")
   (let ((start (nested-blocks-start))
 	(end (nested-blocks-end))
 	(either (nested-blocks-start-or-end))
 	(ignore (nested-blocks-ignore))
 	(depth 0)
 	)
+    (unless (numberp n) (setq n 1))
     (message "trying to classify start=\"%s\" end=\"%s\" ignore=\"%s\"" start end ignore)
-    (save-match-data
+    (while (> n 0)
       (catch 'found
 	(while (re-search-forward either (point-max) t)
-	  (message "At \"%s\"" (match-string 0))
-	  (save-excursion
-	    (goto-char (match-beginning 0))
-	    (cond
-	     ((and ignore (looking-at ignore))
-	      (message "ignoring")
-	      t)
-	     ((looking-at start)
-	      (message "deeper")
-	      (incf depth))
-	     ((looking-at end)
-	      (message "shallower")
-	      (decf depth))
-	     (t (error "inconsistency in nested-block patterns")))
-	    (if (zerop depth)
-		(throw 'found (point)))))
-	nil))))
+	  (save-match-data
+	    (message "At \"%s\"" (match-string 0))
+	    (save-excursion
+	      (goto-char (match-beginning 0))
+	      (cond
+	       ((and ignore (looking-at ignore))
+		(message "ignoring")
+		t)
+	       ((looking-at start)
+		(message "deeper")
+		(incf depth))
+	       ((looking-at end)
+		(message "shallower")
+		(decf depth))
+	       (t (error "inconsistency in nested-block patterns")))
+	      (if (zerop depth)
+		  (throw 'found (point)))))
+	  nil))
+      (setq n (1- n)))))
 
-(defun nested-blocks-backward ()
+(defun nested-blocks-backward (&optional n)
   "Move back over a nested block. Like backward-sexp but more general."
   ;; ought to make this handle things in comments and strings
-  (interactive)
+  (interactive "p")
   (let ((start (nested-blocks-start))
 	(end (nested-blocks-end))
 	(either (nested-blocks-start-or-end))
 	(ignore (nested-blocks-ignore))
 	(depth 0)
 	)
-    (save-match-data
-      (catch 'found
-	(while (re-search-backward either (point-min) t)
-	  (save-excursion
-	    (cond
-	     ((and ignore (looking-at ignore)) t)
-	     ((looking-at start) (decf depth))
-	     ((looking-at end) (incf depth))
-	     (t (error "inconsistency in nested-block patterns")))
-	    (if (zerop depth)
-		(throw 'found (point)))))))))
+    (unless (numberp n) (setq n 1))
+    (while (> n 0)
+      (save-match-data
+	(catch 'found
+	  (while (re-search-backward either (point-min) t)
+	    (save-excursion
+	      (cond
+	       ((and ignore (looking-at ignore)) t)
+	       ((looking-at start) (decf depth))
+	       ((looking-at end) (incf depth))
+	       (t (error "inconsistency in nested-block patterns")))
+	      (if (zerop depth)
+		  (throw 'found (point)))))))
+      (setq n (1- n)))))
 
 (defun nested-blocks-template (start end)
   "Make a nested block template from the buffer between START and END.
