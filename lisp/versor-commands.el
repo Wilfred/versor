@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-02-15 18:29:58 jcgs>
+;;; Time-stamp: <2006-02-27 10:51:30 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -594,11 +594,23 @@ With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
 (versor:definesert "!" (lambda (n) (versor:statement-insertion-strings 'not)))
 (versor:definesert "=" (lambda (n) (versor:statement-insertion-strings 'variable-declaration)))
 
+(defvar versor:statement-insertion-with-dummy-value nil
+  "*Whether versor statement insertion puts a placeholder value in when adding something.
+This tries to avoid changing the semantics, for example, it uses
+\"true\" when adding \"and\" or \"if\".
+You can then change the value, using the versor alterations system.")
+
 (defun versor:statement-insertion-strings (statement)
   "Return the insertion strings for STATEMENT in the current language."
-  (cdr (assoc 'begin-end
-	      (cdr (assoc statement
-			  (get major-mode 'statements))))))
+  (let ((statement-descr (cdr (assoc statement
+				     (get major-mode 'statements)))))
+    (cdr (or (assoc (if versor:statement-insertion-with-dummy-value
+			'begin-end-with-dummy
+		      'begin-end)
+		    statement-descr)
+	     (if versor:statement-insertion-with-dummy-value 
+		 (assoc 'begin-end statement-descr)
+	       nil)))))
 
 ;; todo: we could also do some using something similar to tempo-insert-template (set tempo-region-stop etc first) to insert specific constructs?
 
