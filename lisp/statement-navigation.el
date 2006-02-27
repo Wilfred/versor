@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2005-08-12 10:16:09 jcgs>
+;;; Time-stamp: <2006-02-24 18:31:46 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -176,7 +176,7 @@ Then, if N is greater than 1, move back N-1 more statements."
    (let ((end (statement-container)))
      (setq navigated-latest-part 'container)
      (versor:set-current-item (point) mark-candidate)
-     (versor:display-highlighted-choice "container" languide-parts))))
+     (versor:display-highlighted-choice "container" (languide-parts)))))
 
 (defvar statement-navigate-parts-cyclic nil
   "*Whether to step forwards from body (or tail if present) back round to head.")
@@ -210,8 +210,8 @@ Then, if N is greater than 1, move back N-1 more statements."
 	      (navigate-this-head)))
      ('tail
       (cond
-       (statement-navigate-parts-include-container (navigate-this-container))
        (statement-navigate-parts-cyclic (navigate-this-head))
+       (statement-navigate-parts-include-container (navigate-this-container))
        (t (navigate-this-whole)))))))
 
 (defun statement-navigate-parts-previous (&optional ignore)
@@ -222,8 +222,8 @@ Then, if N is greater than 1, move back N-1 more statements."
      ('whole (navigate-this-body))
      ('container (navigate-this-head))
      ('head
-      (cond ((get-statement-part statement-navigation-type 'tail) (navigate-this-tail))
-	    (statement-navigate-parts-include-container (navigate-this-container))
+      (cond (statement-navigate-parts-include-container (navigate-this-container))
+	    ((get-statement-part statement-navigation-type 'tail) (navigate-this-tail))
 	    (statement-navigate-parts-cyclic (navigate-this-body))
 	    (t (navigate-this-whole))))
      ('body (navigate-this-head))
@@ -355,6 +355,17 @@ See the variable statements-known."
 (defvar languide-parts '("container" "whole" "head" "body" "tail")
   "The parts we can navigate to.")
 
+(defun languide-parts ()
+  "The parts we can navigate to."
+  ;; todo: can we ever get "whole"?
+  (if (get-statement-part statement-navigation-type 'tail)
+      (if statement-navigate-parts-include-container
+	  '("container" "whole" "head" "body" "tail")
+	'("whole" "head" "body" "tail"))
+    (if statement-navigate-parts-include-container
+	'("container" "whole" "head" "body")
+      '("whole" "head" "body"))))
+
 (defvar languide-last-statement-selector-command nil
   "The last command to call establish-current-statement.")
 
@@ -394,7 +405,7 @@ See the variable statements-known."
 	  (set-mark-candidate (cdr remembered))
 	  (goto-char (car remembered))
 	  (versor:set-current-item (car remembered) (cdr remembered))
-	  (versor:display-highlighted-choice (symbol-name part) languide-parts))
+	  (versor:display-highlighted-choice (symbol-name part) (languide-parts)))
       (let* ((type (if prelocated
 		       (third latest-statement-known)
 		     (identify-statement nil)))
@@ -412,7 +423,7 @@ See the variable statements-known."
 		  (statement-remember-part statement-start type
 					   part (point) mark-candidate)
 		  (versor:set-current-item (point) mark-candidate)
-		  (versor:display-highlighted-choice (symbol-name part) languide-parts))
+		  (versor:display-highlighted-choice (symbol-name part) (languide-parts)))
 	      (goto-char old-position)
 	      (error "Don't know how to handle directions like \"%S\"" directions))
 	  (goto-char old-position)
