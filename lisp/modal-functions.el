@@ -1,5 +1,5 @@
 ;;;; modal-functions.el -- make a function which despatches on current major mode
-;;; Time-stamp: <2006-01-17 13:04:22 jcgs>
+;;; Time-stamp: <2006-02-24 16:44:39 jcgs>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -43,6 +43,7 @@
 For each major mode, a function of that name should be defined using defmodal,
 which see. When the function named as FUN is called, the specific function for
 the current major mode is called to implement it. If no such function is defined,
+the function definition for fundamental-mode is tried. If that is not defined,
 the first of the arguments is returned.
 If FUN has an interactive definition, each of the modal functions implementing it
 should also have one.
@@ -62,7 +63,9 @@ naming each major mode for which this function is implemented."
    (if before-form
        (list before-form))
    (list (append (list 'safe-funcall
-		       (list 'get 'major-mode (list 'quote fun)))
+		       (list 'or 
+			     (list 'get 'major-mode (list 'quote fun))
+			     (list 'get ''fundamental-mode (list 'quote fun))))
 		 (remove-optional args)))
    (if after-form
        (list after-form))))
