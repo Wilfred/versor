@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-02-15 18:24:06 jcgs>
+;;; Time-stamp: <2006-02-24 18:21:18 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -135,7 +135,7 @@ Need only work if already at or just beyond the end of a statement."
       ;; and so must go back to check for the "do"
       ;; (languide-previous-substatement) ; we know it's a compound statement, or we wouldn't be in this function
       (goto-char (safe-scan-sexps (point) -2))
-      (languide:debug-message 'continue-back-past-curly-ket "Going back to check for "do"  gets us to %d:\"%s\"" (point) (buffer-substring (point) (+ (point) 20)))
+      (languide:debug-message 'continue-back-past-curly-ket "Going back to check for \"do\"  gets us to %d:\"%s\"" (point) (buffer-substring (point) (+ (point) 20)))
       (if (looking-at "\\<do\\>")
 	  (languide:debug-message 'continue-back-past-curly-ket "at \"do\", so remaining there")
 	(languide:debug-message 'continue-back-past-curly-ket "was not \"do\", going back to code after closing brace")
@@ -579,7 +579,8 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (body "if" (expression) (expression-contents))
   (create (template & > "if (" p ") {" n>
 		    r "}"))
-  (begin-end "if () {" end "}"))
+  (begin-end "if () {" end "}")
+  (begin-end-with-dummy "if (1) {" end "}"))
 
 (defstatement if-then-else (c-mode java-mode perl-mode)
   "If statement with else clause."
@@ -589,7 +590,8 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (create (template & > "if (" p ") {" n>
 		    r "} else {"n>
 		    p "}"))
-  (begin-end "if () {" "} else {}"))
+  (begin-end "if () {" "} else {}")
+  (begin-end-with-dummy "if (1) {" "} else {}"))
 
 (defstatement while-do (c-mode java-mode perl-mode)
   "While statement."
@@ -597,7 +599,8 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (body "while" (expression) (expression-contents))
   (create (template & > "while (" p ") {" n>
 		    r "}"))
-  (begin-end "while () {" "}"))
+  (begin-end "while () {" "}")
+  (begin-end-with-dummy "while (1) {" "}"))
 
 (defstatement do-while (c-mode java-mode perl-mode)
   "Do-While statement."
@@ -656,11 +659,13 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 
 (defstatement and (perl-mode c-mode java-mode)
   "And expression."
-  (begin-end "( " " && )"))
+  (begin-end "( " " && )")
+  (begin-end-with-dummy "( " " && 1)"))
 
 (defstatement or (perl-mode c-mode java-mode)
   "Or expression."
-  (begin-end "(" " || )"))
+  (begin-end "(" " || )")
+  (begin-end-with-dummy "(" " || 0)"))
 
 (defstatement and (perl-mode c-mode java-mode)
   "Not expression."
