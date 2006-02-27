@@ -1,5 +1,5 @@
 ;;;; versor-dwim.el -- move between code, comments, and strings, etc
-;;; Time-stamp: <2006-02-20 14:40:09 john>
+;;; Time-stamp: <2006-02-21 10:03:23 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -45,9 +45,10 @@
 	  (cons 'code nil))))))
 
 
-(defun versor:dwim-textually ()
+(defun versor:dwim-textually (&optional tried)
   "DWIM function for modes with words, phrases etc.
-Returns a description of what it has done."
+Returns a description of what it has done.
+The optional argument says which functions have already been tried."
   (cond
    ((looking-at "\\<")
     (versor:end-of-word 1)
@@ -55,12 +56,16 @@ Returns a description of what it has done."
    ((looking-at "\\>")
     (backward-word 1)
     "Moved from end of word to start of word")
+   ((not (memq 'versor:dwim-lispishly tried))
+    (message "versor:dwim-textually handing over to versor:dwim-lispishly")
+    (versor:dwim-lispishly (cons 'versor:dwim-textually tried)))
    (t
-    "Could not think of anything to do here")))
+    "versor:dwim-textually could not think of anything to do here")))
 
-(defun versor:dwim-lispishly ()
+(defun versor:dwim-lispishly (&optional tried)
   "DWIM function for modes with brackets etc.
-Returns a description of what it has done."
+Returns a description of what it has done.
+The optional argument says which functions have already been tried."
   (let* ((loc (versor:type-of-place))
 	 (loc-type (car loc))
 	 (loc-details (cdr loc)))
@@ -88,7 +93,7 @@ Returns a description of what it has done."
       (goto-char loc-details)
       (forward-sexp 1)
       "Went out of string")
-      ((eq loc-type 'code)
+     ((eq loc-type 'code)
       (cond
        ;; first, try to go to the other end of an expression
        ((and (or (= (char-syntax (char-after)) open-bracket)
@@ -152,11 +157,12 @@ factored out of the calculations."
 	 (if (eq last-command 'versor:dwim)
 	     (1+ versor:dwim-successive-commands)
 	   1))
-   (let ((dwim-function (or (get major-mode 'versor-dwim) (versor:get-action 'dwim)))) 
+   (let ((dwim-function (or (versor:get-action 'dwim)
+			    (get major-mode 'versor-dwim)))) 
      (message
       (if dwim-function 
 	  (funcall dwim-function)
-	"No dwim function defined for this dimension")))))
+	"No dwim function defined for dimension %s:%s" versor:current-meta-level-name versor:current-level-name)))))
 
 (defconst open-bracket (string-to-char "(")
   "Get this out-of-line to avoid confusing indenter when editing functions that use it.")
