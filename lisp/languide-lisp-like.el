@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-02-24 15:23:30 jcgs>
+;;; Time-stamp: <2006-02-28 14:49:22 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -101,20 +101,21 @@ Returns whether it found one."
 	    (goto-char next))))
       (goto-char bod)
       (down-list)
-      (when (looking-at "defmod[ae]l") (forward-sexp))
-      (forward-sexp 2)
-      (let ((limit (safe-scan-sexps (point) 1)))
-	(down-list)
-	(skip-to-actual-code)
-	(message "Arglist starts at %d" (point))
-	(let ((old (point))
-	      new)
-	  (while (and (setq new (safe-scan-sexps old 1))
-		      (< new limit))
-	    (push (list (buffer-substring-no-properties old new)) variables)
-	    (goto-char new)
-	    (skip-to-actual-code limit)
-	    (setq old (point)))))
+      (when (looking-at "def[um]")
+	  (when (looking-at "defmod[ae]l") (forward-sexp))
+	(forward-sexp 2)
+	(let ((limit (safe-scan-sexps (point) 1)))
+	  (down-list)
+	  (skip-to-actual-code)
+	  (message "Arglist starts at %d" (point))
+	  (let ((old (point))
+		new)
+	    (while (and (setq new (safe-scan-sexps old 1))
+			(< new limit))
+	      (push (list (buffer-substring-no-properties old new)) variables)
+	      (goto-char new)
+	      (skip-to-actual-code limit)
+	      (setq old (point))))))
       variables)))
 
 (defmodal move-to-enclosing-scope-last-variable-definition (lisp-mode emacs-lisp-mode lisp-interaction-mode)
@@ -179,6 +180,12 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (save-excursion
     (insert "(" name " " initial-value ")"))
   (indent-sexp))
+
+(defmodal insert-global-variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
+  "Insert a definition for a global variable called NAME, of TYPE, with INITIAL-VALUE.
+TYPE and INITIAL-VALUE may be null, but the NAME is required.
+In fact, TYPE is not meaningful as this is the definition for Lisp."
+  (insert "\n(defvar " name " " initial-value "\n  \"\")\n"))
 
 (defun arg-name (arg)
   "Return just the name of ARG, which is in languide's format, which may be just the name, or (name . type)."
@@ -419,6 +426,9 @@ Each element is a list of:
   (keyword "let")
   (head "(let *(" (expressions))
   (body "(let *" (expression) (expressions))
+  (framework
+   (remember "(") (remember "let") (remember "(") (expressions) (remember ")")
+   (expressions) (remember ")"))
   (create
    (template & > "(let ((" (p "Variable name: ") p "))" n> r n> ")"))
   (begin-end "(let (()) " ")"))
