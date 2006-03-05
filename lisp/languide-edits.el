@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-02-24 14:46:14 jcgs>
+;;; Time-stamp: <2006-02-28 14:59:37 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -84,7 +84,7 @@ counts as a potential scoping point, and gets converted to
 				   (replace-match ref t t)))))))
 
 (defun languide-convert-region-to-variable (from to name)
-  "Take the region between FROM and TO, and make it into a variable called NAME."
+  "Take the region between FROM and TO, and make it into a local variable called NAME."
   (interactive "r
 sVariable name: ")
   (save-excursion
@@ -95,6 +95,20 @@ sVariable name: ")
       (insert name)
       (move-to-enclosing-scope-last-variable-definition variables-needed)
       (insert-variable-declaration name (deduce-expression-type value-text) value-text)
+      (kill-new name))))
+
+(defun languide-convert-region-to-global (from to name)
+  "Take the region between FROM and TO, and make it into a global variable called NAME."
+  (interactive "r
+sVariable name: ")
+  (save-excursion
+    (let ((value-text (buffer-substring-no-properties from to))
+	  (variables-needed (free-variables-in-region from to)))
+      (delete-region from to)
+      (goto-char from)
+      (insert name)
+      (beginning-of-defun 1)
+      (insert-global-variable-declaration name (deduce-expression-type value-text) value-text)
       (kill-new name))))
 
 (defun languide-convert-region-to-function (begin end name &optional docstring)
@@ -122,6 +136,7 @@ sDocumentation: ")
   (interactive "r
 sFunction name: ")
   ;; todo: complete languide-surround-region-with-call
+  ;; probably not suitable: (insert-function-call name arglist)
   )
 
 (defun languide-remove-surrounding-call (from to)
