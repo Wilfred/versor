@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-02-24 18:21:18 jcgs>
+;;; Time-stamp: <2006-03-03 20:06:56 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -162,7 +162,7 @@ Need only work if already at or just beyond the end of a statement."
 
      ;; next, try going back a statement and a keyword
      ;; and seeing if that is an else
-     ((save-excursion			; don't disturb things for the next clause's test
+     ((save-excursion ; don't disturb things for the next clause's test
 	;; we are looking for the cases like:
 	;;   if (...) { ... } else { ... } *
 	;; (languide-previous-substatement) ; we know it's a compound statement, or we wouldn't be in this function
@@ -204,22 +204,38 @@ Need only work if already at or just beyond the end of a statement."
     (languide:debug-message 'continue-back-past-curly-ket "finished classifying code at close")
     ))
 
+(defvar debug-overlays nil)
+
+(defun debug-overlay (from to text colour)
+  (when nil 
+    (let ((o (make-overlay from to)))
+      (overlay-put o 'face (cons 'background-color colour))
+      (overlay-put o 'before-string (format "[%s:" text))
+      (overlay-put o 'after-string (format ":%s]" text))
+      (if nil
+	  (push o debug-overlays)
+	(read-char)
+	(delete-overlay o)))))
+
 (defmodal beginning-of-statement-internal (c-mode perl-mode) ()
   "Move to the beginning of a C or Perl statement."
   (interactive)
+  (mapcar 'delete-overlay debug-overlays)
+  (setq debug-overlays nil)
   (let ((starting-point (point))
 	;; get beginning of defun, so we can use parse-partial-sexp to
 	;; see whether we have landed in a string or comment
 	(bod (save-excursion
 	       (beginning-of-defun 1)
 	       (point))))
+    (debug-overlay bod starting-point "back to bod" "red")
     (languide:debug-message 'beginning-of-statement-internal "")
     (languide:debug-message 'beginning-of-statement-internal "Starting beginning-of-statement-internal-c-perl at %d, with beginning-of-defun at %d" starting-point bod)
 
     (languide-c-back-to-possible-ender bod)
 
     (let ((possible-ender (point)))
-
+      (debug-overlay possible-ender (1+ possible-ender) "possible-ender" "orange")
       (languide:debug-message 'beginning-of-statement-internal "now at possible ender %d: \"%s\", which is not in a comment or string" (point) (buffer-substring (point) (min (point-max) (+ (point) 20))))
 
       ;; We've now found a statement delimiter, and checked that it is a
@@ -229,6 +245,7 @@ Need only work if already at or just beyond the end of a statement."
 
       (cond
        ((looking-at "{")
+	(debug-overlay (point) (1+ (point)) "found open as possible ender" "cyan")
 	(languide:debug-message 'beginning-of-statement-internal "found open as possible ender")
 	;; move one character forward (into the braced area) so that
 	;; when we skip whitespace and comments, we will be at the
@@ -236,6 +253,7 @@ Need only work if already at or just beyond the end of a statement."
 	(forward-char 1))
 
        ((looking-at "}")
+	(debug-overlay (point) (1+ (point)) "found close as possible ender" "cyan")
 	(languide:debug-message 'beginning-of-statement-internal "found close as possible ender at %d" (point))
 	(forward-char 1)
 	;; this will take us back past the rest of the statement
@@ -245,18 +263,21 @@ Need only work if already at or just beyond the end of a statement."
 	;; go back if at "do { ... }  * while (...)", but not if at
 	;; "while (...) do { ... } *"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	(continue-back-past-curly-ket
-	 starting-point			; is this the right place to start it from?
+	 starting-point	   ; is this the right place to start it from?
 	 ))
 
        ((looking-at ";")
+	(goto-char (match-end 0))
 	(let ((following-code (skip-to-actual-code)))
+	  (debug-overlay (point) (1+ (point)) "found semicolon as possible ender" "cyan")
 	  (languide:debug-message 'beginning-of-statement-internal "found semicolon as possible ender at %d, code following it is at %d" (point) following-code)
 	  ;; not sure what's going on here, document it!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	  (if (<= following-code starting-point)
 	      (progn
 		;; this is the "abcd;    fg*hi" case
-		(languide:debug-message 'beginning-of-statement-internal "code following semicolon is behind or at where we started, so here we are")
 		(goto-char following-code)
+		(debug-overlay (point) (1+ (point)) "code following semicolon is behind or at where we started, so here we are" "pale green")
+		(languide:debug-message 'beginning-of-statement-internal "code following semicolon is behind or at where we started, so here we are")
 		(if (looking-at "else")
 		    (progn
 		      ;; this is the "if (xyz) abcd;    el*se mnop;" case
@@ -267,27 +288,42 @@ Need only work if already at or just beyond the end of a statement."
 		      )))
 	    (progn
 	      ;; this is the "abcd;  *  fghi" case
+	      (debug-overlay (point) (1+ (point)) "code following semicolon is after where we started, go back another statement" "pale green")
 	      (languide:debug-message 'beginning-of-statement-internal "code following semicolon is after where we started, go back another statement")
 	      (goto-char (- possible-ender 1))
 	      (beginning-of-statement-internal))))
 	(when (save-excursion ; this is old version, is it right????????????????
-		(parse-partial-sexp (point) starting-point nil t)
+		(parse-partial-sexp (point) starting-point
+				    nil	; targetdepth
+				    t	; stopbefore
+				    )
 		(= (point) starting-point))
-	  (languide:debug-message 'beginning-of-statement-internal "no code between it and where we were (%d); am now at %d" starting-point (point))
+	  (debug-overlay (min starting-point (point)) (max starting-point (point))
+			 "no code between it and where we were" "blue")
+	  (languide:debug-message 'beginning-of-statement-internal
+				  "no code between it and where we were (%d); am now at %d"
+				  starting-point (point))
 	  (backward-char 1)
 	  ))))
 
     ;; now we're at a real statement delimiter
-    (languide:debug-message 'beginning-of-statement-internal "Now at real delimiter, skip to code; am at %d, starting-point is %d" (point) starting-point)
+    (debug-overlay (point) (1+ (point)) "back to real delimiter" "yellow")
+    (languide:debug-message 'beginning-of-statement-internal
+			    "Now at real delimiter, skip to code; am at %d, starting-point is %d"
+			    (point) starting-point)
     ;;;;;;;;;;;;;;;; why this "unless"? find out, and comment it!
     (if (blank-between (point) (1+ starting-point))
-	(languide:debug-message 'beginning-of-statement-internal "in blank area at %d..%d" (point) (1+ starting-point))
-      (languide:debug-message 'beginning-of-statement-internal "final step of b-o-s-i: not in blank")
-      (skip-to-actual-code starting-point)))
-  (languide:debug-message 'beginning-of-statement-internal "finished at %d" (point)))
+	(languide:debug-message 'beginning-of-statement-internal
+				"in blank area at %d..%d" (point) (1+ starting-point))
+      (languide:debug-message 'beginning-of-statement-internal
+			      "final step of b-o-s-i: not in blank")
+      (skip-to-actual-code starting-point))
+      (debug-overlay (point) starting-point "Finished" "purple"))
+  (languide:debug-message 'beginning-of-statement-internal
+			  "beginning-of-statement-internal finished at %d" (point)))
 
-(defmodal end-of-statement-internal (c-mode perl-mode) ()
-  "Move to the end of a C or Perl statement."
+(defmodal end-of-statement-internal (c-mode perl-mode java-mode) ()
+  "Move to the end of a C, Perl or Java statement."
   (let ((old (point))
 	;; get beginning of defun, so we can see whether we have landed in a
 	;; string or comment
@@ -321,7 +357,7 @@ Need only work if already at or just beyond the end of a statement."
 	      (forward-char 1)))))
 
     (languide:debug-message 'end-of-statement-internal "Now at %d=%c, which is not in a comment or string; the latest match, which is \"%s\", starts at %d"
-	     (point) (char-after (point)) (match-string 0) (match-beginning 0))
+			    (point) (char-after (point)) (match-string 0) (match-beginning 0))
     (cond
      ((= (char-after (1- (point))) ?{)
       (languide:debug-message 'end-of-statement-internal "Found block start")
@@ -329,10 +365,13 @@ Need only work if already at or just beyond the end of a statement."
       (forward-sexp 1)))
     (cond
      ((save-excursion
+	(languide:debug-message 'end-of-statement-internal "skipping from %d to look for else" (point))
 	(skip-to-actual-code)
+	(languide:debug-message 'end-of-statement-internal "skipped to %d to look for else" (point))
 	(looking-at "else"))
       (languide:debug-message 'end-of-statement-internal "Found ELSE")
-      (forward-sexp 2)	  ; NB assumes using { } -- should change this
+      (forward-sexp 1)
+      (end-of-statement-internal)
       )
      ((save-excursion
 	(skip-to-actual-code)
@@ -349,7 +388,9 @@ Need only work if already at or just beyond the end of a statement."
 	(skip-to-actual-code)
 	(forward-sexp 2)
 	(if (looking-at "[ \t\r\n]")
-	    (skip-to-actual-code)))))))
+	    (skip-to-actual-code))))))
+  (languide:debug-message 'end-of-statement-internal
+			  "end-of-statement-internal finished at %d" (point)))
 
 (defvar c-binding-regexp-1
   "\\(\\(struct +\\)?[a-z][a-z0-9_]* *\\*?\\[?\\]?\\) *\\([a-z][a-z0-9_]*\\) *\\(=\\|;\\)"
@@ -366,9 +407,10 @@ this does not have to work."
       (cond
        ((string= keyword-string "if")
 	(save-excursion
-	  (forward-sexp 3)
-	  (skip-to-actual-code)
-	  (if (looking-at "else")
+	  (if (and (safe-forward-sexp 2)
+		   (next-statement-internal 1)
+		   (skip-to-actual-code)
+		   (looking-at "else"))
 	      'if-then-else
 	    'if-then)))
        ((string= keyword-string "for") 'for)
@@ -381,21 +423,21 @@ this does not have to work."
        ((string= keyword-string "do") 'do-while)
        (t nil))))
    ((save-excursion
-      (forward-sexp 1)
-      (looking-at " *=[-+*/]? *"))
+      (and (safe-forward-sexp 1)
+	   (looking-at " *[-+*/]?= *")))
     'assignment)
    ((save-excursion
-      (forward-sexp 1)
-      (looking-at "\\(++\\)\\|\\(--\\)"))
+      (and (safe-forward-sexp 1)
+	   (looking-at "\\(++\\)\\|\\(--\\)")))
     'assignment)
    ((save-excursion
-      (forward-sexp 1)
-      (looking-at " *("))
+      (and (safe-forward-sexp 1)
+	   (looking-at " *(")))
     'function-call)
    ;; todo: recognize variable declarations with and without initial values
    ((save-excursion
-      (forward-sexp 2)
-      (looking-at " *[=;] *"))
+      (and (safe-forward-sexp 2)
+	   (looking-at " *[=;] *")))
     ;; (message "vardef1")
     'variable-declaration)
    ((save-excursion
@@ -416,9 +458,17 @@ this does not have to work."
   "Insert a block start."
   (insert "{ "))
 
+(defmodal compound-statement-open (c-mode perl-mode) ()
+  "Return a block start."
+   "{")
+
 (defmodal insert-compound-statement-close (c-mode perl-mode) ()
   "Insert a block end."
   (insert "}"))
+
+(defmodal compound-statement-close (c-mode perl-mode) ()
+  "Return a block end."
+  "}")
 
 (defmodal statement-container (c-mode perl-mode java-mode) ()
   "Select the container of the current statement."
@@ -450,6 +500,7 @@ this does not have to work."
 				    ;;					(nth 4 result)
 
 				    ))
+	(when in-comment-or-string (goto-char in-comment-or-string))
 	(languide:debug-message 'statement-container "in-comment-or-string=%S" in-comment-or-string)
 	;;	    (if in-comment-or-string
 	;;		(forward-char 1))
@@ -545,6 +596,11 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   "Move to before the current function definition."
   (c-mark-function))			; pollutes mark ring -- sorry
 
+(defmodal block-statement-at-end-p (c-mode java-mode perl-mode) ()
+  "Return whether we are at the end of a block statement."
+  (skip-to-actual-code)
+  (looking-at "}"))
+
 (defstatement comment (c-mode)
   "Comment"
   (head "/\\* *")
@@ -576,7 +632,10 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defstatement if-then (c-mode java-mode perl-mode)
   "If statement without else clause."
   (head "if" (expression-contents))
-  (body "if" (expression) (expression-contents))
+  (body "if" (expression) (statement))
+  (framework (remember "if") (remember "(") (expressions) (remember ")")
+	     (skip-to-actual-code) (continue-if "{")
+	     (remember "{") (expressions) (remember "}"))
   (create (template & > "if (" p ") {" n>
 		    r "}"))
   (begin-end "if () {" end "}")
@@ -585,8 +644,17 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defstatement if-then-else (c-mode java-mode perl-mode)
   "If statement with else clause."
   (head "if" (expression-contents))
-  (body "if" (expression) (expression-contents))
-  (tail "if" (expression) (expression) "else" (expression-contents))
+  (body "if" (expression) (statement))	; todo: make a new navigator that selects the simple statement, or the statements that make up a compound statement
+  (tail "if" (expression) (statement) "else" (statement))
+  (framework (remember "if") (remember "(") (expressions) (remember ")")
+	     (skip-to-actual-code)
+	     (if "{"
+		 ((remember "{") (statements) (remember "}"))
+	       (statement))
+	     (remember "else")
+	     (skip-to-actual-code)
+	     (continue-if "{")
+	     (remember "{") (statements) (remember "}"))
   (create (template & > "if (" p ") {" n>
 		    r "} else {"n>
 		    p "}"))
@@ -611,9 +679,21 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defstatement for (c-mode java-mode perl-mode)
   "For statement."
   (head "for" (expression-contents))
-  (body "for" (expression) (expression-contents))
-  (create (template & > "while (" p ";" p ";" p ") {" n>
+  (body "for" (expression) (statement))
+  (framework (remember "for") (remember "(") (expressions) (remember ")")
+	     (remember "{") (statements) (remember "}"))
+  (create (template & > "for (" p ";" p ";" p ") {" n>
 		    r "}")))
+
+(defstatement switch (c-mode java-mode)
+  "Switch statement"
+  (head "switch" (expression-contents))
+  (body "switch" (expression) (statement))
+  (framework (remember "switch") (remember "(") (expressions) (remember ")")
+	     (remember "{") (statements) (remember "}"))
+  (create (template & > "switch (" p ";" p ";" p ") {" n>
+		    r "}")))
+
 
 (defstatement defun (perl-mode)
   "Function definition"
