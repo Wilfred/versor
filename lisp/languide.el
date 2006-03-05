@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-02-21 15:17:24 jcgs>
+;;; Time-stamp: <2006-03-03 16:54:18 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -76,7 +76,8 @@
 (provide 'languide)
 (require 'cl)
 (require 'modal-functions)
-(require 'versor-commands) ; for versor:as-motion-command
+(require 'versor-commands)		; for versor:as-motion-command
+(require 'versor-base-moves)		; for safe-scan-lists
 (require 'statement-navigation)
 (require 'statement-definition)
 (require 'languide-bindings)
@@ -86,7 +87,13 @@
 ;;;; debugging
 
 (defvar languide:debug-messages t)
-(defvar debug-functions '(beginning-of-statement-internal continue-back-past-curly-ket previous-statement navigate-to))
+(defvar debug-functions '(
+			 ;;  beginning-of-statement-internal
+			  ;; end-of-statement-internal
+			  ;; continue-back-past-curly-ket
+			  previous-statement
+			  next-statement
+			  navigate-to))
 
 (defun languide:debug-message (function format &rest args)
   (when (and languide:debug-messages
@@ -95,13 +102,6 @@
     (message "%S: %s" function (apply 'format format args)))
   (when (numberp languide:debug-messages)
     (sit-for languide:debug-messages)))
-
-(defun safe-scan-lists (from count depth)
-  "Like scan-lists, but returns nil on error."
-  (condition-case
-      error-var
-      (scan-lists from count depth)
-    (error nil)))
 
 (defun outward-once ()
   "Move outward one level of brackets, going backward.
@@ -132,8 +132,14 @@ Returns point, if there was a bracket to go out of, else nil."
 (defmodel insert-compound-statement-open ()
   "Insert the start of a compound statement")
 
+(defmodel compound-statement-open ()
+  "Return a block start.")
+
 (defmodel insert-compound-statement-close ()
   "Insert the end of a compound statement")
+
+(defmodel compound-statement-close ()
+  "Return a block end.")
 
 (defmodel statement-container ()
   "Select the container of the current statement.")
@@ -156,12 +162,31 @@ A DOCSTRING may also be given.")
 This assumes that we start in actual code too.
 LIMIT, if given, limits the movement."
   (interactive)
-  (parse-partial-sexp (point) (if limit limit (point-max))
-		      0			; target-depth
-		      t			; stop-before
-		      nil		; state
-		      nil		; stop-comment
-		      )
+  (let* ((bod (save-excursion (beginning-of-defun) (point)))
+	 (parse-results (parse-partial-sexp bod (point)
+					    0
+					    nil
+					    nil
+					    nil))
+	 (in-comment-or-string (nth 8 parse-results)))
+    (when in-comment-or-string
+      (message "Getting out of comment or string")
+      (goto-char in-comment-or-string)))
+  (while (progn
+	   (skip-syntax-forward "->")
+	   ;; (message "now at %d" (point))
+	   (if (looking-at "\\s<")
+	       (progn
+		 (message "at comment start")
+		 (re-search-forward "\\s>" limit t))
+	     (if (and (stringp comment-start-skip)
+		      (stringp comment-end)
+		      (looking-at comment-start-skip))
+		 (progn
+		   (message "at comment-start")
+		   (goto-char (match-end 0))
+		   (search-forward comment-end limit t))
+	       nil))))
   (point))
 
 ;;;; define statements for some common languages
