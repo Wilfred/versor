@@ -1,5 +1,5 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2006-02-24 13:51:53 jcgs>
+;;; Time-stamp: <2006-02-28 10:23:30 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -87,6 +87,10 @@ could wrap the outermost forms of a \"defun\" with a \"let\".")
 
 (defmodel insert-variable-declaration (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
+TYPE and INITIAL-VALUE may be null, but the NAME is required.")
+
+(defmodel insert-global-variable-declaration (name type initial-value)
+  "Insert a definition for a global variable called NAME, of TYPE, with INITIAL-VALUE.
 TYPE and INITIAL-VALUE may be null, but the NAME is required.")
 
 ;;; end of languide-bindings.el
