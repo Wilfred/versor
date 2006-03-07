@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-03-03 20:06:56 jcgs>
+;;; Time-stamp: <2006-03-06 16:12:05 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -596,11 +596,6 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   "Move to before the current function definition."
   (c-mark-function))			; pollutes mark ring -- sorry
 
-(defmodal block-statement-at-end-p (c-mode java-mode perl-mode) ()
-  "Return whether we are at the end of a block statement."
-  (skip-to-actual-code)
-  (looking-at "}"))
-
 (defstatement comment (c-mode)
   "Comment"
   (head "/\\* *")
@@ -632,7 +627,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defstatement if-then (c-mode java-mode perl-mode)
   "If statement without else clause."
   (head "if" (expression-contents))
-  (body "if" (expression) (statement))
+  (body "if" (expression) (statement-contents))
   (framework (remember "if") (remember "(") (expressions) (remember ")")
 	     (skip-to-actual-code) (continue-if "{")
 	     (remember "{") (expressions) (remember "}"))
@@ -644,8 +639,8 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defstatement if-then-else (c-mode java-mode perl-mode)
   "If statement with else clause."
   (head "if" (expression-contents))
-  (body "if" (expression) (statement))	; todo: make a new navigator that selects the simple statement, or the statements that make up a compound statement
-  (tail "if" (expression) (statement) "else" (statement))
+  (body "if" (expression) (statement-contents))
+  (tail "if" (expression) (statement) "else" (statement-contents))
   (framework (remember "if") (remember "(") (expressions) (remember ")")
 	     (skip-to-actual-code)
 	     (if "{"
@@ -664,7 +659,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defstatement while-do (c-mode java-mode perl-mode)
   "While statement."
   (head "while" (expression-contents))
-  (body "while" (expression) (expression-contents))
+  (body "while" (expression) (statement-contents))
   (create (template & > "while (" p ") {" n>
 		    r "}"))
   (begin-end "while () {" "}")
@@ -672,14 +667,14 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 
 (defstatement do-while (c-mode java-mode perl-mode)
   "Do-While statement."
-  (head "do" (expression-contents) "while" (expression))
-  (body "do" (expression-contents))
+  (head "do" (statement) "while" (expression))
+  (body "do" (statement-contents))
   (create (template & > "do {" r "} while (" p ")" n>)))
 
 (defstatement for (c-mode java-mode perl-mode)
   "For statement."
   (head "for" (expression-contents))
-  (body "for" (expression) (statement))
+  (body "for" (expression) (statement-contents))
   (framework (remember "for") (remember "(") (expressions) (remember ")")
 	     (remember "{") (statements) (remember "}"))
   (create (template & > "for (" p ";" p ";" p ") {" n>
@@ -688,17 +683,31 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defstatement switch (c-mode java-mode)
   "Switch statement"
   (head "switch" (expression-contents))
-  (body "switch" (expression) (statement))
+  (body "switch" (expression) (statement-contents))
   (framework (remember "switch") (remember "(") (expressions) (remember ")")
 	     (remember "{") (statements) (remember "}"))
   (create (template & > "switch (" p ";" p ";" p ") {" n>
 		    r "}")))
 
+(defstatement defun (c-mode java-mode)
+  "Function definition"
+  (head)
+  (body)
+  (tail)
+  (framework)
+  (create (template & >  (p "Function result type: ") (p "Function name: ")
+		    "("  (p "Function argument: ") ")"
+		    n>
+		    "{" n>
+		    r
+		    "}" n))
+  (begin-end "(" ")\n{\n}"))
 
 (defstatement defun (perl-mode)
   "Function definition"
   (head "sub" (expression-contents))
   (body "sub" (expression) (expression-contents))
+  (framework (remember "sub") (remember "{") (statements) (remember "}"))
   (create (template & > "sub " (p "Function name: ")
 		    n>
 		    "{" n>
@@ -710,6 +719,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   "My variables"
   (head "my (" (expressions))
   (body "my" (expression) (expressions))
+  (framework (remember "my") (remember "(") (expressions) (remember ")"))
   (create (template & > "my (" p ")" n)))
 
 (defstatement variable-declaration (c-mode java-mode)
@@ -717,24 +727,28 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   ;; todo: recognize local variables with and without initial values, as separate statement types
   (head "=" (start-of-match) (from-start-of-statement))
   (body "=" (upto ";"))
+  (framework (remember "=") (remember ";"))
   (create (template & > " " p ";" n)))
 
 (defstatement assignment (perl-mode c-mode java-mode)
   "Assignment"
   (head "=" (start-of-match) (from-start-of-statement))
   (body "=" (upto ";"))
+  (framework (remember "=") (remember ";"))
   (create (template & > (p "Variable: ") " = " r ";")))
 
 (defstatement function-call (perl-mode c-mode java-mode)
   "Function call"
   (head (expression))
   (body (expression) (expression-contents))
+  (framework (remember "(") (expressions) (remember ")"))
   (create (template & > (p "Function name: ") "(" r ")")))
 
 (defstatement return (c-mode java-mode)
   "Return, with optional result"
   (head "return" (start-of-match) (from-start-of-statement))
   (body "return" (upto ";"))
+  (framework (remember "return") (expression) (remember ";"))
   (create (template & > "return" r ";")))
 
 (defstatement and (perl-mode c-mode java-mode)
