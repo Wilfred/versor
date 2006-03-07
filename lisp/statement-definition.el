@@ -1,5 +1,5 @@
 ;;;; statement-definition.el -- description mechanism for statement syntax in various languages
-;;; Time-stamp: <2006-01-17 19:05:51 jcgs>
+;;; Time-stamp: <2006-02-28 16:10:02 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -67,7 +67,7 @@ or a skeleton."
   "Turn PART into a statement descriptor."
   (let ((type (car part)))
     (cond
-     ((memq type '(head body tail))
+     ((memq type '(head body tail framework))
       (cons type `(statement-navigate ,@(cdr part))))
      ((eq type 'create)
       (mapcar 'make-statement-create-part
@@ -163,12 +163,14 @@ or a skeleton."
   (message "want postcondition %S" postcondition)
   )
 
-(defun create-or-surround (surrounding)
+(defun create-or-surround (surrounding &optional statement)
   "Insert a statement of the current type, optionally SURROUNDING the current region.
-Interactively, uses the current surrounding / following status."
+Interactively, uses the current surrounding / following status.
+Optionally, the statement type can be passed in as second argument."
   (interactive (list (not (eq statement-navigation-forwards 'forwards))))
-  (let ((tempo-interactive t)
-	(description (get-statement-part statement-navigation-type 'create)))
+  (let* ((tempo-interactive t)
+	 (statement-type (or statement statement-navigation-type))
+	 (description (get-statement-part statement-navigation-type 'create)))
     (if description
 	(progn
 	  (message "Handling description %s" description)
@@ -184,6 +186,6 @@ Interactively, uses the current surrounding / following status."
 	    (message "postcondition %S" (cdr (car description)))
 	    (mapcar 'languide-postcondition (cdr (car description)))
 	    (setq description (cdr description))))
-      (error "No %S defined for %S for %S" part statement-navigation-type major-mode))))
+      (error "No %S defined for %S for %S" part statement-type major-mode))))
 
 ;;; end of statement-definition.el

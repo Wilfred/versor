@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-02-24 18:20:34 jcgs>
+;;; Time-stamp: <2006-02-28 14:56:34 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;

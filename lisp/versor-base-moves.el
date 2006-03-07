@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-02-24 18:11:49 jcgs>
+;;; Time-stamp: <2006-03-03 13:10:11 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -99,6 +99,27 @@
       (progn
 	(apply 'down-list args)
 	t)
+    (error nil)))
+
+(defun safe-scan-sexps (from count)
+  "Like scan-sexps, but returns nil on error."
+  (condition-case error-var
+      (scan-sexps from count)
+    (error nil)))
+
+(defun safe-scan-lists (from count depth)
+  "Like scan-lists, but returns nil on error."
+  (condition-case
+      error-var
+      (scan-lists from count depth)
+    (error nil)))
+
+(defun safe-forward-sexp (from)
+  "Like forward-sexp, but returns point on success and nil on error."
+  (condition-case error-var
+      (progn
+	(forward-sexp from)
+	(point))
     (error nil)))
 
 (defvar versor:reformat-automatically t
@@ -207,19 +228,6 @@ Makes a two-part selection, of opening and closing brackets."
 ;;   (save-excursion
 ;;     (delete-region (point) (1+ (point)))
 ;;     (insert -1)))
-
-(defun safe-scan-sexps (from count)
-  "Like scan-sexps, but returns nil on error."
-  (condition-case error-var
-      (scan-sexps from count)
-    (error nil)))
-
-(defun safe-scan-lists (from count depth)
-  "Like scan-lists, but returns nil on error."
-  (condition-case
-      error-var
-      (scan-lists from count depth)
-    (error nil)))
 
 (defmodel first-sexp ()
   "Move back by sexps until you can go back no more."

@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-02-21 14:11:37 jcgs>
+;;; Time-stamp: <2006-02-28 10:54:07 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,15 @@ The variable name is left at the top of the kill ring."
   (versor:as-motion-command
    (let* ((item (versor:get-current-item)))
      (languide-convert-region-to-variable (car item) (cdr item) name))))
+
+(defun versor:convert-selection-to-global-variable (name)
+  "Make a variable declaration holding the current selection, and substitute it.
+Useful when you realize you want to re-use a value you had calculated in-line.
+The variable name is left at the top of the kill ring."
+  (interactive "sVariable name: ")
+  (versor:as-motion-command
+   (let* ((item (versor:get-current-item)))
+     (languide-convert-region-to-global (car item) (cdr item) name))))
 
 (defun versor:convert-selection-to-function (name)
   "Take the selected code, and make it into a function, substituting a call to it.
@@ -55,6 +64,15 @@ The function name is left at the top of the kill ring."
   (versor:as-motion-command
    (let* ((item (versor:get-current-item)))
      (languide-unify-statements-region (car item) (cdr item)))))
+
+(defun versor:comment-selection ()
+  "Turn the selection into a comment."
+  (interactive)
+  (versor:as-motion-command
+   (let* ((items (versor:get-current-items)))
+     (while items
+       (comment-region (caar items) (cdar items))
+       (setq items (cdr items))))))
 
 (defun versor:enclosing-scoping-point ()
   "Move to enclosing scoping point"

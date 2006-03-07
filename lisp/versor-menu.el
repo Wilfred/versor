@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2006-02-10 09:54:56 jcgs>
+;;; Time-stamp: <2006-03-02 18:35:41 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -80,6 +80,7 @@ Allows various actions that depend on the current fine movement dimension."
 	      ;; cannibalize ~/open-projects/emacs-pedals/handsfree-tools-menus.el for
 	      ;; more to go here -- stuff like tag lookup
 	      ("language operations" . versor:languide-menu)
+	      ("versor insertions" . versor:insertions-menu)
 	      ("find" . dwim-find)
 	      ("describe" . dwim-help)
 	      ("search for next %s" . versor:search)
@@ -96,6 +97,29 @@ Allows various actions that depend on the current fine movement dimension."
   (let ((versor:level-shadow versor:level)
 	(versor:meta-level-shadow versor:meta-level))
     (tmm-prompt (versor:generate-dynamic-menu))))
+
+(defun versor:insertions-menu ()
+  "Run the versor insertions menu."
+  (interactive)
+  (let ((versor:insertion-using-menu t))
+    (tmm-prompt (versor:generate-insertions-menu))))
+
+(defun versor:generate-insertions-menu ()
+  "Generate insertions menu for versor.
+Allows various actions that depend on the current fine movement dimension."
+  (let ((dynamic-menu (make-sparse-keymap "Versor insertions menu")))
+    (mapcar (function
+	     (lambda (name-command)
+	       (let* ((raw-name (car name-command))
+		      (formatted-name (format raw-name versor:current-level-name))
+		      )
+		 (versor:add-menu-item dynamic-menu formatted-name (cdr name-command)))))
+	    '(
+	      ("insert before %s" . versor:insert-before)
+	      ("insert after %s" . versor:insert-after)
+	      ("insert around %s" . versor:insert-around)
+	      ))
+    dynamic-menu))
 
 ;;;;experimental!!!!!!!!!!!!!!!!
 

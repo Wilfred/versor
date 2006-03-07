@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-03-03 16:54:18 jcgs>
+;;; Time-stamp: <2006-03-06 15:59:14 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -157,11 +157,9 @@ A DOCSTRING may also be given.")
 (defmodel move-before-defun ()
   "Move to before the current function definition.")
 
-(defun skip-to-actual-code (&optional limit)
-  "Skip forward, over any whitespace or comments, to the next actual code.
-This assumes that we start in actual code too.
-LIMIT, if given, limits the movement."
-  (interactive)
+(defun backward-out-of-comment ()
+  "If in a comment, move to just before it, else do nothing..
+Returns whether it did anything."
   (let* ((bod (save-excursion (beginning-of-defun) (point)))
 	 (parse-results (parse-partial-sexp bod (point)
 					    0
@@ -169,9 +167,16 @@ LIMIT, if given, limits the movement."
 					    nil
 					    nil))
 	 (in-comment-or-string (nth 8 parse-results)))
-    (when in-comment-or-string
-      (message "Getting out of comment or string")
-      (goto-char in-comment-or-string)))
+    (if in-comment-or-string
+	(goto-char in-comment-or-string)
+      nil)))
+
+(defun skip-to-actual-code (&optional limit)
+  "Skip forward, over any whitespace or comments, to the next actual code.
+This assumes that we start in actual code too.
+LIMIT, if given, limits the movement."
+  (interactive)
+  (backward-out-of-comment)
   (while (progn
 	   (skip-syntax-forward "->")
 	   ;; (message "now at %d" (point))
@@ -187,6 +192,16 @@ LIMIT, if given, limits the movement."
 		   (goto-char (match-end 0))
 		   (search-forward comment-end limit t))
 	       nil))))
+  (point))
+
+(defun skip-to-actual-code-backwards (&optional limit)
+  "Skip backward, over any whitespace or comments, to the next actual code.
+This assumes that we start in actual code too.
+LIMIT, if given, limits the movement."
+  (interactive)
+  (while (progn
+	   (skip-syntax-backward "->")
+	   (backward-out-of-comment)))
   (point))
 
 ;;;; define statements for some common languages

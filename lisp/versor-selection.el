@@ -1,9 +1,9 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2005-10-18 14:22:38 jcgs>
+;;; Time-stamp: <2006-03-03 17:07:33 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -50,13 +50,30 @@ other emacs commands.")
 
 (defun versor:set-current-item (start end)
   "Set the START and END of the current item, and get rid of any extra parts."
-  (mapcar 'delete-overlay (cdr versor:items))
-  (rplacd versor:items nil)
+  (when versor:items
+      (mapcar 'delete-overlay (cdr versor:items))
+    (rplacd versor:items nil))
   (let ((item (and versor:items
 		   (car versor:items))))
     (if (and (overlayp item) (overlay-buffer item))
 	(move-overlay item start end (current-buffer))
       (make-versor:overlay start end))))
+
+(defun versor:set-current-items (items)
+  "Set the ITEMS, given as conses."
+  (mapcar 'delete-overlay versor:items)
+  (if (null items)
+      (setq versor:items nil)
+    (setq versor:items
+	  (mapcar (lambda (item)
+		    (let ((overlay (make-overlay (car item) (cdr item))))
+		      (overlay-put overlay 'face
+				   (if versor:use-face-attributes
+				       'versor:item
+				     'region))
+		      overlay))
+		  items))
+    (goto-char (apply 'min (mapcar 'car items)))))
 
 (defun versor:current-item-valid ()
   "Return whether there is a valid current item."

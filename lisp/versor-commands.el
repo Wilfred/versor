@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-02-27 10:51:30 john>
+;;; Time-stamp: <2006-03-03 11:41:22 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -22,6 +22,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (provide 'versor-commands)
+(require 'versor-menu)
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;; reversing ;;;;
@@ -41,10 +42,17 @@ It is enabled by the variable versor:reversible, which see.")
 ;;;; more structure ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defvar versor:pre-command-hook nil
+  "Hooks to run at the start of versor commands.")
+
+(defvar versor:post-command-hook nil
+  "Hooks to run at the end of versor commands.")
+
 (defmacro versor:as-motion-command (&rest body)
   "Run BODY as a versor motion command.
 Necessary pre- and post-processing get done."
   `(progn
+     (run-hooks 'versor:pre-command-hook)
      (versor:clear-current-item-indication)
      (progn
        ;; The body may call versor:set-current-item to show us where
@@ -55,7 +63,8 @@ Necessary pre- and post-processing get done."
      ;; the few commands that want to do otherwise, must re-set this
      ;; one just after using this macro
      (setq versor:extension-direction nil)
-     (versor:indicate-current-item)))
+     (versor:indicate-current-item)
+     (run-hooks 'versor:post-command-hook)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; commands begin here ;;;;
@@ -531,7 +540,10 @@ this."
   "Alist for reading what kind of insertion to do.
 Almost a keymap, but the functions it contains are not commands.")
 
-(defun versor:definesert (key fun)
+(defvar versor:insertion-kinds-menu (make-sparse-keymap "Insertion kinds")
+  "Menu for kinds of insertions.")
+
+(defun versor:definesert (key fun &optional menu-label)
   "Bind KEY to FUN in the map for choosing kinds of insertion.
 This lets us have uniform insertion commands with various origins of
 things to insert. We want to this because of being able to insert
@@ -542,7 +554,8 @@ can delete an opening and closing bracket together.
 FUN should take one argument, the number of items to return.
 It should return a list of that many items.
 For insert-around, the first thing in the list is inserted before the selection,
-and the second is inserted after it."
+and the second is inserted after it.
+If a MENU-LABEL is given, add that to versor:insertions-menu."
   (if (or (stringp key) (vectorp key)) (setq key (aref key 0)))
   (let ((binding (assoc key versor:insertion-kind-alist)))
     (if binding
@@ -550,7 +563,13 @@ and the second is inserted after it."
       (setq versor:insertion-kind-alist
 	    (cons
 	     (cons key fun)
-	     versor:insertion-kind-alist)))))
+	     versor:insertion-kind-alist))))
+  (when menu-label
+    (versor:add-menu-item versor:insertion-kinds-menu
+			  menu-label
+			  `(lambda ()
+			    (interactive)
+			    (funcall ,fun n)))))
 
 (defun versor:top-n-kills (n &optional offset)
   "Return the top N entries in the kill ring.
@@ -566,14 +585,14 @@ With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
   "Return the N most recent searches."
   (subseq search-ring 0 n))
 
-(versor:definesert "\d" 'versor:top-n-kills)
+(versor:definesert "\d" 'versor:top-n-kills "Latest kill")
 (versor:definesert [ kp-delete ] 'versor:top-n-kills)
 (versor:definesert [ delete ] 'versor:top-n-kills)
 (versor:definesert [ DEL ] 'versor:top-n-kills)
 (versor:definesert [ backspace ] 'versor:top-n-kills)
 (versor:definesert "\C-y" 'versor:top-n-kills)
 (versor:definesert "1" (lambda (n) (versor:top-n-kills n 1)))
-(versor:definesert "2" (lambda (n) (versor:top-n-kills n 2)))
+(versor:definesert "2" (lambda (n) (versor:top-n-kills n 2)) "Latest 2 kills")
 (versor:definesert "3" (lambda (n) (versor:top-n-kills n 3)))
 (versor:definesert "4" (lambda (n) (versor:top-n-kills n 4)))
 (versor:definesert "5" (lambda (n) (versor:top-n-kills n 5)))
@@ -581,18 +600,23 @@ With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
 (versor:definesert "7" (lambda (n) (versor:top-n-kills n 7)))
 (versor:definesert "8" (lambda (n) (versor:top-n-kills n 8)))
 (versor:definesert "9" (lambda (n) (versor:top-n-kills n 9)))
-(versor:definesert "f" (lambda (n) (list (save-window-excursion (buffer-file-name (window-buffer (other-window 1)))))))
+(versor:definesert "f"
+		   (lambda (n)
+		     (list (save-window-excursion
+			     (buffer-file-name
+			      (window-buffer (other-window 1))))))
+		   "Name of file in other window")
 (versor:definesert "\C-s" 'versor:top-n-searches)
-(versor:definesert "(" (lambda (n) (list "(" ")")))
-(versor:definesert "[" (lambda (n) (list "[" "]")))
-(versor:definesert "{" (lambda (n) (list "{" "}")))
-(versor:definesert "<" (lambda (n) (list "<" ">")))
-(versor:definesert "?" (lambda (n) (versor:statement-insertion-strings 'if-then)))
-(versor:definesert "@" (lambda (n) (versor:statement-insertion-strings 'while-do)))
-(versor:definesert "&" (lambda (n) (versor:statement-insertion-strings 'and)))
-(versor:definesert "|" (lambda (n) (versor:statement-insertion-strings 'or)))
-(versor:definesert "!" (lambda (n) (versor:statement-insertion-strings 'not)))
-(versor:definesert "=" (lambda (n) (versor:statement-insertion-strings 'variable-declaration)))
+(versor:definesert "(" (lambda (n) (list "(" ")")) "()")
+(versor:definesert "[" (lambda (n) (list "[" "]")) "[]")
+(versor:definesert "{" (lambda (n) (list "{" "}")) "{}")
+(versor:definesert "<" (lambda (n) (list "<" ">")) "<>")
+(versor:definesert "?" (lambda (n) (versor:statement-insertion-strings 'if-then)) "if-then")
+(versor:definesert "@" (lambda (n) (versor:statement-insertion-strings 'while-do)) "while-do")
+(versor:definesert "&" (lambda (n) (versor:statement-insertion-strings 'and)) "and")
+(versor:definesert "|" (lambda (n) (versor:statement-insertion-strings 'or)) "or")
+(versor:definesert "!" (lambda (n) (versor:statement-insertion-strings 'not)) "not")
+(versor:definesert "=" (lambda (n) (versor:statement-insertion-strings 'variable-declaration)) "variable declaration")
 
 (defvar versor:statement-insertion-with-dummy-value nil
   "*Whether versor statement insertion puts a placeholder value in when adding something.
@@ -620,16 +644,21 @@ You can then change the value, using the versor alterations system.")
 ;; (versor:definesert "f" 'languide-get-function-insertion)
 ;; (versor:definesert "t" 'versor:get-tag-insertion)
 
+(defvar versor:insertion-using-menu nil
+  "Whether the insertion is being done from a menu.")
+
 (defun versor:get-insertable (n &optional prompt)
   "Return N things to insert, having asked the user for what kind of insertion this is.
 This lets us do commands such as insert-around using a common framework."
   ;; should also be available for putting things into the search string --
   ;; in which case it ought to have a different name
-  (let* ((key (read-event (if prompt prompt "Kind of insertion: ")))
-	 (command (assoc key versor:insertion-kind-alist)))
-    (if (consp command)
-	(funcall (cdr command) n)
-      (error "%S in not bound to a kind of insertion" key))))
+  (if versor:insertion-using-menu
+      (tmm-prompt versor:insertion-kinds-menu)
+      (let* ((key (read-event (if prompt prompt "Kind of insertion: ")))
+	     (command (assoc key versor:insertion-kind-alist)))
+	(if (consp command)
+	    (funcall (cdr command) n)
+	  (error "%S in not bound to a kind of insertion" key)))))
 
 (defun insert-active (insertion)
   "If INSERTION is a string, insert it; if a function, call it.

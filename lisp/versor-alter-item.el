@@ -1,5 +1,5 @@
 ;;;; versor-alter-item.el -- choose possible value for the current item
-;;; Time-stamp: <2006-02-01 18:57:39 jcgs>
+;;; Time-stamp: <2006-02-28 10:12:37 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -211,6 +211,13 @@ some of which expect an argument."
 (defun versor:get-statement-types (&rest junk)
   (get-statement-types))
 
+(defmodel versor:get-language-constants (where)
+  "Return the common constants for a language.")
+
+(defmodal versor:get-language-constants (emacs-lisp-mode lisp-interaction-mode lisp-mode) (where)
+  "Return the common constants for Lisp."
+  '(("t" . "t") ("nil" . "nil")))
+
 (defmodal versor:get-alterations-possibility-types
   (
    ;; probably most programming language modes will use this definition
@@ -221,6 +228,7 @@ some of which expect an argument."
   '(("local variables" variables-in-scope)
     ("tags" versor:tags-as-alist)
     ("statements" versor:get-statement-types)
+    ("constants" versor:get-language-constants)
     ("sorted tags" versor:tags-as-sorted-alist)
     ("current" versor:alterations-get-current)))
 
