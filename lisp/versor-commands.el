@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-03-03 11:41:22 jcgs>
+;;; Time-stamp: <2006-03-09 12:04:06 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -23,6 +23,7 @@
 
 (provide 'versor-commands)
 (require 'versor-menu)
+(require 'versor-trim-whitespace)
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;; reversing ;;;;
@@ -461,6 +462,20 @@ this."
 	   (goto-char (car item))
 	   (sit-for 1)))))))
 
+(defun abbreviate-cut-string (cut-string)
+  "Return a string based on CUT-STRING but more suitable for display in the minibuffer."
+  (subst-char-in-string
+   ?\t ? 
+   (subst-char-in-string
+    ?\n ?  
+    (if (< (length cut-string) (frame-width))
+	cut-string
+      (let ((w (/ (- (frame-width) 13 ) 2)))
+	(concat (substring cut-string 0 w)
+		" ... "
+		(substring cut-string (- w))))
+      )) t))
+
 (defun versor:kill ()
   "Kill the current item.
 If there are multiple parts to the current item (for example, opening
@@ -473,29 +488,28 @@ this."
    (let ((ready-made (versor:get-action 'delete)))
      (if ready-made
 	 (versor:call-interactively ready-made)
-      (mapcar
+       (mapcar
 	(lambda (item)
 	  (let* ((start (versor:overlay-start item))
 		 (end (versor:overlay-end item))
 		 (cut-string (buffer-substring start end)))
 	    (when (boundp 'label-with-adjacent-whitespace)
 	      (label-with-adjacent-whitespace start end cut-string))
-	    (message "Killing %s" (subst-char-in-string
-				   ?\t ? 
-				   (subst-char-in-string
-				    ?\n ?  
-				    (if (< (length cut-string) (frame-width))
-					cut-string
-				      (let ((w (/ (- (frame-width) 13 ) 2)))
-					(concat (substring cut-string 0 w)
-						" ... "
-						(substring cut-string (- w))))
-				      )) t))
+	    (message "Killing %s" (abbreviate-cut-string cut-string))
 	    (kill-new cut-string)
-	    (delete-region start end)))
-	(reverse (versor:get-current-items)))))
+	    (delete-region start end)
+	    (versor:trim-whitespace start)))
+	(versor:last-item-first))))
    (if (fboundp 'update-shown-stacks)	; from rpn-edit.el
        (update-shown-stacks))))
+
+(defun versor:yank (&optional arg)
+  "Versor wrapper for yank.
+Does yank, then adjusts whitespace, versor-style."
+  (interactive)
+  (yank arg)
+  (versor:trim-whitespace (region-end))
+  (versor:trim-whitespace (region-beginning)))
 
 (defun versor:transpose ()
   "Transpose this item with the following one."
@@ -612,6 +626,7 @@ With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
 (versor:definesert "{" (lambda (n) (list "{" "}")) "{}")
 (versor:definesert "<" (lambda (n) (list "<" ">")) "<>")
 (versor:definesert "?" (lambda (n) (versor:statement-insertion-strings 'if-then)) "if-then")
+(versor:definesert "%" (lambda (n) (versor:statement-insertion-strings 'if-then-else)) "if-then-else")
 (versor:definesert "@" (lambda (n) (versor:statement-insertion-strings 'while-do)) "while-do")
 (versor:definesert "&" (lambda (n) (versor:statement-insertion-strings 'and)) "and")
 (versor:definesert "|" (lambda (n) (versor:statement-insertion-strings 'or)) "or")
