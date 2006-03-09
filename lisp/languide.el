@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-03-06 15:59:14 jcgs>
+;;; Time-stamp: <2006-03-09 11:02:56 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -151,11 +151,32 @@ A DOCSTRING may also be given.")
 (defmodel insert-function-call (name arglist)
   "Insert a function call for a function called NAME taking ARGLIST")
 
+(defmodel function-arglist-boundaries (&optional where)
+  "Return a cons of the start and end of the argument list surrounding WHERE,
+or surrounding point if WHERE is not given.")
+
 (defmodel deduce-expression-type (value-text)
   "Given VALUE-TEXT, try to deduce the type of it.")
 
 (defmodel move-before-defun ()
   "Move to before the current function definition.")
+
+(defmodel languide-trim-whitespace (syntax-before syntax-after)
+  "Trim whitespace around point, in a language-dependent way.
+The syntax classes of the non-space chars around point are passed in
+as SYNTAX-BEFORE and SYNTAX-AFTER.")
+
+(defmodel languide-region-type (from to)
+  "Try to work out what type of thing the code between FROM and TO is.
+Results can be things like if-then-body, if-then-else-tail, progn-whole,
+while-do-head, defun-body, and so on. If one of these is returned, the
+code must be exactly that (apart from leading and trailing
+whitespace).
+If it is not recognizable as anything in particular, but ends at the
+same depth as it starts, and never goes below that depth in between,
+that is, is something that could be made into a compound statement or
+expression, return t. 
+Otherwise return nil.")
 
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing..
@@ -174,7 +195,8 @@ Returns whether it did anything."
 (defun skip-to-actual-code (&optional limit)
   "Skip forward, over any whitespace or comments, to the next actual code.
 This assumes that we start in actual code too.
-LIMIT, if given, limits the movement."
+LIMIT, if given, limits the movement.
+Returns the new point."
   (interactive)
   (backward-out-of-comment)
   (while (progn
@@ -197,7 +219,8 @@ LIMIT, if given, limits the movement."
 (defun skip-to-actual-code-backwards (&optional limit)
   "Skip backward, over any whitespace or comments, to the next actual code.
 This assumes that we start in actual code too.
-LIMIT, if given, limits the movement."
+LIMIT, if given, limits the movement.
+Returns the new point."
   (interactive)
   (while (progn
 	   (skip-syntax-backward "->")
