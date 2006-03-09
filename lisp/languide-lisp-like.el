@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-02-28 14:49:22 jcgs>
+;;; Time-stamp: <2006-03-09 12:08:10 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -64,11 +64,13 @@
   "Insert a progn's closing bracket."
   (insert ")"))
 
-(defun find-next-lisp-binding-outwards ()
+(defun find-next-lisp-binding-outwards (&optional allow-conversions)
   "Move to the next enclosing binding.
 Returns whether it found one."
   (interactive)
-  (let ((binding-pattern "(let\\*?\\>"))
+  (let ((binding-pattern (if allow-conversions
+			     "\\((let\\*?\\\\)\\|\\((progn\\)>"
+			   "(let\\*?\\>")))
     (while (and (outward-once)
 		(not (looking-at binding-pattern))))
     (looking-at binding-pattern)))
@@ -118,31 +120,56 @@ Returns whether it found one."
 	      (setq old (point))))))
       variables)))
 
-(defmodal move-to-enclosing-scope-last-variable-definition (lisp-mode emacs-lisp-mode lisp-interaction-mode)
-  (&optional variables-needed)
+(defmodal move-to-enclosing-scope-last-variable-definition
+  (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+  (&optional widest variables-needed allow-conversions)
   "Move to the end of the nearest set of variable bindings.
 This is the place at which you would naturally insert a new
 variable, allowing for its initial value referring to any
 variable already declared.
-Optional arguments list names of variables needed in the definition of the new one.
-This lets clever implementations put the definition as far out as possible."
-  (if (find-next-lisp-binding-outwards)
-      (let ((best-so-far (point)))
-	;; we've found a let, but let's see if we can find one
-	;; further out that still binds all the variables we need
-	(catch 'far-enough
-	  (while (find-next-lisp-binding-outwards)
-	    (let ((end-of-bindings (save-excursion
-				     (down-list)
-				     (forward-sexp)
-				     (point))))
-	      (if (all-variables-in-scope-p end-of-bindings variables-needed)
-		  (setq best-so-far (point))
-		(throw 'far-enough nil)))))
-	(goto-char best-so-far)
+
+Optional first argument WIDEST lets you indicate that you want the
+widest scope possible, that is, the widest at which all the variables
+needed in the definition of the new variable are already defined. If
+WIDEST is a number, it is used to count how many scoping points to
+move outwards by.
+
+Optional second argument VARIABLES-NEEDED lists names of variables
+needed in the definition of the new one. This is used if you specify
+you want the widest scope.
+
+It may create a suitable place if there is none; for example, in Lisp
+it could wrap the outermost forms of a \"defun\" with a \"let\".
+
+Optional third argument ALLOW-CONVERSIONS allows conversion of
+possible scoping points into actual ones. For example, in lisp, this
+means a \"progn\" can be changed to a \"let\"."
+  (if (find-next-lisp-binding-outwards allow-conversions)
+      (progn
+	(when widest
+	  (let ((best-so-far (point)))
+	    ;; we've found a let, but let's see if we can find one
+	    ;; further out that still binds all the variables we need
+	    (catch 'far-enough
+	      (while (find-next-lisp-binding-outwards allow-conversions)
+		(when (numberp widest)
+		  (when (zerop widest) (throw 'far-enough nil))
+		  (setq widest (1- widest)))
+		(let ((end-of-bindings (save-excursion
+					 (down-list)
+					 (forward-sexp)
+					 (point))))
+		  (if (all-variables-in-scope-p end-of-bindings variables-needed)
+		      (setq best-so-far (point))
+		    (throw 'far-enough nil)))))
+	    (goto-char best-so-far)))
 	(when (looking-at "\\((let\\)[^*]")
 	  (save-excursion
-	    (replace-match "\\1*" nil nil nil 1)))
+	    (replace-match "\\1*" t nil nil 1)))
+	(when (and allow-conversions
+		   (looking-at "(\\(progn))"))
+	  (save-excursion
+	    (replace-match "let* ()" t t nil 1)))
 	(down-list 2)
 	(let ((old (point))
 	      new)
@@ -226,6 +253,66 @@ A DOCSTRING may also be given."
   (insert "(" name " ")
   (insert-lisp-arglist-elements arglist)
   (insert ")"))
+
+(defmodal languide-find-surrounding-call (lisp-mode emacs-lisp-mode lisp-interaction-mode) ()
+  "Return a list of the function call syntax around point.
+Each entry is a cons of start and end positions. For most languages
+there will be two or three entries, the function name, the
+start-of-call or start-of-args (may be merged with the function name),
+and the end-of-call or end-of-args. Separators between arguments could
+also be included. The caller should treat these as
+coming in any order, and being in any quantity; thus, if using them to
+modify the buffer, it is usually necessary to sort them and deal with
+them in descending order of character position."
+  (save-excursion
+    (let ((bod (save-excursion (beginning-of-defun) (point))))
+      (catch 'found
+	(while (and (safe-backward-up-list)
+		    (>= (point) bod))
+	  (let ((open-bracket (cons (point) (1+ (point)))))
+	    (when (save-excursion
+		    (down-list)
+		    (skip-to-actual-code)
+		    (looking-at "\\(\\s_\\|\\sw\\)+"))
+	      (let ((function-name (cons (match-beginning 0) (match-end 0))))
+		(forward-sexp)
+		(throw 'found (list function-name open-bracket (cons (1- (point)) (point))))))))
+	nil))))
+
+(defmodal languide-trim-whitespace (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+  (syntax-before syntax-after)
+  "Trim whitespace around point, in a language-dependent way.
+The syntax classes of the non-space chars around point are passed in
+as SYNTAX-BEFORE and SYNTAX-AFTER."
+  ;; do this in two stages, as the second can happen after the first has
+  (cond
+   ((save-excursion
+      (beginning-of-line)
+      (looking-at "^\\(\\s-*\\))"))
+    (delete-region (1- (match-beginning 1)) (match-end 1))))
+  (cond
+   ((save-excursion
+      (beginning-of-line)
+      (looking-at "^\\s-*$"))
+    (delete-blank-lines)
+    (delete-blank-lines)
+    (when (looking-at "^(")
+      (open-line 1)))
+   ((and (eq syntax-before close-bracket)
+	 (eq syntax-after open-bracket))
+    (just-one-space))
+   ((or (and (eq syntax-before open-bracket)
+	     (memq syntax-after
+		   '(open-bracket ?w ?_)))
+	(and (eq syntax-after close-bracket)
+	     (memq syntax-before
+		   '(close-bracket ?w ?_))))
+    (delete-horizontal-space))))
+
+;; (defmodal function-arglist-boundaries (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+;;   (&optional where)
+;;   "Return a cons of the start and end of the argument list surrounding WHERE,
+;; or surrounding point if WHERE is not given.")
 
 (defmodal deduce-expression-type (lisp-mode emacs-lisp-mode lisp-interaction-mode) (value-text)
   "Given VALUE-TEXT, try to deduce the type of it."
@@ -333,6 +420,19 @@ Each element is a list of:
 	      (push (list (match-string-no-properties 0) where) result))
 	  (goto-char end)))
       result)))
+
+(defmodal languide-region-type (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+  (from to)
+  "Try to work out what type of thing the code between FROM and TO is.
+Results can be things like if-then-body, if-then-else-tail, progn-whole,
+while-do-head, defun-body, and so on. If one of these is returned, the
+code must be exactly that (apart from leading and trailing
+whitespace).
+If it is not recognizable as anything in particular, but ends at the
+same depth as it starts, and never goes below that depth in between,
+that is, is something that could be made into a compound statement or
+expression, return t. 
+Otherwise return nil.")
 
 (defstatement comment (lisp-mode
 		       emacs-lisp-mode
