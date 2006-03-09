@@ -1,5 +1,5 @@
 ;;;; versor-dwim.el -- move between code, comments, and strings, etc
-;;; Time-stamp: <2006-02-21 10:03:23 jcgs>
+;;; Time-stamp: <2006-03-08 12:53:29 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -43,7 +43,6 @@
 		      'line-comment))
 		  string-or-comment-start)
 	  (cons 'code nil))))))
-
 
 (defun versor:dwim-textually (&optional tried)
   "DWIM function for modes with words, phrases etc.
@@ -96,18 +95,35 @@ The optional argument says which functions have already been tried."
      ((eq loc-type 'code)
       (cond
        ;; first, try to go to the other end of an expression
-       ((and (or (= (char-syntax (char-after)) open-bracket)
-		 (looking-at "\\<"))
+       ((and (save-excursion
+	       (skip-to-actual-code)
+	       (or (= (char-syntax (char-after)) open-bracket)
+		   (looking-at "\\<")))
 	     (< versor:dwim-successive-commands 3))
 	(let ((start (point))) 
 	  (forward-sexp 1)
-	  ;; I tried this, but it didn't dwim: (skip-to-actual-code)
+	  ;; I tried this, but it didn't dwim:
+	  ;; (skip-to-actual-code)
+	  ;; try this instead
+	  ;; if in multiple spaces between things, go part way into those spaces,
+	  ;; as that is a common place to want to start typing, e.g. a replacement
+	  ;; for something you just deleted, that had a space on either side of it
+	  (when (looking-at "  +")
+	    (forward-char))
 	  (versor:set-current-item start (point)))
 	"Went from start of expression to end of it")
-       ((and (or (= (char-syntax (char-before)) close-bracket)
-		 (looking-at "\\>"))
+       ((and (save-excursion
+	       (skip-to-actual-code-backwards)
+	       (or (= (char-syntax (char-before)) close-bracket)
+		   (looking-at "\\>")))
 	     (< versor:dwim-successive-commands 3))
 	(previous-sexp 1)
+	;; if in multiple spaces, go part way into those spaces
+	(when (save-excursion
+		(skip-to-actual-code-backwards)
+		(looking-at "  +"))
+	  (skip-to-actual-code-backwards)
+	  (forward-char))
 	"Went from end of expression to start of it")
        ;; otherwise, try going into the next string or comment
        (t (let ((nearest-string (save-excursion
