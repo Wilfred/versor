@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-03-06 16:12:05 jcgs>
+;;; Time-stamp: <2006-03-09 14:13:39 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -589,12 +589,105 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (insert (mapconcat 'arg-name arglist ", "))
   (insert ")"))
 
+(defmodal languide-find-surrounding-call (c-mode java-mode perl-mode) ()
+  "Return a list of the function call syntax around point.
+Each entry is a cons of start and end positions. For most languages
+there will be two or three entries, the function name, the
+start-of-call or start-of-args (may be merged with the function name),
+and the end-of-call or end-of-args. Separators between arguments could
+also be included. The caller should treat these as coming in any
+order, and being in any quantity; thus, if using them to modify the
+buffer, it is usually necessary to sort them and deal with them in
+descending order of character position."
+  (save-excursion
+    (let ((bod (save-excursion (beginning-of-defun) (point))))
+      (catch 'found
+	(while (and (safe-backward-up-list)
+		    (>= (point) bod))
+	  (let ((open-bracket (cons (point) (1+ (point)))))
+	    (when (save-excursion
+		    (backward-sexp)
+		    (looking-at "\\(\\s_\\|\\sw\\)+"))
+	      (let ((function-name (cons (match-beginning 0) (match-end 0))))
+		(forward-sexp)
+		(throw 'found (list function-name open-bracket (cons (1- (point)) (point))))))))
+	nil))))
+
+;; (defmodal function-arglist-boundaries (c-mode java-mode perl-mode) (&optional where)
+;;   "Return a cons of the start and end of the argument list surrounding WHERE,
+;; or surrounding point if WHERE is not given.")
+
 (defmodal deduce-expression-type (c-mode java-mode perl-mode) (value-text)
   "Given VALUE-TEXT, try to deduce the type of it.")
 
 (defmodal move-before-defun (c-mode java-mode perl-mode) ()
   "Move to before the current function definition."
   (c-mark-function))			; pollutes mark ring -- sorry
+
+(defun is-under-control-statement (where)
+  "Return whether WHERE is the start of the body of a control statement."
+  (save-excursion
+    (or (and (safe-backward-sexp)
+	     (looking-at "else"))
+	(and (safe-backward-sexp)
+	     (looking-at "\\(if\\)\\|\\(while\\)\\|\\(for\\)")))))
+
+(defmodal languide-region-type (c-mode java-mode perl-mode) (from to)
+  "Try to work out what type of thing the code between FROM and TO is.
+Results can be things like if-then-body, if-then-else-tail, progn-whole,
+while-do-head, defun-body, and so on. If one of these is returned, the
+code must be exactly that (apart from leading and trailing
+whitespace).
+If it is not recognizable as anything in particular, but ends at the
+same depth as it starts, and never goes below that depth in between,
+that is, is something that could be made into a compound statement or
+expression, return t. 
+Otherwise return nil."
+  (let* ((ppe (parse-partial-sexp from to))
+	 (depth (nth 0 ppe))
+	 (min-depth (nth 6 ppe))
+	 (in-string (nth 3 ppe))
+	 (in-comment (nth 4 ppe)))
+    (message "depth=%d min-depth=%d" depth min-depth)
+    (if (or (/= depth 0)
+	    (< min-depth 0)
+	    in-string
+	    in-comment)
+	nil
+      (let* ((preceding (save-excursion
+			  (goto-char from)
+			  (skip-to-actual-code-backwards)))
+	     (following (save-excursion
+			  (goto-char to)
+			  (skip-to-actual-code))))
+	(message "preceding=%d->%c, following=%d->%c" 
+		 preceding (char-before preceding)
+		 following (char-after following))
+	(if (and (eq (char-before preceding) (compound-statement-open))
+		 (eq (char-after following) (compound-statement-close)))
+	    (progn
+	      ;; we have got a whole compound statement
+	      ;; todo: use (is-under-control-statement preceding)
+	      )
+	  ;; not a whole compound statement, first see whether it is one statement or several whole statements
+	  (let* ((real-start (save-excursion
+			       (goto-char from)
+			       (skip-to-actual-code)))
+		 (real-end (save-excursion
+			     (goto-char to)
+			     (skip-to-actual-code-backwards)))
+		 )
+	    (let ((is-single-statement (save-excursion
+					 (goto-char real-start)
+					 (next-statement)
+					 (skip-to-actual-code-backwards)
+					 (= (point) real-end)))
+		  (is-under-control
+		   (is-under-control-statement real-start)
+		   )
+		  (is-multiple-statements
+		   ))))
+	  ))))))
 
 (defstatement comment (c-mode)
   "Comment"
