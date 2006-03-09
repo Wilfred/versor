@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-02-28 14:59:37 jcgs>
+;;; Time-stamp: <2006-03-08 15:10:47 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -83,17 +83,24 @@ counts as a potential scoping point, and gets converted to
 				 (while (search-forward value (point-max) t)
 				   (replace-match ref t t)))))))
 
-(defun languide-convert-region-to-variable (from to name)
-  "Take the region between FROM and TO, and make it into a local variable called NAME."
+(defun languide-convert-region-to-variable (from to name &optional nearest)
+  "Take the expression between FROM and TO, and make it into a local variable called NAME.
+NAME is left on the top of the kill ring, as this command is meant for when you realize
+that you need to re-use the result of an expression.
+With optional NEAREST, use the narrowest binding point; otherwise use the widest scope
+in which all the variables used in the expression are defined."
   (interactive "r
-sVariable name: ")
+sVariable name: 
+P")
   (save-excursion
     (let ((value-text (buffer-substring-no-properties from to))
-	  (variables-needed (free-variables-in-region from to)))
+	  (variables-needed (if nearest
+				nil
+			      (free-variables-in-region from to))))
       (delete-region from to)
       (goto-char from)
       (insert name)
-      (move-to-enclosing-scope-last-variable-definition variables-needed)
+      (move-to-enclosing-scope-last-variable-definition (not nearest) variables-needed)
       (insert-variable-declaration name (deduce-expression-type value-text) value-text)
       (kill-new name))))
 
@@ -135,22 +142,82 @@ sDocumentation: ")
   "Surround the region between FROM and TO with a call to NAME."
   (interactive "r
 sFunction name: ")
-  ;; todo: complete languide-surround-region-with-call
-  ;; probably not suitable: (insert-function-call name arglist)
-  )
+  (let ((arglist (list (buffer-substring-no-properties from to))))
+    (delete-region from to)
+    (insert-function-call name arglist)))
 
-(defun languide-remove-surrounding-call (from to)
-  "Remove the function call around FROM and TO, leaving just the argument(s) to the function."
+(defmodel languide-find-surrounding-call ()
+  "Return a list of the function call syntax around point.
+Each entry is a cons of start and end positions. For most languages
+there will be two or three entries, the function name, the
+start-of-call or start-of-args (may be merged with the function name),
+and the end-of-call or end-of-args. Separators between arguments could
+also be included. The caller should treat these as
+coming in any order, and being in any quantity; thus, if using them to
+modify the buffer, it is usually necessary to sort them and deal with
+them in descending order of character position.")
+
+(defun versor:select-surrounding-call ()
+  "Make the surrounding call into a versor selection."
+  ;; mostly for debugging languide-find-surrounding-call
+  (interactive)
+  (versor:as-motion-command
+   (versor:set-current-items (languide-find-surrounding-call))))
+
+(defmacro those-rel-limit (those rel limit)
+  `(let ((result nil)
+	 (these ,those))
+     (while these
+       (when (,rel (car these) ,limit)
+	 (setq result (cons (car these) result)))
+       (setq these (cdr these)))
+     (nreverse result)))
+
+(defun those<=limit (those limit)
+  "Return members of THOSE that are less than or equal to LIMIT."
+  (those-rel-limit those <= limit))
+
+(defun those>=limit (those limit)
+  "Return members of THOSE that are greater than or equal to LIMIT."
+  (those-rel-limit those >= limit))
+
+(defun languide-remove-surrounding-call (&optional where)
+  "Remove the function call around WHERE, leaving just the argument(s) to the function."
   (interactive "r")
-  ;; todo: complete languide-remove-surrounding-call
-  )
+  (save-excursion
+    (when where (goto-char where))
+    (let* ((call-syntax (sort (languide-find-surrounding-call)
+			     ;; remove in descending order of
+			     ;; position, as these are likely to be
+			     ;; numbers rather than markers
+			     (function
+			      (lambda (a b)
+				(> (car a) (car b))))))
+	   (begins (mapcar 'car call-syntax))
+	   (last-before (apply 'max (those<=limit begins where)))
+	   (last-before-marker (make-marker))
+	   (ends (mapcar 'cdr call-syntax))
+	   (first-after (apply 'min (those>=limit ends where)))
+	   (first-after-marker (make-marker)))
+      (set-marker last-before-marker last-before)
+      (set-marker first-after-marker first-after)
+      (mapcar (function
+	       (lambda (region)
+		 (delete-region (car region) (cdr region))))
+	      call-syntax)
+      (versor:trim-whitespace last-before-marker)
+      (versor:trim-whitespace first-after-marker)
+      (versor:set-current-item last-before-marker first-after-marker)
+      (set-marker last-before-marker nil)
+      (set-marker first-after-marker nil))))
 
-(defun languide-make-conditional ()
-  ;; todo: write languide-make-conditional
-  )
+(defun languide-make-conditional (from to condition)
+  ;; todo: write languide-make-conditional -- try to use the existing skeleton or template
+  ;; remember to try use existing conditional
+  (let ((body-type (languide-region-type from to)))))
 
 (defun languide-make-repeating ()
-  ;; todo: write languide-make-repeating
+  ;; todo: write languide-make-repeating -- try to use the existing skeleton or template
 )
 
 (defun languide-remove-control ()
