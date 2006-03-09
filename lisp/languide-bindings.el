@@ -1,5 +1,5 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2006-02-28 10:23:30 jcgs>
+;;; Time-stamp: <2006-03-07 21:00:02 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -75,15 +75,29 @@ Where types are not declared, as in Lisp, nil can be given as the type.")
 
 (defmodel variable-reference (varname) "")
 
-(defmodel move-to-enclosing-scope-last-variable-definition (&optional variables-needed)
+(defmodel move-to-enclosing-scope-last-variable-definition
+  (&optional widest variables-needed allow-conversions)
   "Move to the end of the nearest set of variable bindings.
 This is the place at which you would naturally insert a new
 variable, allowing for its initial value referring to any
 variable already declared.
-Optional argument lists names of variables needed in the definition of the new one.
-This lets clever implementations put the definition as far out as possible.
-It may create a suitable place if there is none; for example, in Lisp it
-could wrap the outermost forms of a \"defun\" with a \"let\".")
+
+Optional first argument WIDEST lets you indicate that you want the
+widest scope possible, that is, the widest at which all the variables
+needed in the definition of the new variable are already defined. If
+WIDEST is a number, it is used to count how many scoping points to
+move outwards by.
+
+Optional second argument VARIABLES-NEEDED lists names of variables
+needed in the definition of the new one. This is used if you specify
+you want the widest scope.
+
+It may create a suitable place if there is none; for example, in Lisp
+it could wrap the outermost forms of a \"defun\" with a \"let\".
+
+Optional third argument ALLOW-CONVERSIONS allows conversion of
+possible scoping points into actual ones. For example, in lisp, this
+means a \"progn\" can be changed to a \"let\".")
 
 (defmodel insert-variable-declaration (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
