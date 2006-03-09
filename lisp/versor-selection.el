@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-03-03 17:07:33 jcgs>
+;;; Time-stamp: <2006-03-08 15:08:29 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -93,6 +93,17 @@ If there are multiple items, return only the first one."
     (car versor:latest-items))
    (t
     (versor:invent-item))))
+
+(defun versor:last-item-first ()
+  "Return the current versor items, sorted so the last comes first.
+This is the sensible order in which to edit them, to avoid upsetting
+the buffer positions in the items you have yet to edit."
+  (setq versor:items
+	(sort (versor:get-current-items)
+	      (function
+	       (lambda (a b)
+		 (> (versor:overlay-start a)
+		    (versor:overlay-start b)))))))
 
 (defun versor:get-current-items ()
   "Return the current items."
