@@ -1,9 +1,9 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2004-05-24 15:45:07 john>
+;;; Time-stamp: <2006-03-09 14:52:34 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -27,24 +27,24 @@
   "Switch cursor keys between different sorts of movement."
   :version "0.1"
   :group 'editing
-  :prefix "versor:")
+  :prefix "versor-")
 
-(defcustom versor:level-wrap t
+(defcustom versor-level-wrap t
   "*Whether to wrap the level changes"
   :group 'versor
   :type 'boolean)
 
-(defcustom versor:meta-level-wrap t
+(defcustom versor-meta-level-wrap t
   "*Whether to wrap the meta-level changes"
   :group 'versor
   :type 'boolean)
 
-(defcustom versor:change-cursor-color t
+(defcustom versor-change-cursor-color t
   "*Whether to use the cursor color to indicate the level."
   :group 'versor
   :type 'boolean)
 
-(defcustom versor:item-attribute
+(defcustom versor-item-attribute
   (if (< emacs-major-version 21)
       nil
     :background)
@@ -52,12 +52,12 @@
 This is looked up in the current item, to get the value to set it to.
 You can only use this from Emacs 21 onwards.")
 
-(defcustom versor:try-to-display-whole-item t
+(defcustom versor-try-to-display-whole-item t
   "*Whether to try to display the whole item after each movement."
   :group 'versor
   :type 'boolean)
 
-(defcustom versor:reversible (not (eq window-system 'x))
+(defcustom versor-reversible (not (eq window-system 'x))
   "*Whether we allow reversing.
 This is useful if you cannot use \"shift-next\" for \"previous\".
 These seem to work OK on X but not on Windows; not sure about
@@ -72,7 +72,7 @@ other platforms/terminals yet."
 
 ;;;; some other variables
 
-(defvar versor:use-face-attributes
+(defvar versor-use-face-attributes
   (and (boundp 'emacs-major-version)
 	   (>= emacs-major-version 21))
   "*Whether to use face attributes, as provided from Emacs 21 onwards.")

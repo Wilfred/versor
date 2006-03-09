@@ -1,9 +1,9 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2004-05-24 14:03:35 john>
+;;; Time-stamp: <2006-03-09 14:52:35 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -22,17 +22,17 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ;;; This is not needed for using versor just through the cursor keys
-;;; or pedals, but is used by versor:voice and versor:menu
+;;; or pedals, but is used by versor-voice and versor-menu
 
 (provide 'versor-names)
 (require 'versor)
 
-(defvar versor:level-names-cache nil
-  "A cache used internally by versor:level-names.")
+(defvar versor-level-names-cache nil
+  "A cache used internally by versor-level-names.")
 
-(defun versor:meta-level-names ()
+(defun versor-meta-level-names ()
   "Return an alist of the meta-level names, consed with the numbers."
-  (let ((cached (assoc "metamoves" versor:level-names-cache)))
+  (let ((cached (assoc "metamoves" versor-level-names-cache)))
     (if cached
 	(cdr cached)
       (let ((result nil))
@@ -43,14 +43,14 @@
 		    result)))
 	(setq result (nreverse result))
 	(push (cons "metamoves" result)
-		    versor:level-names-cache)
+		    versor-level-names-cache)
 	result))))
 
-(defun versor:level-names ()
+(defun versor-level-names ()
   "Return an alist of the level names for the current meta-level, consed with the numbers."
-  (let* ((meta-level (versor:current-meta-level))
+  (let* ((meta-level (versor-current-meta-level))
 	 (meta-level-name (aref meta-level 0))
-	 (cached (assoc meta-level-name versor:level-names-cache)))
+	 (cached (assoc meta-level-name versor-level-names-cache)))
     (if cached
 	(cdr cached)
       (let* ((result nil)
@@ -62,10 +62,10 @@
 		result)
 	  (incf i))
 	(push (cons meta-level-name result)
-	      versor:level-names-cache)
+	      versor-level-names-cache)
 	result))))
 
-(defun versor:find-meta-level-by-name (name)
+(defun versor-find-meta-level-by-name (name)
   "Return the index of the meta-level called NAME."
   (let* ((meta-level-index (1- (length moves-moves))))
     (catch 'found
@@ -75,9 +75,9 @@
 	(decf meta-level-index))
       nil)))
 
-(defun versor:find-level-by-double-name (meta-name name)
+(defun versor-find-level-by-double-name (meta-name name)
   "Return the index of the level called META-NAME NAME as a cons of (meta-level . level)."
-  (let ((meta-level-index (versor:find-meta-level-by-name meta-name)))
+  (let ((meta-level-index (versor-find-meta-level-by-name meta-name)))
     (if meta-level-index
 	(let ((level-index (1- (length (aref moves-moves meta-level-index)))))
 	  (catch 'found
@@ -88,11 +88,11 @@
 	    nil))
       nil)))
 
-(defun versor:find-level-by-single-name (name)
+(defun versor-find-level-by-single-name (name)
   "Return the index of the level called NAME as a cons of (meta-level . level).
 If this occurs in several meta-levels, including the current one, use the occurrece
 in the caurrent one."
-  (let* ((meta-level-index versor:meta-level))
+  (let* ((meta-level-index versor-meta-level))
     (catch 'found
       (while t
 	(let* ((meta-level (aref moves-moves meta-level-index))
@@ -105,51 +105,51 @@ in the caurrent one."
 	(incf meta-level-index)
 	(when (= meta-level-index (length moves-moves))
 	  (setq meta-level-index 1))
-	(when (= meta-level-index versor:meta-level)
+	(when (= meta-level-index versor-meta-level)
 	  ;; gone right round
 	  (throw 'found nil)))
       nil)))
 
 
-(defvar versor:meta-history-hack-var nil
+(defvar versor-meta-history-hack-var nil
   "History hack.")
 
-(defvar versor:history-hack-var nil
+(defvar versor-history-hack-var nil
   "History hack.")
 
-(defun versor:select-named-meta-level (name)
+(defun versor-select-named-meta-level (name)
   "Set the current meta-level to NAME."
   (interactive
    (list
     (completing-read-with-history-hack
      "Meta-level: "
-     'versor:meta-history-hack-var
-     versor:current-meta-level-name
-     (mapcar 'car (versor:meta-level-names)))))
-  (setq versor:meta-level (versor:find-meta-level-by-name name))
-  (versor::trim-meta-level)
-  (versor::trim-level)
-  (versor:set-status-display))
+     'versor-meta-history-hack-var
+     versor-current-meta-level-name
+     (mapcar 'car (versor-meta-level-names)))))
+  (setq versor-meta-level (versor-find-meta-level-by-name name))
+  (versor-:trim-meta-level)
+  (versor-:trim-level)
+  (versor-set-status-display))
 
-(defun versor:select-named-level (name)
+(defun versor-select-named-level (name)
   "Set the current level to NAME."
   (interactive
    (list
     (completing-read-with-history-hack
      "Level: "
-     'versor:history-hack-var
-     versor:current-level-name
-     (mapcar 'car (versor:level-names)))))
-  (let ((level-pair (versor:find-level-by-single-name name)))
+     'versor-history-hack-var
+     versor-current-level-name
+     (mapcar 'car (versor-level-names)))))
+  (let ((level-pair (versor-find-level-by-single-name name)))
     (if level-pair
 	(progn
-	  (setq versor:old-level versor:level
-		versor:meta-level (car level-pair)
-		versor:level (cdr level-pair))
-	  (versor:set-status-display))
+	  (setq versor-old-level versor-level
+		versor-meta-level (car level-pair)
+		versor-level (cdr level-pair))
+	  (versor-set-status-display))
       (error "Could not find versor level named %s" name))))
 
-(defun versor:all-level-names (&optional include-meta)
+(defun versor-all-level-names (&optional include-meta)
   "Return the list of level names.
 With non-nil arg, include meta-level names."
   (let ((names nil))
@@ -162,26 +162,26 @@ With non-nil arg, include meta-level names."
 		(pushnew (car (aref meta-level level-index)) names :test 'string=))))))
     (sort names 'string<)))
 
-(defvar versor:all-names-grid nil)
+(defvar versor-all-names-grid nil)
 
-(defun versor:all-names-grid ()
-  (when (null versor:all-names-grid)
+(defun versor-all-names-grid ()
+  (when (null versor-all-names-grid)
   (let ((n (length moves-moves))
-	(versor:meta-level 1))
-    (while (< versor:meta-level n)
-      (push (versor:level-names) versor:all-names-grid)
-      (incf versor:meta-level))))
-  versor:all-names-grid)
+	(versor-meta-level 1))
+    (while (< versor-meta-level n)
+      (push (versor-level-names) versor-all-names-grid)
+      (incf versor-meta-level))))
+  versor-all-names-grid)
 
-(defvar versor:all-names-grid-widths nil
-  "The column widths needed for versor:all-names-grid")
+(defvar versor-all-names-grid-widths nil
+  "The column widths needed for versor-all-names-grid")
 
-(defun versor:all-names-grid-widths ()
-  "Return the column widths needed for versor:all-names-grid"
-  (if versor:all-names-grid-widths
-      versor:all-names-grid-widths
-    (setq versor:all-names-grid-widths
-	  (let* ((grid (versor:all-names-grid))
+(defun versor-all-names-grid-widths ()
+  "Return the column widths needed for versor-all-names-grid"
+  (if versor-all-names-grid-widths
+      versor-all-names-grid-widths
+    (setq versor-all-names-grid-widths
+	  (let* ((grid (versor-all-names-grid))
 		 (grid-width (apply 'max (mapcar 'length grid)))
 		 (widths (make-vector grid-width 0))
 		 (i 0)
@@ -196,15 +196,15 @@ With non-nil arg, include meta-level names."
 	      (incf i))
 	    widths))))
 
-(defvar versor:all-names-grid-formats nil
-  "The column formats needed for versor:all-names-grid")
+(defvar versor-all-names-grid-formats nil
+  "The column formats needed for versor-all-names-grid")
 
-(defun versor:all-names-grid-formats ()
-  "Return the column formats needed for versor:all-names-grid"
-  (if versor:all-names-grid-formats
-      versor:all-names-grid-formats
-    (setq versor:all-names-grid-formats
+(defun versor-all-names-grid-formats ()
+  "Return the column formats needed for versor-all-names-grid"
+  (if versor-all-names-grid-formats
+      versor-all-names-grid-formats
+    (setq versor-all-names-grid-formats
 	  (mapcar (lambda (w) (format "%% %ds" (- 0 w 1)))
-		  (versor:all-names-grid-widths)))))
+		  (versor-all-names-grid-widths)))))
 
 ;;; end of versor-names.el

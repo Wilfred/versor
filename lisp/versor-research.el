@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-02-22 16:35:12 john>
+;;; Time-stamp: <2006-03-09 14:52:36 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -21,17 +21,17 @@
   "Obarray naming all the commands in versor.")
 
 (mapc (function (lambda (symbol) (intern (symbol-name symbol) versor-commands-obarray)))
-      '(versor:out versor:in versor:next-meta-level
-		   versor:prev-meta-level versor:reverse versor:start versor:prev
-		   versor:next versor:end versor:over-start versor:over-prev
-		   versor:over-next versor:over-end versor:over-over-start
-		   versor:over-over-prev versor:over-over-next versor:over-over-end
-		   versor:end-of-item versor:start-of-item versor:other-end-of-item
-		   versor:extend-item-forwards versor:extend-item-backwards
-		   versor:extend-over-item-forwards versor:extend-over-item-backwards
-		   versor:copy versor:mark versor:kill versor:transpose versor:search
-		   versor:insert-before versor:insert-after versor:insert-around
-		   versor:insert-within
+      '(versor-out versor-in versor-next-meta-level
+		   versor-prev-meta-level versor-reverse versor-start versor-prev
+		   versor-next versor-end versor-over-start versor-over-prev
+		   versor-over-next versor-over-end versor-over-over-start
+		   versor-over-over-prev versor-over-over-next versor-over-over-end
+		   versor-end-of-item versor-start-of-item versor-other-end-of-item
+		   versor-extend-item-forwards versor-extend-item-backwards
+		   versor-extend-over-item-forwards versor-extend-over-item-backwards
+		   versor-copy versor-mark versor-kill versor-transpose versor-search
+		   versor-insert-before versor-insert-after versor-insert-around
+		   versor-insert-within
 		   versor-dwim))
 
 (defun versor-command-p (command)

@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-03-08 15:08:29 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:36 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -27,7 +27,7 @@
 ;;;; highlighting current selection ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar versor:items (list 'not-yet-set)
+(defvar versor-items (list 'not-yet-set)
   ;; what was this old value? see if it works ok without it!
   ;; (list (cons (cons nil nil) nil))
   "The current versor items.
@@ -37,115 +37,115 @@ There is always at least one item in this list, to avoid churning
 overlays; if there is no current item, the top item has nil for its
 buffer.")
 
-(defvar versor:latest-items nil
+(defvar versor-latest-items nil
   "The items list as it was at the start of the current command,
 but converted from overlays to conses of start . end, as the overlays
-get cancelled on the pre-command-hook versor:de-indicate-current-item,
+get cancelled on the pre-command-hook versor-de-indicate-current-item,
 which we use to make sure we go away quietly when the user wants to type
 other emacs commands.")
 
 (mapcar 'make-variable-buffer-local
-	'(versor:items
-	  versor:latest-items))
+	'(versor-items
+	  versor-latest-items))
 
-(defun versor:set-current-item (start end)
+(defun versor-set-current-item (start end)
   "Set the START and END of the current item, and get rid of any extra parts."
-  (when versor:items
-      (mapcar 'delete-overlay (cdr versor:items))
-    (rplacd versor:items nil))
-  (let ((item (and versor:items
-		   (car versor:items))))
+  (when versor-items
+      (mapcar 'delete-overlay (cdr versor-items))
+    (rplacd versor-items nil))
+  (let ((item (and versor-items
+		   (car versor-items))))
     (if (and (overlayp item) (overlay-buffer item))
 	(move-overlay item start end (current-buffer))
-      (make-versor:overlay start end))))
+      (make-versor-overlay start end))))
 
-(defun versor:set-current-items (items)
+(defun versor-set-current-items (items)
   "Set the ITEMS, given as conses."
-  (mapcar 'delete-overlay versor:items)
+  (mapcar 'delete-overlay versor-items)
   (if (null items)
-      (setq versor:items nil)
-    (setq versor:items
+      (setq versor-items nil)
+    (setq versor-items
 	  (mapcar (lambda (item)
 		    (let ((overlay (make-overlay (car item) (cdr item))))
 		      (overlay-put overlay 'face
-				   (if versor:use-face-attributes
-				       'versor:item
+				   (if versor-use-face-attributes
+				       'versor-item
 				     'region))
 		      overlay))
 		  items))
     (goto-char (apply 'min (mapcar 'car items)))))
 
-(defun versor:current-item-valid ()
+(defun versor-current-item-valid ()
   "Return whether there is a valid current item."
-  (let ((item (car versor:items)))
+  (let ((item (car versor-items)))
     (and (overlayp item)
 	 (overlay-buffer item))))
 
-(defun versor:get-current-item ()
+(defun versor-get-current-item ()
   "Return (start . end) for the current item.
 If there are multiple items, return only the first one."
   (cond
-   ((versor:current-item-valid)
-    (let ((olay (car versor:items)))
+   ((versor-current-item-valid)
+    (let ((olay (car versor-items)))
       (cons (overlay-start olay)
 	    (overlay-end olay))))
-   ((versor:valid-item-list-p versor:latest-items)
-    (car versor:latest-items))
+   ((versor-valid-item-list-p versor-latest-items)
+    (car versor-latest-items))
    (t
-    (versor:invent-item))))
+    (versor-invent-item))))
 
-(defun versor:last-item-first ()
+(defun versor-last-item-first ()
   "Return the current versor items, sorted so the last comes first.
 This is the sensible order in which to edit them, to avoid upsetting
 the buffer positions in the items you have yet to edit."
-  (setq versor:items
-	(sort (versor:get-current-items)
+  (setq versor-items
+	(sort (versor-get-current-items)
 	      (function
 	       (lambda (a b)
-		 (> (versor:overlay-start a)
-		    (versor:overlay-start b)))))))
+		 (> (versor-overlay-start a)
+		    (versor-overlay-start b)))))))
 
-(defun versor:get-current-items ()
+(defun versor-get-current-items ()
   "Return the current items."
   (let ((result
 	 (cond 
-	  ((versor:current-item-valid)
-	   ;; (message "versor:get-current-items: current item valid")
-	   versor:items)
-	  ((versor:valid-item-list-p versor:latest-items)
-	   ;; (message "versor:get-current-items: latest item valid")
-	   versor:latest-items)
+	  ((versor-current-item-valid)
+	   ;; (message "versor-get-current-items: current item valid")
+	   versor-items)
+	  ((versor-valid-item-list-p versor-latest-items)
+	   ;; (message "versor-get-current-items: latest item valid")
+	   versor-latest-items)
 	  (t
-	   ;; (message "versor:get-current-items: constructing item")
-	   (let ((pair (versor:invent-item)))
-	     (make-versor:overlay (car pair) (cdr pair))
-	     versor:items
+	   ;; (message "versor-get-current-items: constructing item")
+	   (let ((pair (versor-invent-item)))
+	     (make-versor-overlay (car pair) (cdr pair))
+	     versor-items
 	     )))
 	 ))
     (message "%S" result)
     result))
 
-(defun versor:overlay-start (olay)
+(defun versor-overlay-start (olay)
   "Return the start of OLAY.
 OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
   (if (consp olay)
       (car olay)
     (overlay-start olay)))
 
-(defun versor:overlay-end (olay)
+(defun versor-overlay-end (olay)
   "Return the end of OLAY.
 OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
   (if (consp olay)
       (cdr olay)
     (overlay-end olay)))
 
-(defun versor:display-item-list (label il)
+(defun versor-display-item-list (label il)
   "With LABEL, display IL.
 Meant for debugging versor itself."
   (message label)
   (mapcar (lambda (item)
-	    (let ((start (versor:overlay-start item))
-		  (end (versor:overlay-end item)))
+	    (let ((start (versor-overlay-start item))
+		  (end (versor-overlay-end item)))
 	      (if (< (- end start) 16)
 		  (message "  %d..%d: %s" start end
 			   (buffer-substring start end))
@@ -154,23 +154,23 @@ Meant for debugging versor itself."
 		       (buffer-substring (- end 8) end)))))
 	  il))
 
-(defun versor:invent-item ()
+(defun versor-invent-item ()
   "Invent a versor item around the current point.
 Meant to be used by things that require an item, when there is none.
 Leaves point in a position compatible with what has just been returned."
-  ;; (message "Using %S in inventing item" (versor:current-level))
-  (let* ((end (progn (funcall (or (versor:get-action 'end-of-item)
-				  (versor:get-action 'next))
+  ;; (message "Using %S in inventing item" (versor-current-level))
+  (let* ((end (progn (funcall (or (versor-get-action 'end-of-item)
+				  (versor-get-action 'next))
 			      1)
 		     ;; (message "invented end") (sit-for 2)
 		     (point)))
-	 (start (progn (funcall (versor:get-action 'previous) 1)
+	 (start (progn (funcall (versor-get-action 'previous) 1)
 		       ;; (message "invented start") (sit-for 2)
 		       (point))))
     ;; (message "Invented item %d..%d" start end)
     (cons start end)))
 
-(defun versor:valid-item-list-p (a)
+(defun versor-valid-item-list-p (a)
   "Return whether A is a valid item list."
   (and (consp a)
        (let ((cara (car a)))
@@ -180,58 +180,58 @@ Leaves point in a position compatible with what has just been returned."
 	     (and (overlayp cara)
 		  (bufferp (overlay-buffer cara)))))))
 
-(defun versor:item-overlay ()
+(defun versor-item-overlay ()
   "The (primary) item indication overlay for this buffer."
-  (car versor:items))
+  (car versor-items))
 
-(defun make-versor:overlay (start end)
+(defun make-versor-overlay (start end)
   "Make a versor overlay at START END.
 If there is already a versor overlay for this buffer, reuse that.
-You should normally call versor:set-current-item rather than this."
-  (unless (overlayp (versor:item-overlay))
+You should normally call versor-set-current-item rather than this."
+  (unless (overlayp (versor-item-overlay))
     (let ((overlay (make-overlay start end (current-buffer))))
-      (setq versor:items (list overlay))
+      (setq versor-items (list overlay))
       (overlay-put overlay 'face
-		   (if versor:use-face-attributes
-		       'versor:item
+		   (if versor-use-face-attributes
+		       'versor-item
 		     'region)
 		   )))
-  (move-overlay (versor:item-overlay) start end (current-buffer)))
+  (move-overlay (versor-item-overlay) start end (current-buffer)))
 
-(defun versor:extra-overlay (start end)
+(defun versor-extra-overlay (start end)
   "Make an extra versor overlay between START and END."
   (let ((overlay (make-overlay start end (current-buffer))))
     (overlay-put overlay 'face
-		 (if versor:use-face-attributes
-		     'versor:item
+		 (if versor-use-face-attributes
+		     'versor-item
 		   'region))
-    (rplacd versor:items
+    (rplacd versor-items
 	    (cons overlay
-		  (cdr versor:items)))))
+		  (cdr versor-items)))))
 
-(defun delete-versor:overlay ()
+(defun delete-versor-overlay ()
   "Delete the versor overlay for this buffer."
   ;; in fact, we just disconnect it from the buffer,
   ;; to avoid having to keep creating and destroying overlays
-  (let ((overlay (versor:item-overlay)))
+  (let ((overlay (versor-item-overlay)))
     (when (overlayp overlay)
       (delete-overlay overlay)))
   ;; get rid of any extras
-  (when versor:items
-    (mapcar 'delete-overlay (cdr versor:items))
-    (rplacd versor:items nil)))
+  (when versor-items
+    (mapcar 'delete-overlay (cdr versor-items))
+    (rplacd versor-items nil)))
 
-(defun versor:clear-current-item-indication ()
+(defun versor-clear-current-item-indication ()
   "Intended to go at the start of each versor motion command.
-It clears variables looked at by versor:indicate-current-item, which sets them
+It clears variables looked at by versor-indicate-current-item, which sets them
 up for itself only if the command didn't set them for it."
-  (setq versor:indication-known-valid nil)
-  (delete-versor:overlay))
+  (setq versor-indication-known-valid nil)
+  (delete-versor-overlay))
 
-(defun versor:indicate-current-item ()
+(defun versor-indicate-current-item ()
   "Make the current item distinctly visible.
 This is intended to be called at the end of all versor commands.
-See also the complementary function versor:de-indicate-current-item,
+See also the complementary function versor-de-indicate-current-item,
 which goes on the pre-command-hook, to make sure that versor gets out
 of the way of ordinary Emacs commands.
 We assume point to be at the start of the item."
@@ -242,14 +242,14 @@ We assume point to be at the start of the item."
 	;; if it knows in such a way that it can tell us much faster
 	;; than we could work out for ourselves; they are cleared at
 	;; the start of each command by
-	;; versor:clear-current-item-indication, which, like us, is
-	;; called by the as-versor:command macro
+	;; versor-clear-current-item-indication, which, like us, is
+	;; called by the as-versor-command macro
 
-	(unless (versor:current-item-valid)
-	  (versor:set-current-item (point) (versor:end-of-item-position)))
+	(unless (versor-current-item-valid)
+	  (versor-set-current-item (point) (versor-end-of-item-position)))
 
-	(when versor:try-to-display-whole-item
-	  (let* ((item (versor:get-current-item))
+	(when versor-try-to-display-whole-item
+	  (let* ((item (versor-get-current-item))
 		 (end (cdr item)))
 	    ;; try to get the whole item on-screen
 	    (when (> end (window-end))
@@ -262,22 +262,22 @@ We assume point to be at the start of the item."
 		  (message "%d more lines of this item would not fit on screen" (- lines-needed lines-available 1)))))))
 
 	;; re-do this because it somehow gets taken off from time to time
-	(add-hook 'pre-command-hook 'versor:de-indicate-current-item))
+	(add-hook 'pre-command-hook 'versor-de-indicate-current-item))
     (error
      (progn
        ;; (message "Caught error %S in item indication" error-var)
        ;; (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
-       (versor:de-indicate-current-item)
+       (versor-de-indicate-current-item)
        ))))
 
-(defun versor:de-indicate-current-item ()
+(defun versor-de-indicate-current-item ()
   "Remove the current item marking.
 Intended to go on pre-command-hook, to make sure that versor gets out
 of the way of ordinarily Emacs commands. in case, however, the new
 command is itself a versor command, we save the item marking as a list
-of conses of start . end, in versor:latest-items."
-  (unless (eq (car versor:items) 'not-yet-set)
-    (setq versor:latest-items
+of conses of start . end, in versor-latest-items."
+  (unless (eq (car versor-items) 'not-yet-set)
+    (setq versor-latest-items
 	  (catch 'no-region
 	    (mapcar 
 	     (lambda (item)
@@ -290,23 +290,23 @@ of conses of start . end, in versor:latest-items."
 		       (error t))
 		     (throw 'no-region nil)
 		   (cons (region-beginning) (region-end)))))
-	     versor:items)))
-    ;; (versor:display-item-list (format "starting command %S" this-command) versor:latest-items)
-    (delete-versor:overlay)))
+	     versor-items)))
+    ;; (versor-display-item-list (format "starting command %S" this-command) versor-latest-items)
+    (delete-versor-overlay)))
 
-(defun versor:set-item-indication (arg)
+(defun versor-set-item-indication (arg)
   "Set whether item indication is done.
 Positive argument means on, negative or zero is off."
   (interactive "p")
   (if (> arg 0)
       (progn
 	(message "Item indication turned on")
-	(setq versor:indicate-items t)
-	(add-hook 'pre-command-hook 'versor:de-indicate-current-item)
-	(versor:indicate-current-item))
+	(setq versor-indicate-items t)
+	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
+	(versor-indicate-current-item))
     (message "Item indication turned off")
-    (setq versor:indicate-items nil)
-    (versor:de-indicate-current-item)
-    (remove-hook 'pre-command-hook 'versor:de-indicate-current-item)))
+    (setq versor-indicate-items nil)
+    (versor-de-indicate-current-item)
+    (remove-hook 'pre-command-hook 'versor-de-indicate-current-item)))
 
 ;;;; end of versor-selection.el

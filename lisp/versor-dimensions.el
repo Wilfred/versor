@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-02-28 14:56:34 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:30 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -23,35 +23,35 @@
 
 (provide 'versor-dimensions)
 
-(mapcar 'makunbound '(versor:current-level-name moves-moves versor:meta-level versor:level))
+(mapcar 'makunbound '(versor-current-level-name moves-moves versor-meta-level versor-level))
 
-(defvar versor:meta-level 1
+(defvar versor-meta-level 1
   "The current versor meta-level, as an index into moves-moves")
 
-(defvar versor:level 1
-  "The current versor level, as an index into (aref moves-moves versor:meta-level)")
+(defvar versor-level 1
+  "The current versor level, as an index into (aref moves-moves versor-meta-level)")
 
-(defvar versor:meta-level-shadow nil
-  "If non-nil, the value to use instead of versor:meta-level.
-Bound in versor:do-dynamic-menu because otherwise we end up with the
+(defvar versor-meta-level-shadow nil
+  "If non-nil, the value to use instead of versor-meta-level.
+Bound in versor-do-dynamic-menu because otherwise we end up with the
 wrong meta-level, as we have just come out of some menuing code.
 Other uses for this might be found.")
 
-(defvar versor:level-shadow nil
-  "If non-nil, the value to use instead of versor:level.
-Bound in versor:do-dynamic-menu because otherwise we end up with the
+(defvar versor-level-shadow nil
+  "If non-nil, the value to use instead of versor-level.
+Bound in versor-do-dynamic-menu because otherwise we end up with the
 wrong level, as we have just come out of some menuing code.
 Other uses for this might be found.")
 
-(defmacro versor:level-name (level)
+(defmacro versor-level-name (level)
   "Return the name of LEVEL."
-  `(first (aref (versor:current-meta-level) ,level)))
+  `(first (aref (versor-current-meta-level) ,level)))
 
-(defmacro versor:meta-level-name (meta-level)
+(defmacro versor-meta-level-name (meta-level)
   "Return the name of META-LEVEL."
   `(aref (aref moves-moves ,meta-level) 0))
 
-(defun versor:make-movemap-set (name &rest movemaps)
+(defun versor-make-movemap-set (name &rest movemaps)
   "Make a set of movemaps called NAME from the remaining arguments.
 The lowest-level (finest-grain) movemap should come first.
 A movemap-set represents a metalevel of movements.
@@ -59,7 +59,7 @@ Also, all the movemap-sets are grouped together using another movemap-set,
 called moves-moves, which is the root variable of the versor system."
   (apply 'vector name movemaps))
 
-(defun versor:make-movemap (name)
+(defun versor-make-movemap (name)
   "Make a movemap called NAME.
 A move map is a list whose head is the name of the map,
 and whose tale is an alist of moves and the commands which execute them.
@@ -75,14 +75,14 @@ this documentation was written:
   color
 The pseudo-move \"color\" gives the cursor colour to use when this move map
 is current.
-you can fill in the contents of a move map by using versor:define-move and
-versor:define-moves.
-Move maps are grouped together by versor:make-movemap-set."
+you can fill in the contents of a move map by using versor-define-move and
+versor-define-moves.
+Move maps are grouped together by versor-make-movemap-set."
   (list name))
 
-(defun versor:define-move (movemap move command)
+(defun versor-define-move (movemap move command)
   "In MOVEMAP define MOVE to do COMMAND. Analogous to define-key.
-See the definition of versor:make-movemap for details of move maps."
+See the definition of versor-make-movemap for details of move maps."
   (let ((pair (assoc move movemap)))
     (if pair
 	(rplacd pair command)
@@ -91,21 +91,21 @@ See the definition of versor:make-movemap for details of move maps."
 			  command)
 		    (cdr movemap))))))
 
-(defun versor:define-moves (movemap move-command-specs)
+(defun versor-define-moves (movemap move-command-specs)
   "In MOVEMAP define each of MOVE-COMMAND-SPECS.
 We can't just splice MOVE-COMMAND-SPECS into the map because that would
 not interact properly with any existing definitions in the map.
-See the definition of versor:make-movemap for details of move maps."
+See the definition of versor-make-movemap for details of move maps."
   (mapcar 
    (function
     (lambda (k-c)
-      (versor:define-move movemap (first k-c) (second k-c))))
+      (versor-define-move movemap (first k-c) (second k-c))))
    move-command-specs))
 
 (mapcar (function 
 	 (lambda (name)
 	   (set (intern (concat "movemap-" name))
-		(versor:make-movemap name))))
+		(versor-make-movemap name))))
 	'("chars"
 	  "lines"
 	  "pages"
@@ -123,9 +123,9 @@ See the definition of versor:make-movemap for details of move maps."
 	  "cells"
 	  "rows"))
 
-(versor:define-moves movemap-chars
+(versor-define-moves movemap-chars
 		      '((color "purple")
-			(first versor:start-of-line)
+			(first versor-start-of-line)
 			(previous backward-char)
 			(next forward-char)
 			(last end-of-line)
@@ -133,21 +133,21 @@ See the definition of versor:make-movemap for details of move maps."
 			(transpose transpose-chars)
 			))
 
-(versor:define-moves movemap-lines
+(versor-define-moves movemap-lines
 		     '((color "black")
 		       (other-color "gray")
 		       (:background "black")
 		       (:foreground "white")
 		       (first beginning-of-buffer)
-		       (previous versor:previous-line)
-		       (next versor:next-line)
+		       (previous versor-previous-line)
+		       (next versor-next-line)
 		       (last end-of-buffer)
 		       (end-of-item end-of-line)
 		       ;; (delete kill-line)
 			(transpose transpose-lines)
 		       ))
 
-(versor:define-moves movemap-pages
+(versor-define-moves movemap-pages
 		     '((color "white")
 		       (other-color "gray")
 		       (first beginning-of-buffer)
@@ -161,7 +161,7 @@ See the definition of versor:make-movemap for details of move maps."
 			)
 		       (last end-of-buffer)))
 
-(versor:define-moves movemap-exprs
+(versor-define-moves movemap-exprs
 		     '((color "green")
 		       (:underline "dark green")
 		       (:background "pale green")
@@ -173,20 +173,20 @@ See the definition of versor:make-movemap for details of move maps."
 		       (mark mark-sexp)
 		       ;; (delete kill-sexp)
 		       (transpose transpose-sexps)
-		       (dwim versor:dwim-lispishly)
+		       (dwim versor-dwim-lispishly)
 		       ))
 
-(versor:define-moves movemap-depth
+(versor-define-moves movemap-depth
 		     '((color "orange")
 		       (:background "orange")
 		       (:foreground "green")
 		       (first beginning-of-defun)
-		       (previous versor:backward-up-list)
-		       (next versor:down-list)
+		       (previous versor-backward-up-list)
+		       (next versor-down-list)
 		       (last innermost-list)
-		       (dwim versor:dwim-lispishly)))
+		       (dwim versor-dwim-lispishly)))
 
-(versor:define-moves movemap-statement-parts
+(versor-define-moves movemap-statement-parts
 		     '((color "cyan")
 		       (:background "cyan")
 		       (:foreground "red")
@@ -195,9 +195,9 @@ See the definition of versor:make-movemap for details of move maps."
 		       (next statement-navigate-parts-next)
 		       (last navigate-this-body)
 		       (end-of-item latest-statement-navigation-end)
-		       (dwim versor:dwim-lispishly)))
+		       (dwim versor-dwim-lispishly)))
 
-(versor:define-moves movemap-statements
+(versor-define-moves movemap-statements
 		     '((color "cyan")
 		       (:background "cyan")
 		       (:foreground "green")
@@ -206,22 +206,22 @@ See the definition of versor:make-movemap for details of move maps."
 		       (next next-statement)
 		       (last end-of-defun) ;;;;;;;;;;;;;;;; make this go back one statement from the end of the defun
 		       (end-of-item latest-statement-navigation-end)
-		       (dwim versor:dwim-lispishly)))
+		       (dwim versor-dwim-lispishly)))
 
-(versor:define-moves movemap-defuns
+(versor-define-moves movemap-defuns
 		     '((color "yellow")
 		       (:background "yellow")
 		       (:foreground "black")
-		       (first versor:first-defun)
-		       (previous versor:previous-defun)
-		       (next versor:next-defun)
+		       (first versor-first-defun)
+		       (previous versor-previous-defun)
+		       (next versor-next-defun)
 		       (end-of-item end-of-defun)
-		       (last versor:last-defun)
+		       (last versor-last-defun)
 		       ;; (transpose transpose-sexps); would only work for lisp?
-		       (dwim versor:dwim-lispishly)
+		       (dwim versor-dwim-lispishly)
 		       ))
 
-(versor:define-moves movemap-words
+(versor-define-moves movemap-words
 		     '((color "grey")
 		       (other-color "green")
 		       (:background "light gray")
@@ -229,19 +229,19 @@ See the definition of versor:make-movemap for details of move maps."
 		       (:underline "dark slate gray")
 		       ;; things like this (notionally the wrong
 		       ;; dimension) still work OK, because of how
-		       ;; versor:indicate-current-item works when the
+		       ;; versor-indicate-current-item works when the
 		       ;; things it calls don't explicitly set the item
 		       ;; boundaries for it:
 		       (first backward-phrase) 
 		       (previous backward-word)
-		       (next versor:next-word)
-		       (end-of-item versor:end-of-word)
+		       (next versor-next-word)
+		       (end-of-item versor-end-of-word)
 		       (last forward-phrase)
-		       (delete versor:delete-word)
+		       (delete versor-delete-word)
 		       (transpose transpose-words)
-		       (dwim versor:dwim-textually)))
+		       (dwim versor-dwim-textually)))
 
-(versor:define-moves movemap-phrases
+(versor-define-moves movemap-phrases
 		     '((color "blue")
 		       (:background "cornflower blue")
 		       (:foreground "black")
@@ -249,32 +249,32 @@ See the definition of versor:make-movemap for details of move maps."
 		       (previous backward-phrase)
 		       (next forward-phrase)
 		       (last forward-sentence)
-		       (dwim versor:dwim-textually)))
+		       (dwim versor-dwim-textually)))
 
-(versor:define-moves movemap-sentences
+(versor-define-moves movemap-sentences
 		     '((color "cyan")
 		       (:background "light sky blue")
 		       (:foreground "black")
-		       (first versor:backward-paragraph)
+		       (first versor-backward-paragraph)
 		       (previous backward-sentence)
 		       (next forward-sentence)
-		       (last versor:forward-paragraph)
+		       (last versor-forward-paragraph)
 		       (transpose transpose-sentences)
-		       (dwim versor:dwim-textually)))
+		       (dwim versor-dwim-textually)))
 
-(versor:define-moves movemap-paragraphs
+(versor-define-moves movemap-paragraphs
 		     '((color "yellow")
 		       (:background "yellow")
 		       (:foreground "red")
 		       (first beginning-of-buffer)
-		       (previous versor:backward-paragraph)
-		       (next versor:forward-paragraph)
-		       (end-of-item versor:end-of-paragraph)
+		       (previous versor-backward-paragraph)
+		       (next versor-forward-paragraph)
+		       (end-of-item versor-end-of-paragraph)
 		       (last end-of-buffer)
 		       (transpose transpose-paragraphs)
-		       (dwim versor:dwim-textually)))
+		       (dwim versor-dwim-textually)))
 
-(versor:define-moves movemap-blocks
+(versor-define-moves movemap-blocks
 		     '((color "green")
 		       (:underline "dark green")
 		       (:foreground "white")
@@ -282,64 +282,64 @@ See the definition of versor:make-movemap for details of move maps."
 		       (previous nested-blocks-backward)
 		       (next nested-blocks-forward)))
 
-(versor:define-moves movemap-block-depth
+(versor-define-moves movemap-block-depth
 		     '((color "orange")
 		       (:foreground "black")
 		       (:background "orange")
 		       (previous nested-blocks-leave-backwards)
 		       (next nested-blocks-enter)))
 
-(versor:define-moves movemap-cells
+(versor-define-moves movemap-cells
 		     '((color "blue")
 		       (:background "cyan")
-		       (first versor:first-cell)
-		       (previous versor:previous-cell)
-		       (next versor:next-cell)
-		       (last versor:last-cell)))
+		       (first versor-first-cell)
+		       (previous versor-previous-cell)
+		       (next versor-next-cell)
+		       (last versor-last-cell)))
 
-(versor:define-moves movemap-rows
+(versor-define-moves movemap-rows
 		     '((color "cyan")
 		       (:background "light sky blue")
 		       (:foreground "black")
-		       (first versor:first-row)
-		       (previous versor:previous-row)
-		       (next versor:next-row)
-		       (last versor:last-row)))
+		       (first versor-first-row)
+		       (previous versor-previous-row)
+		       (next versor-next-row)
+		       (last versor-last-row)))
 
 
-;; See versor:make-movemap-set for details of movemap-sets
+;; See versor-make-movemap-set for details of movemap-sets
 		       
-(setq moves-cartesian (versor:make-movemap-set "cartesian"
+(setq moves-cartesian (versor-make-movemap-set "cartesian"
 					       movemap-chars
 					       movemap-lines
 					       movemap-pages)
 
-      moves-structural (versor:make-movemap-set "structural"
+      moves-structural (versor-make-movemap-set "structural"
 						movemap-chars
 						movemap-exprs
 						movemap-depth
 						movemap-defuns)
 
-      moves-text (versor:make-movemap-set "text"
+      moves-text (versor-make-movemap-set "text"
 					  movemap-chars
 					  movemap-words
 					  movemap-phrases
 					  movemap-sentences
 					  movemap-paragraphs)
 
-      moves-structured-text (versor:make-movemap-set "structured text"
+      moves-structured-text (versor-make-movemap-set "structured text"
 						     movemap-chars
 						     movemap-words
 						     ;; movemap-paragraphs
 						     movemap-blocks
 						     movemap-block-depth)
 
-      moves-tables (versor:make-movemap-set "tables"
+      moves-tables (versor-make-movemap-set "tables"
 					    movemap-chars
 					    movemap-cells
 					    movemap-rows)
 
-      moves-program (versor:make-movemap-set "program"
+      moves-program (versor-make-movemap-set "program"
 					     movemap-chars
 					     movemap-exprs
 					     movemap-statement-parts
@@ -347,7 +347,7 @@ See the definition of versor:make-movemap for details of move maps."
 					     movemap-defuns))
 
 (defvar moves-moves
-  (versor:make-movemap-set "metamoves"
+  (versor-make-movemap-set "metamoves"
 			   moves-cartesian
 			   moves-structural
 			   moves-text
@@ -355,53 +355,53 @@ See the definition of versor:make-movemap for details of move maps."
 			   moves-tables
 			   moves-program)
   "The map of meta-moves.
-See versor:make-movemap-set for the description of move map sets.
+See versor-make-movemap-set for the description of move map sets.
 Note that this is a reuse of that data type at a different level. ")
 
-(defmacro versor:current-meta-level ()
+(defmacro versor-current-meta-level ()
   "The current meta-level, as an array."
-  '(aref moves-moves (or versor:meta-level-shadow versor:meta-level)))
+  '(aref moves-moves (or versor-meta-level-shadow versor-meta-level)))
 
-(defun versor:current-level (&optional level-offset)
+(defun versor-current-level (&optional level-offset)
   "Return the current level, as an array.
 With optional LEVEL-OFFSET, add that to the level first."
   (if (integerp level-offset)
-      (let ((meta (versor:current-meta-level)))
-	(aref meta (min (+ (or versor:level-shadow versor:level) level-offset)
+      (let ((meta (versor-current-meta-level)))
+	(aref meta (min (+ (or versor-level-shadow versor-level) level-offset)
 			(1- (length meta)))))
-    (aref (versor:current-meta-level) (or versor:level-shadow versor:level))))
+    (aref (versor-current-meta-level) (or versor-level-shadow versor-level))))
 
-(defun versor:action (level action)
+(defun versor-action (level action)
   "From LEVEL get ACTION, which will be a move such as next or previous."
   (cdr (assoc action level)))
 
-(defvar versor:current-level-name (first (versor:current-level))
+(defvar versor-current-level-name (first (versor-current-level))
   "The name of the current versor level, for display in the global-mode-string")
 
-(defvar versor:current-meta-level-name (aref (versor:current-meta-level) 0)
+(defvar versor-current-meta-level-name (aref (versor-current-meta-level) 0)
   "The name of the current versor meta-level, for display in the global-mode-string")
 
-(defun versor::trim-level ()
-  "Ensure that versor:level is in range."
-  (let ((max (1- (length (versor:current-meta-level)))))
-    (when (> versor:level max)
-      (setq versor:level
-	    (if versor:level-wrap 1 max)))
-    (when (< versor:level 1)
-      (setq versor:level
-	    (if versor:level-wrap max 1)))))
+(defun versor-:trim-level ()
+  "Ensure that versor-level is in range."
+  (let ((max (1- (length (versor-current-meta-level)))))
+    (when (> versor-level max)
+      (setq versor-level
+	    (if versor-level-wrap 1 max)))
+    (when (< versor-level 1)
+      (setq versor-level
+	    (if versor-level-wrap max 1)))))
 
-(defun versor::trim-meta-level ()
-  "Ensure that versor:meta-level is in range."
+(defun versor-:trim-meta-level ()
+  "Ensure that versor-meta-level is in range."
   (let ((max (1- (length moves-moves))))
-    (when (> versor:meta-level max)
-      (setq versor:meta-level
-	    (if versor:meta-level-wrap 1 max)))
-    (when (< versor:meta-level 1)
-      (setq versor:meta-level
-	    (if versor:meta-level-wrap max 1)))))
+    (when (> versor-meta-level max)
+      (setq versor-meta-level
+	    (if versor-meta-level-wrap 1 max)))
+    (when (< versor-meta-level 1)
+      (setq versor-meta-level
+	    (if versor-meta-level-wrap max 1)))))
 
-(defvar versor:meta-dimensions-valid-for-modes
+(defvar versor-meta-dimensions-valid-for-modes
   '(((emacs-lisp-mode lisp-mode scheme-mode lisp-interaction-mode)
      t "cartesian" "structural" "text")
     ((texinfo-mode tex-mode latex-mode html-mode html-helper-mode)
@@ -433,26 +433,26 @@ Like assoc, return the element of list for which it matches."
 	(setq list (cdr list))))
     nil))
 
-(defun versor:meta-dimension-valid-for-mode (meta-name mode)
+(defun versor-meta-dimension-valid-for-mode (meta-name mode)
   "Return whether the meta-dimension called META-NAME is allowed in MODE."
   ;; smug -- worked first time
   (cond
-   ((eq versor:meta-dimensions-valid-for-modes t)
+   ((eq versor-meta-dimensions-valid-for-modes t)
     t)
-   ((consp versor:meta-dimensions-valid-for-modes)
-    (let* ((descr (cdr (or (assoc major-mode versor:meta-dimensions-valid-for-modes)
-			   (assoc-multi-key major-mode versor:meta-dimensions-valid-for-modes)
-			   (assoc t versor:meta-dimensions-valid-for-modes))))
+   ((consp versor-meta-dimensions-valid-for-modes)
+    (let* ((descr (cdr (or (assoc major-mode versor-meta-dimensions-valid-for-modes)
+			   (assoc-multi-key major-mode versor-meta-dimensions-valid-for-modes)
+			   (assoc t versor-meta-dimensions-valid-for-modes))))
 	   (allowing (car descr))
 	   (mentioned (member meta-name (cdr descr))))
       (or (and allowing mentioned)
 	  (and (not allowing) (not mentioned)))))
    (t t)))
 
-(defvar versor:mode-current-levels nil
+(defvar versor-mode-current-levels nil
   "Alist of mode name symbols to the current meta-level and level for that mode.
-Used by versor:local, but defined in versor:dimensions."
-  ;; I tried getting versor:local's versor:mode-change-function to remember the
+Used by versor-local, but defined in versor-dimensions."
+  ;; I tried getting versor-local's versor-mode-change-function to remember the
   ;; levels for the mode, but couldn't get it to work -- something about the
   ;; mode being set strangely in the minibuffer, I think
 )

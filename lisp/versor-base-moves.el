@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-03-09 14:13:39 john>
+;;; Time-stamp: <2006-03-09 14:52:30 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -28,7 +28,7 @@
 ;; some internal functions for operations that aren't typically there already,
 ;; or that normal emacs does slightly differently from what we want
 
-(defun versor:forward-paragraph (&optional n)
+(defun versor-forward-paragraph (&optional n)
   "Like forward-paragraph, but don't end up on a blank line."
   (interactive "p")
   (forward-paragraph n)
@@ -38,7 +38,7 @@
 	(message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
-(defun versor:backward-paragraph (&optional n)
+(defun versor-backward-paragraph (&optional n)
   "Like backward-paragraph, but don't end up on a blank line."
   (interactive "p")
   (backward-paragraph (1+ n))
@@ -48,21 +48,21 @@
 	(message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
-(defun versor:end-of-paragraph (&optional arg)
+(defun versor-end-of-paragraph (&optional arg)
   "Move to the end of the paragraph."
   (end-of-paragraph-text))
 
 ;; todo: add tex, latex, bibtex ideas of paragraphs, perhaps going via generic-text, or building on the built-in ones in-place?
 
-(defun versor:start-of-line (n)
+(defun versor-start-of-line (n)
   "Move to first non-space on line, or to start of Nth line from here."
   (interactive "p")
   (if (or (= n 1)
-	  (not (eq last-command 'versor:start-of-line)))
+	  (not (eq last-command 'versor-start-of-line)))
       (back-to-indentation)
     (beginning-of-line n)))
 
-(defmacro versor:following-margins (&rest body)
+(defmacro versor-following-margins (&rest body)
   "Perform BODY while sticking to the same margin if on one."
   `(let* ((at-left-edge (bolp))
 	  (at-right-margin (eolp))
@@ -77,15 +77,15 @@
       (at-right-margin (end-of-line 1))
       (at-left-margin (back-to-indentation)))))
 
-(defun versor:previous-line (n)
+(defun versor-previous-line (n)
   "Move to the previous line, following margins if on one."
   (interactive "p")
-  (versor:following-margins (previous-line n)))
+  (versor-following-margins (previous-line n)))
 
-(defun versor:next-line (n)
+(defun versor-next-line (n)
   "Move to the next line, following margins if on one."
   (interactive "p")
-  (versor:following-margins (next-line n)))
+  (versor-following-margins (next-line n)))
 
 (defun safe-backward-up-list (&rest args)
   "Like backward-up-list, but returns nil on error."
@@ -132,34 +132,34 @@
 	(point))
     (error nil)))
 
-(defvar versor:reformat-automatically t
+(defvar versor-reformat-automatically t
   "If non-nil, some versor movements call reformatting commands.")
 
-(defmodel versor:backward-up-list (arg)
+(defmodel versor-backward-up-list (arg)
   "Like backward-up-list, but with some versor stuff around it.
 Makes a two-part selection, of opening and closing brackets."
   (interactive "p"))
 
-(defmodal versor:backward-up-list (fundamental-mode) (arg)
+(defmodal versor-backward-up-list (fundamental-mode) (arg)
   "Like backward-up-list, but with some versor stuff around it.
 Makes a two-part selection, of opening and closing brackets."
   (interactive "p")
   (safe-backward-up-list arg)
-  (when versor:reformat-automatically
+  (when versor-reformat-automatically
     (condition-case evar
 	(indent-sexp)
       (error nil)))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
 	(end (save-excursion (forward-sexp 1) (point))))
-    ;; TODO: should probably be versor:set-current-item
-    (make-versor:overlay start (1+ start))
+    ;; TODO: should probably be versor-set-current-item
+    (make-versor-overlay start (1+ start))
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-    ;; TODO: should probably be versor:add-to-current-item when I've written one
-    (versor:extra-overlay (1- end) end)
+    ;; TODO: should probably be versor-add-to-current-item when I've written one
+    (versor-extra-overlay (1- end) end)
     (cons start end)))
 
-(defmodal versor:backward-up-list (html-mode html-helper-mode) (arg)
+(defmodal versor-backward-up-list (html-mode html-helper-mode) (arg)
   "Like backward-up-list, but with versor stuff around it, and for HTML blocks."
   (nested-blocks-leave-backwards)
   (let ((open-start (match-beginning 0))
@@ -167,15 +167,15 @@ Makes a two-part selection, of opening and closing brackets."
     (nested-blocks-forward)
     (let ((close-start (match-beginning 0))
 	  (close-end (match-end 0)))
-      (make-versor:overlay open-start open-end)
-      (versor:extra-overlay close-start close-end)
+      (make-versor-overlay open-start open-end)
+      (versor-extra-overlay close-start close-end)
       (goto-char open-start))))
 
-(defmodel versor:down-list (arg)
+(defmodel versor-down-list (arg)
   "Like down-list, but with some versor stuff around it."
   (interactive "p"))
 
-(defmodal versor:down-list (fundamental-mode) (arg)
+(defmodal versor-down-list (fundamental-mode) (arg)
   "Like down-list, but with some versor stuff around it."
   (interactive "p")
   (unless (safe-down-list arg)
@@ -183,14 +183,14 @@ Makes a two-part selection, of opening and closing brackets."
     (previous-sexp 1)
     (safe-down-list args))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
-  (make-versor:overlay (point) (1+ (point))) ; TODO: should probably be versor:set-current-item
+  (make-versor-overlay (point) (1+ (point))) ; TODO: should probably be versor-set-current-item
   (when (looking-at "\\s(")
     (save-excursion
       (forward-sexp 1)
       ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-      (versor:extra-overlay (1- (point)) (point))))) ; TODO: should probably be versor:add-to-current-item when I've written one
+      (versor-extra-overlay (1- (point)) (point))))) ; TODO: should probably be versor-add-to-current-item when I've written one
 
-(defmodal versor:down-list (html-mode html-helper-mode) (arg)
+(defmodal versor-down-list (html-mode html-helper-mode) (arg)
   "Like down-list, but with versor stuff around it, and for HTML block structure."
   (nested-blocks-enter))
 
@@ -269,9 +269,9 @@ Makes a two-part selection, of opening and closing brackets."
     (parse-partial-sexp prevprev prev
 			0 t)))
 
-(defvar versor:allow-move-to-end-of-last 'dwim
+(defvar versor-allow-move-to-end-of-last 'dwim
   "*Whether to allow moving to the end of the last sexp in a list.
-  Otherwise, versor:next stops at the start of it, and refuses to do
+  Otherwise, versor-next stops at the start of it, and refuses to do
   another forward move.
   Setting this non-nil does what you probably want in practice, although
   setting it nil is probably cleaner in some abstract sort of way.
@@ -279,9 +279,9 @@ Makes a two-part selection, of opening and closing brackets."
   go to just before the closing syntax of the list, which is where you
   typically want to be to type the next sexp in.")
 
-(defvar versor:move-out-when-at-end t
+(defvar versor-move-out-when-at-end t
   "If non-nil, trying to move further on when already at the end of
-  the last thing in a container (see versor:allow-move-to-end-of-last)
+  the last thing in a container (see versor-allow-move-to-end-of-last)
   will move to just after the end of the container. Can be convenient in
   practice, although it breaks the symmetry of the next<-->previous
   operations.")
@@ -290,14 +290,14 @@ Makes a two-part selection, of opening and closing brackets."
   "Move forward N sexps.
   Like forward-sexp but moves to the start of the next sexp rather than the
   end of the current one, and so skips leading whitespace etc.
-  See versor:allow-move-to-end-of-last for some finer control."
+  See versor-allow-move-to-end-of-last for some finer control."
   (interactive "p"))
     
 (defmodal next-sexp (fundamental-mode) (n)
   "Move forward N sexps.
   Like forward-sexp but moves to the start of the next sexp rather than the
   end of the current one, and so skips leading whitespace etc.
-  See versor:allow-move-to-end-of-last for some finer control."
+  See versor-allow-move-to-end-of-last for some finer control."
   (interactive "p")
   (let* ((where (safe-scan-sexps (point) n))
 	 (one-more (safe-scan-sexps where 1)))
@@ -311,16 +311,16 @@ Makes a two-part selection, of opening and closing brackets."
 				  0	; targetdepth
 				  t	; stopbefore
 				  )))
-	  (when (and (not one-more) versor:allow-move-to-end-of-last)
+	  (when (and (not one-more) versor-allow-move-to-end-of-last)
 	    (message "not one-more; where=%d, point=%d" where (point)) ;
 	    ;; This is the special case where we move to the end of
 	    ;; the last regexp in a list. (The normal case is that
 	    ;; we move to the start of a regexp, and let the surrounding
-	    ;; macro versor:as-motion-command in versor:next call
-	    ;; versor:set-current-item for us.
-  (versor:set-current-item (safe-scan-sexps (point) -1)
+	    ;; macro versor-as-motion-command in versor-next call
+	    ;; versor-set-current-item for us.
+  (versor-set-current-item (safe-scan-sexps (point) -1)
 			   ;; where
-			   (if (eq versor:allow-move-to-end-of-last t)
+			   (if (eq versor-allow-move-to-end-of-last t)
 			       where
 			     (progn
 			       (goto-char where)
@@ -330,7 +330,7 @@ Makes a two-part selection, of opening and closing brackets."
 			       (point)
 			       ))
 			   )))
-      (if versor:move-out-when-at-end
+      (if versor-move-out-when-at-end
 	  (progn
 	    (up-list)
 	    (skip-to-actual-code))
@@ -347,7 +347,7 @@ things with natural language punctuation."
     (skip-to-actual-code)
     (let ((start (point)))
       (nested-blocks-forward)
-      (versor:set-current-item start (point))))
+      (versor-set-current-item start (point))))
    ((save-excursion
       (let ((started (point)))
 	(and (re-search-backward sentence-end (point-min) t)
@@ -356,12 +356,12 @@ things with natural language punctuation."
     (skip-to-actual-code)
     (let ((start (point)))
       (forward-sentence)
-      (versor:set-current-item start (point))))
+      (versor-set-current-item start (point))))
    ((looking-at "[[({]")
     (skip-to-actual-code)
     (let ((start (point)))
       (forward-sexp n)
-      (versor:set-current-item start (point))))
+      (versor-set-current-item start (point))))
    (t (forward-word 1))))
 
 (defmodel previous-sexp (n)
@@ -376,7 +376,7 @@ Like backward-sexp but stops without error on reaching the start."
   (let ((where (safe-scan-sexps (point) (- n))))
     (if where
 	(goto-char where)
-      (if versor:move-out-when-at-end
+      (if versor-move-out-when-at-end
 	  (safe-backward-up-list)
 	(message "No more previous sexps")))))
 
@@ -393,7 +393,7 @@ Like backward-sexp but stops without error on reaching the start."
     (let ((end (match-end 0)))
       (goto-char end)
       (nested-blocks-backward)
-      (versor:set-current-item (point) end)))
+      (versor-set-current-item (point) end)))
    ;; todo: add handling of sentences
    ;; todo: add handling of real brackets
    (t (backward-word 1))))
@@ -411,7 +411,7 @@ Like backward-sexp but stops without error on reaching the start."
       (setq p n))
     (goto-char p)))
 
-(defun versor:next-word (n)
+(defun versor-next-word (n)
   "Move forward a word, or, with argument, that number of words.
 Like forward-word but leaves point on the first character of the word,
 and never on the space or punctuation before it."
@@ -419,17 +419,17 @@ and never on the space or punctuation before it."
   (forward-word n)
   (skip-syntax-forward "^w"))
 
-(defun versor:end-of-word (n)
+(defun versor-end-of-word (n)
   "Move to the end of the current word, or, with argument, that number of words."
   (interactive "p")
   (forward-word (1- n))
   (skip-syntax-forward "w"))
 
-(defun versor:delete-word (n)
+(defun versor-delete-word (n)
   "Delete N words."
   (interactive "p")
-  (versor:as-motion-command
-   (let* ((item (versor:get-current-item))
+  (versor-as-motion-command
+   (let* ((item (versor-get-current-item))
 	  (spaced (and (= (char-before (car item)) ? )
 		       (= (char-after (cdr item)) ? ))))
      (delete-region (car item) (cdr item))
@@ -494,14 +494,14 @@ Stay within the current sentence."
   (let ((last-mark (last tempo-marks)))
     (when last-mark (goto-char last-mark))))
 
-(defun versor:set-mode-properties (mode properties)
+(defun versor-set-mode-properties (mode properties)
   "Set the mode-specific versor properties for MODE to be PROPERTIES.
 PROPERTIES is given as an alist."
   (mapcar (lambda (pair)
 	    (put mode (car pair) (cdr pair)))
 	  properties))
 
-(versor:set-mode-properties
+(versor-set-mode-properties
  'html-mode
  '((table-starter . "<table[^>]*>")
    (table-ender .  "</table[^>]*>")
@@ -511,7 +511,7 @@ PROPERTIES is given as an alist."
    (cell-ender . "</t[dh][^>]*>")
    ))
 
-(versor:set-mode-properties
+(versor-set-mode-properties
  'html-helper-mode
  '((table-starter . "<table[^>]*>")
    (table-ender .  "</table[^>]*>")
@@ -521,79 +521,79 @@ PROPERTIES is given as an alist."
    (cell-ender . "</t[dh][^>]*>")
    ))
 
-(versor:set-mode-properties
+(versor-set-mode-properties
  'texinfo-mode
  '((table-starter . "@multitable")
    (table-ender . "@end multitable")
    (row-starter . "@item")
    (cell-starter . "@tab")))
 
-(defun versor:table-starter ()
+(defun versor-table-starter ()
   "Return the table starter regexp for the current major mode."
   (or (get major-mode 'table-starter)
       (error "No table starter for %S") major-mode))
 
-(defun versor:table-ender ()
+(defun versor-table-ender ()
   "Return the table ender regexp for the current major mode."
   (or (get major-mode 'table-ender)
       (error "No table ender for %S") major-mode))
 
-(defun versor:row-starter ()
+(defun versor-row-starter ()
   "Return the row starter regexp for the current major mode."
   (or (get major-mode 'row-starter)
       (error "No row starter for %S") major-mode))
 
-(defun versor:row-ender ()
+(defun versor-row-ender ()
   "Return the row ender regexp for the current major mode."
    (get major-mode 'row-ender))
 
-(defun versor:cell-starter ()
+(defun versor-cell-starter ()
   "Return the cell starter regexp for the current major mode."
   (or (get major-mode 'cell-starter)
       (error "No cell starter for %S") major-mode))
 
-(defun versor:cell-ender ()
+(defun versor-cell-ender ()
   "Return the cell ender regexp for the current major mode."
   (get major-mode 'cell-ender))
 
-(defun versor:first-cell ()
+(defun versor-first-cell ()
   "Move to the first cell of the current row."
   ;; todo: finish this properly
   (interactive)
-  (if (and (search-backward (versor:row-starter) (point-min) t)
-	   (re-search-forward (versor:cell-starter) (point-max) t))
+  (if (and (search-backward (versor-row-starter) (point-min) t)
+	   (re-search-forward (versor-cell-starter) (point-max) t))
       t
     (error "Could not locate first cell.")))
 
-(defun versor:previous-cell (n)
+(defun versor-previous-cell (n)
   "Move to the previous cell."
   ;; todo: limit to within this row? or at least not include the row markup line
   (interactive "p")
-  (let* ((cell-starter (versor:cell-starter)))
+  (let* ((cell-starter (versor-cell-starter)))
     (while (> n -1)
       (backward-char 1)
       (re-search-backward cell-starter (point-min) t)
       (setq n (1- n)))
     (let ((start-starter (point))
 	  (start-ender (match-end 0))
-	  (ender (versor:cell-ender)))
+	  (ender (versor-cell-ender)))
       (save-excursion
 	(if ender
 	    (re-search-forward ender (point-max) t)
 	  (forward-char 1)
-	  (re-search-forward (versor:cell-starter) (point-max) t)
+	  (re-search-forward (versor-cell-starter) (point-max) t)
 	  (goto-char (1- (match-beginning 0))))
-	(versor:set-current-item start-starter (point)))
+	(versor-set-current-item start-starter (point)))
       (goto-char start-ender)
       (skip-to-actual-code))))
 
-(defun versor:next-cell (n)
+(defun versor-next-cell (n)
   "Move to the next cell."
   ;; todo: limit to within this row? or at least not include the row markup line
   (interactive "p")
   (forward-char 1)
-  (let* ((starter (versor:cell-starter))
-	 (ender (versor:cell-ender)))
+  (let* ((starter (versor-cell-starter))
+	 (ender (versor-cell-ender)))
     (while (> n 0)
       (if (not (re-search-forward starter (point-max) t))
 	  (error "No more next cells")
@@ -604,37 +604,37 @@ PROPERTIES is given as an alist."
 	(if ender
 	    (re-search-forward ender (point-max) t)
 	  (forward-char 1)
-	  (re-search-forward (versor:cell-starter) (point-max) t)
+	  (re-search-forward (versor-cell-starter) (point-max) t)
 	  (goto-char (1- (match-beginning 0))))
-	(versor:set-current-item starter-start (point)))
+	(versor-set-current-item starter-start (point)))
       (skip-to-actual-code))))
 
-(defun versor:last-cell ()
+(defun versor-last-cell ()
   "Move to the last cell of the current row."
   (interactive)
   ;; todo: finish this properly
-  (if (and (re-search-forward (versor:row-ender) (point-max) t)
-	   (re-search-backward (versor:cell-starter) (point-min) t))
+  (if (and (re-search-forward (versor-row-ender) (point-max) t)
+	   (re-search-backward (versor-cell-starter) (point-min) t))
       (goto-char (match-end 0))
     (error "Could not locate last cell")))
 
-(defun versor:first-row ()
+(defun versor-first-row ()
   "Move to the first row of the current table."
   (interactive)
   ;; todo: finish this properly
-  (if (and (search-backward (versor:table-starter) (point-min) t)
-	   (re-search-forward (versor:row-starter) (point-max) t))
+  (if (and (search-backward (versor-table-starter) (point-min) t)
+	   (re-search-forward (versor-row-starter) (point-max) t))
       t
     (error "Could not locate first row")))
 
-(defun versor:previous-row (n)
+(defun versor-previous-row (n)
   "Move to the previous row."
   (interactive "p")
   (let* ((limit (save-excursion
-		  (re-search-backward (versor:table-starter) (point-min) t)
+		  (re-search-backward (versor-table-starter) (point-min) t)
 		  (match-end 0)))
-	 (row-starter (versor:row-starter))
-	 (ender (versor:row-ender)))
+	 (row-starter (versor-row-starter))
+	 (ender (versor-row-ender)))
     (while (> n -1)
       (backward-char 1)
       (re-search-backward row-starter limit t)
@@ -645,22 +645,22 @@ PROPERTIES is given as an alist."
 	  (if ender
 	      (re-search-forward ender (point-max) t)
 	    (forward-char 1)
-	    (re-search-forward (versor:row-starter) (point-max) t)
+	    (re-search-forward (versor-row-starter) (point-max) t)
 	    (goto-char (1- (match-beginning 0))))
-	  (versor:set-current-item start-starter (point)))
+	  (versor-set-current-item start-starter (point)))
 	(goto-char start-ender)
 	(skip-to-actual-code))))
 
-(defun versor:next-row (n)
+(defun versor-next-row (n)
   "Move to the next row."
   ;; todo: handling of last row isn't right yet
   (interactive "p")
   (forward-char 1)
-  (let* ((ender (versor:row-ender))
+  (let* ((ender (versor-row-ender))
 	 (limit (save-excursion
-		  (re-search-forward (versor:table-ender) (point-max) t)
+		  (re-search-forward (versor-table-ender) (point-max) t)
 		  (match-beginning 0)))
-	 (row-starter (versor:row-starter)))
+	 (row-starter (versor-row-starter)))
     (while (> n 0)
       (if (not (re-search-forward row-starter limit t))
 	  (error "No more next rows")
@@ -671,37 +671,37 @@ PROPERTIES is given as an alist."
 	(if ender
 	    (re-search-forward ender limit t)
 	  (forward-char 1)
-	  (re-search-forward (versor:row-starter) limit t)
+	  (re-search-forward (versor-row-starter) limit t)
 	  (goto-char (1- (match-beginning 0))))
-	(versor:set-current-item start-starter (point)))
+	(versor-set-current-item start-starter (point)))
       (skip-to-actual-code))))
 
-(defun versor:last-row ()
+(defun versor-last-row ()
   "Move to the last row of the current table."
   (interactive)
   ;; todo: finish this properly
-  (if (and (search-forward (versor:table-ender) (point-max) t)
-	   (re-search-backward (versor:row-starter) (point-min) t))
+  (if (and (search-forward (versor-table-ender) (point-max) t)
+	   (re-search-backward (versor-row-starter) (point-min) t))
       (goto-char (match-end 0))
     (error "Could not locate last row")))
 
-(defun versor:first-defun ()
+(defun versor-first-defun ()
   "Move to the start of the first function definition in the buffer."
   (interactive)
   (goto-char (point-min))
   (beginning-of-defun -1))
 
-(defun versor:previous-defun (n)
+(defun versor-previous-defun (n)
   "Move to the start of the previous function definition."
   (interactive "p")
   (beginning-of-defun n))
 
-(defun versor:next-defun (n)
+(defun versor-next-defun (n)
   "Move to the start of the next function definition."
   (interactive "p")
   (beginning-of-defun (- n)))
 
-(defun versor:last-defun ()
+(defun versor-last-defun ()
   "Move to the start of the last function definition in the buffer."
   (interactive)
   (goto-char (point-max))

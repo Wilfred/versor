@@ -1,5 +1,5 @@
 ;;;; versor-chop-chop.el -- move quickly using binary chop
-;;; Time-stamp: <2005-02-19 20:03:01 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:35 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -19,19 +19,19 @@
 (require 'versor-containers)
 
 (defvar chop-colours [ "red" "green" "blue" ])
-(defvar versor:chops 3)
+(defvar versor-chops 3)
 
-(defun versor:choose-chop ()
+(defun versor-choose-chop ()
   (let ((choices '(("red" . 0) ("green" . 1) ("blue" . 2))))
     (cdr (assoc
 	  (completing-read "Choose chop: " choices nil t)
 	  choices))))
 
-(defun versor:chop ()
+(defun versor-chop ()
   "Move the selection, using binary / ternary chop."
   (interactive)
-  (versor:select-container-contents)
-  (let* ((item (versor:get-current-item))
+  (versor-select-container-contents)
+  (let* ((item (versor-get-current-item))
 	 (start (car item))
 	 (end (cdr item))
 	 (count 0))
@@ -41,23 +41,23 @@
 	(while (and (/= where (point))
 		    (<= (point) end))
 	  (setq where (point))
-	  (versor:next-action)
+	  (versor-next-action)
 	  (message "%d" count)
 	  (setq count (1+ count)))))
-    (message "%d %s" count versor:current-level-name)
+    (message "%d %s" count versor-current-level-name)
     (goto-char start)
-    (let ((per-choice (/ count versor:chops))
-	  (chops (make-vector versor:chops nil))
-	  (chop-items (make-vector versor:chops 0))
+    (let ((per-choice (/ count versor-chops))
+	  (chops (make-vector versor-chops nil))
+	  (chop-items (make-vector versor-chops 0))
 	  (chop 0))
-      (while (< chop versor:chops)
+      (while (< chop versor-chops)
 	(message "measuring out chop %d" chop)
 	(let ((this-start (point))
 	      (i 0))
 	  (while (and (< (point) end)
 		      (<= i per-choice))
-	    (message "measuring %s %d of chop %d" versor:current-level-name i chop)
-	    (versor:next-action)
+	    (message "measuring %s %d of chop %d" versor-current-level-name i chop)
+	    (versor-next-action)
 	    (setq i (1+ i)))
 	  (aset chop-items chop i)
 	  (let ((olay (make-overlay this-start (point))))
@@ -67,16 +67,16 @@
 	    (aset chops chop olay))
 	  )
 	(setq chop (1+ chop)))
-      (let ((chosen (versor:choose-chop)))
+      (let ((chosen (versor-choose-chop)))
 	
 	)
       (let ((i 0))
-	(while (< i versor:chops)
+	(while (< i versor-chops)
 	  (delete-overlay (aref chops i))
 	  (setq i (1+ i)))))
 
     ))
 
-(global-set-key [ f4 ] 'versor:chop)
+(global-set-key [ f4 ] 'versor-chop)
 
 ;;; end of versor-chop-chop.el

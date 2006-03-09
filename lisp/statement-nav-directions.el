@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-03-06 15:53:33 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:30 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -49,8 +49,8 @@
     (if remembered
 	(progn				; we have cached data for this
 	  (message "using cached statement position %S" remembered)
-	  (versor:set-current-items remembered)
-	  (versor:display-highlighted-choice (symbol-name part) (languide-parts)))
+	  (versor-set-current-items remembered)
+	  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
       (let* ((type (if prelocated
 		       (third latest-statement-known)
 		     (identify-statement nil)))
@@ -71,9 +71,9 @@
 					   selected-parts
 					   )
 		  (message "Selected-parts=%S" selected-parts)
-		  ;; (versor:set-current-item (point) mark-candidate)
-		  (versor:set-current-items selected-parts)
-		  (versor:display-highlighted-choice (symbol-name part) (languide-parts)))
+		  ;; (versor-set-current-item (point) mark-candidate)
+		  (versor-set-current-items selected-parts)
+		  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
 	      (goto-char old-position)
 	      (error "Don't know how to handle directions like \"%S\"" directions))
 	  (goto-char old-position)

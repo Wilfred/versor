@@ -1,9 +1,9 @@
 ;;;; versor-modal.el -- part of versatile cursor
-;;; Time-stamp: <2004-05-24 14:03:08 john>
+;;; Time-stamp: <2006-03-09 14:52:32 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -24,14 +24,14 @@
 (provide 'versor-modal)
 (require 'versor-names)
 
-(defun versor:bind-modal (mode meta-level level action fn)
+(defun versor-bind-modal (mode meta-level level action fn)
   "For MODE and META-LEVEL LEVEL, bind ACTION to call FN."
-  (let* ((level-index-pair (versor:find-level-by-double-name meta-level level)))
+  (let* ((level-index-pair (versor-find-level-by-double-name meta-level level)))
     (if level-index-pair
 	(let* ((meta-level-index (car level-index-pair))
 	       (level-index (cdr level-index-pair))
-	       (level-data (versor:current-level))
-	       (level-all-modal-data (versor:action level-data 'modal-bindings))
+	       (level-data (versor-current-level))
+	       (level-all-modal-data (versor-action level-data 'modal-bindings))
 	       (level-this-mode-bindings (assoc mode level-all-modal-data)))
 	  (when (null level-all-modal-data)
 	    (setq level-all-modal-data (list 'modal-bindings))
@@ -52,12 +52,12 @@
 
 (if (fboundp 'vm-summary-mode)
     (progn
-      (versor:bind-modal 'vm-summary-mode "cartesian" "lines" 'previous 'vm-previous-message)
-      (versor:bind-modal 'vm-summary-mode "cartesian" "lines" 'next 'vm-next-message)))
+      (versor-bind-modal 'vm-summary-mode "cartesian" "lines" 'previous 'vm-previous-message)
+      (versor-bind-modal 'vm-summary-mode "cartesian" "lines" 'next 'vm-next-message)))
 
-(versor:bind-modal 'emacs-lisp-mode "structural" "defuns" 'insert 'tempo-template-lisp-mode-definition-defun)
+(versor-bind-modal 'emacs-lisp-mode "structural" "defuns" 'insert 'tempo-template-lisp-mode-definition-defun)
 
-(versor:bind-modal 'html-helper-mode "text" "paragraphs" 'insert 'tempo-template-html-paragraph)
+(versor-bind-modal 'html-helper-mode "text" "paragraphs" 'insert 'tempo-template-html-paragraph)
 
-(versor:bind-modal 'html-helper-mode "tables" "cells" 'insert 'tempo-template-html-table-data)
-(versor:bind-modal 'html-helper-mode "tables" "rows" 'insert 'tempo-template-html-table-row)
+(versor-bind-modal 'html-helper-mode "tables" "cells" 'insert 'tempo-template-html-table-data)
+(versor-bind-modal 'html-helper-mode "tables" "rows" 'insert 'tempo-template-html-table-row)

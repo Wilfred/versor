@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2006-02-03 12:03:27 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:32 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -423,57 +423,57 @@ See versor.el (versatile cursors) for fine and coarse movements.
 See handsfree-menus.el for menus."
   (interactive)
 
-  (versor:setup)
+  (versor-setup)
 
   (pedals-setup-codes)
 
   ;; left pedal of right cluster -- misc things at point
-  (global-set-key pedal-aux 'versor:over-next)
-  (global-set-key pedal-S-aux 'versor:over-prev)
+  (global-set-key pedal-aux 'versor-over-next)
+  (global-set-key pedal-S-aux 'versor-over-prev)
 
   (global-set-key pedal-C-aux (if pedal:versor-change-dimension-ctrl
-				  'versor:next-meta-level
-				'versor:dwim ; 'versor:other-end-of-item
+				  'versor-next-meta-level
+				'versor-dwim ; 'versor-other-end-of-item
 				))
   (global-set-key pedal-C-S-aux (if pedal:versor-change-dimension-ctrl
-				    'versor:prev-meta-level
+				    'versor-prev-meta-level
 				  'wander-yank-dwim))
 
   (global-set-key pedal-M-aux (if pedal:versor-change-dimension-ctrl
-				  'versor:dwim ; 'versor:other-end-of-item
-				'versor:next-meta-level))
+				  'versor-dwim ; 'versor-other-end-of-item
+				'versor-next-meta-level))
   (global-set-key pedal-M-S-aux (if pedal:versor-change-dimension-ctrl
 				    'wander-yank-dwim
-				  'versor:prev-meta-level))
+				  'versor-prev-meta-level))
 
   ;; middle pedal of right cluster -- dimensional navigation
-  (global-set-key pedal-onward 'versor:next)
-  (global-set-key pedal-S-onward 'versor:prev)
+  (global-set-key pedal-onward 'versor-next)
+  (global-set-key pedal-S-onward 'versor-prev)
 
   (global-set-key pedal-C-onward (if pedal:versor-change-dimension-ctrl
-				     'versor:in
+				     'versor-in
 				   'versor-extend-item-forwards))
   (global-set-key pedal-C-S-onward (if pedal:versor-change-dimension-ctrl
-				       'versor:out
-				     'versor:extend-item-backwards))
+				       'versor-out
+				     'versor-extend-item-backwards))
 
   (global-set-key pedal-M-onward (if pedal:versor-change-dimension-ctrl
-				     'versor:extend-item-forwards
-				   'versor:in))
+				     'versor-extend-item-forwards
+				   'versor-in))
   (global-set-key pedal-M-S-onward (if pedal:versor-change-dimension-ctrl
-				       'versor:extend-item-backwards
-				     'versor:out))
+				       'versor-extend-item-backwards
+				     'versor-out))
 
   ;; right pedal of right cluster -- menus, yank, repeat, undo, quit
   (global-set-key pedal-menu 'handsfree-main-menu)
   ;;  (global-set-key pedal-S-menu 'handsfree-popup-tools-menu)
-  (global-set-key pedal-S-menu 'versor:do-dynamic-menu)
+  (global-set-key pedal-S-menu 'versor-do-dynamic-menu)
 
   (global-set-key pedal-C-menu 'other-window-or-buffer)
   (global-set-key pedal-C-S-menu 'repeat-complex-command )
 
   ;;  (global-set-key pedal-M-menu 'move-sexp-from-point) ; should become "select value"?
-  (global-set-key pedal-M-menu 'versor:begin-altering-item)
+  (global-set-key pedal-M-menu 'versor-begin-altering-item)
   (global-set-key pedal-M-S-menu 'keyboard-quit )
 
   ;;  (global-set-key pedal-C-M-S-aux 'describe-key )
@@ -515,15 +515,15 @@ See handsfree-menus.el for menus."
   (define-key isearch-mode-map pedal-menu 'isearch-exit)
   (define-key isearch-mode-map pedal-S-menu 'isearch-cancel)
 
-  (if (and (boundp 'versor:altering-map)
-	   (keymapp versor:altering-map))
+  (if (and (boundp 'versor-altering-map)
+	   (keymapp versor-altering-map))
       (progn
-	(define-key versor:altering-map pedal-onward 'versor:alter-item-next)
-	(define-key versor:altering-map pedal-S-onward 'versor:alter-item-prev)
-	(define-key versor:altering-map pedal-aux 'versor:alter-item-over-next)
-	(define-key versor:altering-map pedal-S-aux 'versor:alter-item-over-prev)
-	(define-key versor:altering-map pedal-menu 'versor:end-altering-item)
-	(define-key versor:altering-map pedal-S-menu 'versor:abandon-altering-item)))
+	(define-key versor-altering-map pedal-onward 'versor-alter-item-next)
+	(define-key versor-altering-map pedal-S-onward 'versor-alter-item-prev)
+	(define-key versor-altering-map pedal-aux 'versor-alter-item-over-next)
+	(define-key versor-altering-map pedal-S-aux 'versor-alter-item-over-prev)
+	(define-key versor-altering-map pedal-menu 'versor-end-altering-item)
+	(define-key versor-altering-map pedal-S-menu 'versor-abandon-altering-item)))
 
   (if (and (boundp 'Buffer-menu-mode-map)
 	   (keymapp Buffer-menu-mode-map))

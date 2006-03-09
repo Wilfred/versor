@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-02-10 15:26:11 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:36 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -26,17 +26,17 @@
 
 ;; Display the current meta-dimension and dimension etc
 
-(defvar versor:multi-line-level-display (and (boundp 'emacs-major-version)
+(defvar versor-multi-line-level-display (and (boundp 'emacs-major-version)
 					     (>= emacs-major-version 21))
   "*Whether to use multi-line indication of the current meta-level and level.")
 
-(defun versor:gather-level-attributes (level attributes)
+(defun versor-gather-level-attributes (level attributes)
   "For LEVEL, gather the ATTRIBUTES.
 The result is in the form of a property list."
   (let ((result nil))
     (while attributes
       (let* ((attr (car attributes))
-	     (value (versor:action level attr)))
+	     (value (versor-action level attr)))
 	(when value
 	  (setq result
 		(cons attr
@@ -45,108 +45,108 @@ The result is in the form of a property list."
       (setq attributes (cdr attributes)))
     result))
 
-(defun versor:set-status-display (&optional one of-these explicit)
+(defun versor-set-status-display (&optional one of-these explicit)
   "Indicate the state of the versor system."
-  (setq versor:current-level-name (versor:level-name versor:level)
-	versor:current-meta-level-name (versor:meta-level-name versor:meta-level))
-  (if (and versor:multi-line-level-display explicit)
-      (versor:display-dimensions-2d)
+  (setq versor-current-level-name (versor-level-name versor-level)
+	versor-current-meta-level-name (versor-meta-level-name versor-meta-level))
+  (if (and versor-multi-line-level-display explicit)
+      (versor-display-dimensions-2d)
     (if one
 	(if of-these
-	    (versor:display-highlighted-choice one of-these)
+	    (versor-display-highlighted-choice one of-these)
 	  (if (stringp one)
 	      (message one)))
-      (message (first (versor:current-level)))))
-  (if versor:reversible
-      (setq versor:mode-line-begin-string (if versor:reversed " <==" " <")
-	    versor:mode-line-end-string (if versor:reversed ">" "==>"))
-    (setq versor:mode-line-begin-string " <"
-	  versor:mode-line-end-string ">"))
+      (message (first (versor-current-level)))))
+  (if versor-reversible
+      (setq versor-mode-line-begin-string (if versor-reversed " <==" " <")
+	    versor-mode-line-end-string (if versor-reversed ">" "==>"))
+    (setq versor-mode-line-begin-string " <"
+	  versor-mode-line-end-string ">"))
   (force-mode-line-update t)
-  (when versor:change-cursor-color
+  (when versor-change-cursor-color
     ;; done: allow for a second choice of colour, to be used if the main one is the same as the background colour
-    (let ((color (versor:action (versor:current-level) 'color)))
+    (let ((color (versor-action (versor-current-level) 'color)))
       (when (and (eq color (frame-parameter nil 'foreground-color))
-		 (versor:action (versor:current-level) 'other-color))
-	(setq color (versor:action (versor:current-level) 'other-color)))
+		 (versor-action (versor-current-level) 'other-color))
+	(setq color (versor-action (versor-current-level) 'other-color)))
       (set-cursor-color color)))
   (when (and window-system
-	     versor:item-attribute
+	     versor-item-attribute
 	     (fboundp 'set-face-attribute))
     (cond
-     ((symbolp versor:item-attribute)
-      (let ((attr-value (versor:action (versor:current-level)
-				       versor:item-attribute)))
+     ((symbolp versor-item-attribute)
+      (let ((attr-value (versor-action (versor-current-level)
+				       versor-item-attribute)))
 	(when attr-value
-	  (set-face-attribute 'versor:item nil
-			      versor:item-attribute
+	  (set-face-attribute 'versor-item nil
+			      versor-item-attribute
 			      attr-value))))
-     ((consp versor:item-attribute)
-      (apply 'set-face-attribute 'versor:item nil
-	     (versor:gather-level-attributes (versor:current-level)
-					     versor:item-attribute)))))
-  (let ((old-pair (assoc major-mode versor:mode-current-levels)))
+     ((consp versor-item-attribute)
+      (apply 'set-face-attribute 'versor-item nil
+	     (versor-gather-level-attributes (versor-current-level)
+					     versor-item-attribute)))))
+  (let ((old-pair (assoc major-mode versor-mode-current-levels)))
     (if (null old-pair)
-	(push (cons major-mode (cons versor:meta-level versor:level))
-	      versor:mode-current-levels)
-      (rplaca (cdr old-pair) versor:meta-level)
-      (rplacd (cdr old-pair) versor:level))))
+	(push (cons major-mode (cons versor-meta-level versor-level))
+	      versor-mode-current-levels)
+      (rplaca (cdr old-pair) versor-meta-level)
+      (rplacd (cdr old-pair) versor-level))))
 
-(defvar versor:highlight-with-brackets (not versor:use-face-attributes)
+(defvar versor-highlight-with-brackets (not versor-use-face-attributes)
   "*Whether to use brackets around highlighted items in status feedback.")
 
-(defun versor:highlighted-string (string)
+(defun versor-highlighted-string (string)
   "Return a highlighted version of STRING."
-  (if versor:use-face-attributes
+  (if versor-use-face-attributes
       (let ((strong
-	     (if versor:highlight-with-brackets
+	     (if versor-highlight-with-brackets
 		 (format "[%s]" string)
 	       (copy-sequence string))))
 	(put-text-property 0 (length strong)
-			   'face 'versor:item
+			   'face 'versor-item
 			   strong)
 	strong)
-    (if versor:highlight-with-brackets
+    (if versor-highlight-with-brackets
 	(format "[%s]" string)
       string)))
 
-(defun versor:unhighlighted-string (string)
+(defun versor-unhighlighted-string (string)
   "Return an unhighlighted version of STRING."
-  (if versor:highlight-with-brackets
+  (if versor-highlight-with-brackets
       string
     ;; allow space where the brackets would go in the highlighted version
     (format " %s " string)))
 
-(defun versor:display-highlighted-choice (one of-these-choices)
+(defun versor-display-highlighted-choice (one of-these-choices)
   "Display, with ONE highlighted, the members of OF-THESE-CHOICES"
   (let* ((msg (mapconcat
 	       (lambda (string)
 		 (if (string= string one)
-		     (versor:highlighted-string string)
-		   (versor:unhighlighted-string string)))
+		     (versor-highlighted-string string)
+		   (versor-unhighlighted-string string)))
 	       of-these-choices
 	       ", ")))
     (message msg)))
 
-(defvar versor:max-meta-name-length nil
+(defvar versor-max-meta-name-length nil
   "The length of the longest meta-level name.
 Used for display purposes, and cached here.")
 
-(defun versor:display-dimensions-2d ()
+(defun versor-display-dimensions-2d ()
   "Indicate the current meta-level and level, in a multi-line message."
   (interactive)
-  (unless versor:max-meta-name-length
-    (setq versor:max-meta-name-length
+  (unless versor-max-meta-name-length
+    (setq versor-max-meta-name-length
 	  (apply 'max
 		 (mapcar 'length
 			 (mapcar 'car
-				 (versor:meta-level-names))))))
+				 (versor-meta-level-names))))))
   (message
-   (let ((meta-levels-name-format-string (format "%% %ds" versor:max-meta-name-length)))
+   (let ((meta-levels-name-format-string (format "%% %ds" versor-max-meta-name-length)))
      (mapconcat
       'identity
       (let ((meta (1- (length moves-moves)))
-	    (formats (reverse (versor:all-names-grid-formats)))
+	    (formats (reverse (versor-all-names-grid-formats)))
 	    (result nil))
 	(while (>= meta 1)
 	  (let* ((meta-data (aref moves-moves meta))
@@ -156,8 +156,8 @@ Used for display purposes, and cached here.")
 		 (level 1)
 		 (n-level (length meta-data)))
 	    (when (or (eq meta-name
-			  (aref (aref moves-moves versor:meta-level) 0))
-		      (versor:meta-dimension-valid-for-mode meta-name major-mode))
+			  (aref (aref moves-moves versor-meta-level) 0))
+		      (versor-meta-dimension-valid-for-mode meta-name major-mode))
 	      (while row-formats
 		(let* ((level-name-raw 
 			(if (< level n-level)
@@ -165,9 +165,9 @@ Used for display purposes, and cached here.")
 			  ""))
 		       (level-name (format (car row-formats) level-name-raw)))
 		  (push
-		   (if (and (= meta versor:meta-level)
-			    (= level versor:level))
-		       (versor:highlighted-string level-name)
+		   (if (and (= meta versor-meta-level)
+			    (= level versor-level))
+		       (versor-highlighted-string level-name)
 		     level-name)
 		   inner-result)
 		  (setq row-formats (cdr row-formats))
@@ -175,8 +175,8 @@ Used for display purposes, and cached here.")
 	      (push
 	       (concat
 		(format meta-levels-name-format-string
-			(if (= meta versor:meta-level)
-			    (versor:highlighted-string meta-name)
+			(if (= meta versor-meta-level)
+			    (versor-highlighted-string meta-name)
 			  meta-name))
 		": "
 		(mapconcat 'identity inner-result " "))

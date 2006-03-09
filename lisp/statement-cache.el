@@ -1,5 +1,5 @@
 ;;;; statement-cache.el -- cache statement data for statement-navigation.el
-;;; Time-stamp: <2006-03-06 09:53:18 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:36 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -162,12 +162,12 @@ See the variable statements-known."
   (mapcar 'delete-overlay statement-cache-display-overlays)
   (setq statement-cache-display-overlays nil))
 
-(add-hook 'versor:pre-command-hook 'cancel-overlays)
-(remove-hook 'versor:pre-command-hook 'cancel-overlays)
-(add-hook 'versor:pre-command-hook 'statement-forget-cache)
-(remove-hook 'versor:pre-command-hook 'statement-forget-cache)
-(add-hook 'versor:post-command-hook 'statement-display-cache-as-overlays)
-(remove-hook 'versor:post-command-hook 'statement-display-cache-as-overlays)
+(add-hook 'versor-pre-command-hook 'cancel-overlays)
+(remove-hook 'versor-pre-command-hook 'cancel-overlays)
+(add-hook 'versor-pre-command-hook 'statement-forget-cache)
+(remove-hook 'versor-pre-command-hook 'statement-forget-cache)
+(add-hook 'versor-post-command-hook 'statement-display-cache-as-overlays)
+(remove-hook 'versor-post-command-hook 'statement-display-cache-as-overlays)
 
 (defun statement-display-cache-as-overlays ()
   "Display the cached statement data. Meant for debugging."

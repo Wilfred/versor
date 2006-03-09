@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2006-03-08 14:54:01 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:32 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -23,7 +23,7 @@
 
 ;;; If you have even fewer keys than normal available for versor (for
 ;;; example, a more restricted set of input than that arranged by
-;;; versor:pedals) you may need a menu for some of the actions -- for
+;;; versor-pedals) you may need a menu for some of the actions -- for
 ;;; example, reversing motion if you only have a "move" key rather
 ;;; than a "next" and "previous" pair
 
@@ -33,91 +33,91 @@
 (require 'versor-language-edits)
 (require 'languide-keymap)
 
-(defvar versor:control-menu-items
-  `(["Out briefly" versor:out-briefly-only t]
-    ["Backwards" versor:reverse [ :included (and versor:reversible (not versor:reversed))]]
-    ["Forwards" versor:reverse [ :included (and versor:reversible versor:reversed)]]
-    ["Set level" versor:select-named-level t]
-    ["Set meta-level" versor:select-named-meta-level t]
-    ["Copy" versor:copy t]
-    ["Kill" versor:kill t]
-    ["Mark" versor:mark t]
+(defvar versor-control-menu-items
+  `(["Out briefly" versor-out-briefly-only t]
+    ["Backwards" versor-reverse [ :included (and versor-reversible (not versor-reversed))]]
+    ["Forwards" versor-reverse [ :included (and versor-reversible versor-reversed)]]
+    ["Set level" versor-select-named-level t]
+    ["Set meta-level" versor-select-named-meta-level t]
+    ["Copy" versor-copy t]
+    ["Kill" versor-kill t]
+    ["Mark" versor-mark t]
     )
   "Control of versor.")
 
-(easy-menu-define versor:control-menu nil
-  "Versor Control Menu" (cons "Versor control" versor:control-menu-items))
+(easy-menu-define versor-control-menu nil
+  "Versor Control Menu" (cons "Versor control" versor-control-menu-items))
 
-(defun versor:control-menu ()
+(defun versor-control-menu ()
   "Run the versor control menu."
   (interactive)
-  (tmm-prompt versor:control-menu)
+  (tmm-prompt versor-control-menu)
   ;; return t because we can be used in aux-pedal (pedals.el) as a hook
   t)
 
-(defun versor:add-menu-item (menu name command)
+(defun versor-add-menu-item (menu name command)
   "Add to MENU an item made from NAME and COMMAND."
   (rplacd (cdr menu)
 	  (cons
 	   (list (intern name) 'menu-item name command)
 	   (cdr (cdr menu)))))
 
-(defun versor:generate-dynamic-menu ()
+(defun versor-generate-dynamic-menu ()
   "Generate dynamic menu for versor.
 Allows various actions that depend on the current fine movement dimension."
   (let ((dynamic-menu (make-sparse-keymap "Versor dynamic menu")))
     (mapcar (function
 	     (lambda (name-command)
 	       (let* ((raw-name (car name-command))
-		      (formatted-name (format raw-name versor:current-level-name))
+		      (formatted-name (format raw-name versor-current-level-name))
 		      )
-		 (versor:add-menu-item dynamic-menu formatted-name (cdr name-command)))))
+		 (versor-add-menu-item dynamic-menu formatted-name (cdr name-command)))))
 	    '(
-	      ("yank" . versor:yank)
-	      ("alter %s" . versor:begin-altering-item)
-	      ("kill %s" . versor:kill)
-	      ("versor control" . versor:control-menu)
+	      ("yank" . versor-yank)
+	      ("alter %s" . versor-begin-altering-item)
+	      ("kill %s" . versor-kill)
+	      ("versor control" . versor-control-menu)
 	      ;; cannibalize ~/open-projects/emacs-pedals/handsfree-tools-menus.el for
 	      ;; more to go here -- stuff like tag lookup
-	      ("language operations" . versor:languide-menu)
-	      ("versor insertions" . versor:insertions-menu)
+	      ("language operations" . versor-languide-menu)
+	      ("versor insertions" . versor-insertions-menu)
 	      ("find" . dwim-find)
 	      ("describe" . dwim-help)
-	      ("search for next %s" . versor:search)
+	      ("search for next %s" . versor-search)
 	      ("copy region" . kill-ring-save)
-	      ("mark %s" . versor:mark)
-	      ("copy %s" . versor:copy)
+	      ("mark %s" . versor-mark)
+	      ("copy %s" . versor-copy)
 	      ))
     dynamic-menu))
 
-(defun versor:do-dynamic-menu ()
+(defun versor-do-dynamic-menu ()
   "Dynamic menu for versor.
 Allows various actions that depend on the current fine movement dimension."
   (interactive)
-  (let ((versor:level-shadow versor:level)
-	(versor:meta-level-shadow versor:meta-level))
-    (tmm-prompt (versor:generate-dynamic-menu))))
+  (let ((versor-level-shadow versor-level)
+	(versor-meta-level-shadow versor-meta-level))
+    (tmm-prompt (versor-generate-dynamic-menu))))
 
-(defun versor:insertions-menu ()
+(defun versor-insertions-menu ()
   "Run the versor insertions menu."
   (interactive)
-  (let ((versor:insertion-using-menu t))
-    (tmm-prompt (versor:generate-insertions-menu))))
+  (let ((versor-insertion-using-menu t))
+    (tmm-prompt (versor-generate-insertions-menu))))
 
-(defun versor:generate-insertions-menu ()
+(defun versor-generate-insertions-menu ()
   "Generate insertions menu for versor.
 Allows various actions that depend on the current fine movement dimension."
   (let ((dynamic-menu (make-sparse-keymap "Versor insertions menu")))
     (mapcar (function
 	     (lambda (name-command)
 	       (let* ((raw-name (car name-command))
-		      (formatted-name (format raw-name versor:current-level-name))
+		      (formatted-name (format raw-name versor-current-level-name))
 		      )
-		 (versor:add-menu-item dynamic-menu formatted-name (cdr name-command)))))
+		 (versor-add-menu-item dynamic-menu formatted-name (cdr name-command)))))
 	    '(
-	      ("insert before %s" . versor:insert-before)
-	      ("insert after %s" . versor:insert-after)
-	      ("insert around %s" . versor:insert-around)
+	      ("insert before %s" . versor-insert-before)
+	      ("insert after %s" . versor-insert-after)
+	      ("insert around %s" . versor-insert-around)
 	      ))
     dynamic-menu))
 

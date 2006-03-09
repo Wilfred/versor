@@ -1,5 +1,5 @@
 ;;;; versor-dwim.el -- move between code, comments, and strings, etc
-;;; Time-stamp: <2006-03-08 12:53:29 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:35 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -17,7 +17,7 @@
 
 (provide 'versor-dwim)
 
-(defun versor:type-of-place (&optional place)
+(defun versor-type-of-place (&optional place)
   "Return what type of place PLACE (default is point) is."
   (let* ((bod (save-excursion (if place (goto-char place))
 			      (beginning-of-defun)
@@ -44,28 +44,28 @@
 		  string-or-comment-start)
 	  (cons 'code nil))))))
 
-(defun versor:dwim-textually (&optional tried)
+(defun versor-dwim-textually (&optional tried)
   "DWIM function for modes with words, phrases etc.
 Returns a description of what it has done.
 The optional argument says which functions have already been tried."
   (cond
    ((looking-at "\\<")
-    (versor:end-of-word 1)
+    (versor-end-of-word 1)
     "Moved from start of word to end of word")
    ((looking-at "\\>")
     (backward-word 1)
     "Moved from end of word to start of word")
-   ((not (memq 'versor:dwim-lispishly tried))
-    (message "versor:dwim-textually handing over to versor:dwim-lispishly")
-    (versor:dwim-lispishly (cons 'versor:dwim-textually tried)))
+   ((not (memq 'versor-dwim-lispishly tried))
+    (message "versor-dwim-textually handing over to versor-dwim-lispishly")
+    (versor-dwim-lispishly (cons 'versor-dwim-textually tried)))
    (t
-    "versor:dwim-textually could not think of anything to do here")))
+    "versor-dwim-textually could not think of anything to do here")))
 
-(defun versor:dwim-lispishly (&optional tried)
+(defun versor-dwim-lispishly (&optional tried)
   "DWIM function for modes with brackets etc.
 Returns a description of what it has done.
 The optional argument says which functions have already been tried."
-  (let* ((loc (versor:type-of-place))
+  (let* ((loc (versor-type-of-place))
 	 (loc-type (car loc))
 	 (loc-details (cdr loc)))
     (cond
@@ -99,7 +99,7 @@ The optional argument says which functions have already been tried."
 	       (skip-to-actual-code)
 	       (or (= (char-syntax (char-after)) open-bracket)
 		   (looking-at "\\<")))
-	     (< versor:dwim-successive-commands 3))
+	     (< versor-dwim-successive-commands 3))
 	(let ((start (point))) 
 	  (forward-sexp 1)
 	  ;; I tried this, but it didn't dwim:
@@ -110,13 +110,13 @@ The optional argument says which functions have already been tried."
 	  ;; for something you just deleted, that had a space on either side of it
 	  (when (looking-at "  +")
 	    (forward-char))
-	  (versor:set-current-item start (point)))
+	  (versor-set-current-item start (point)))
 	"Went from start of expression to end of it")
        ((and (save-excursion
 	       (skip-to-actual-code-backwards)
 	       (or (= (char-syntax (char-before)) close-bracket)
 		   (looking-at "\\>")))
-	     (< versor:dwim-successive-commands 3))
+	     (< versor-dwim-successive-commands 3))
 	(previous-sexp 1)
 	;; if in multiple spaces, go part way into those spaces
 	(when (save-excursion
@@ -147,16 +147,16 @@ The optional argument says which functions have already been tried."
       )
      ((eq loc-type 'top-level-comment)
       ;; not sure what to do with this, try going into the nearest function
-      (versor:down-list)
+      (versor-down-list)
       "In top level comment, tried entering top-level form")
      ((eq loc-type 'top-level)
       (re-search-backward "^\\s<" (point-min) t)
       "At top level, tried finding top-level form"))))
 
-(defvar versor:dwim-successive-commands 0
-  "The number of consecutive commands which are versor:dwim.")
+(defvar versor-dwim-successive-commands 0
+  "The number of consecutive commands which are versor-dwim.")
 
-(defun versor:dwim ()
+(defun versor-dwim ()
   "Move to another sort of place that the user has in mind,
 switching as necesssary between comment, code, string literal, etc.
 This does many kind of movement that cannot easily be done using
@@ -168,17 +168,17 @@ This function reads the user's mind, using the following algorithm:
 Aspects of mental state not necessary for figuring out where to leave point are
 factored out of the calculations."
   (interactive)
-  (versor:as-motion-command
-   (setq versor:dwim-successive-commands
-	 (if (eq last-command 'versor:dwim)
-	     (1+ versor:dwim-successive-commands)
+  (versor-as-motion-command
+   (setq versor-dwim-successive-commands
+	 (if (eq last-command 'versor-dwim)
+	     (1+ versor-dwim-successive-commands)
 	   1))
-   (let ((dwim-function (or (versor:get-action 'dwim)
+   (let ((dwim-function (or (versor-get-action 'dwim)
 			    (get major-mode 'versor-dwim)))) 
      (message
       (if dwim-function 
 	  (funcall dwim-function)
-	"No dwim function defined for dimension %s:%s" versor:current-meta-level-name versor:current-level-name)))))
+	"No dwim function defined for dimension %s:%s" versor-current-meta-level-name versor-current-level-name)))))
 
 (defconst open-bracket (string-to-char "(")
   "Get this out-of-line to avoid confusing indenter when editing functions that use it.")
@@ -186,13 +186,13 @@ factored out of the calculations."
 (defconst close-bracket (string-to-char ")")
   "Get this out-of-line to avoid confusing indenter when editing functions that use it.")
 
-(defun versor:set-dwim-for-modes (dwim-function &rest modes)
+(defun versor-set-dwim-for-modes (dwim-function &rest modes)
   "Set DWIM-FUNCTION to be the dwim-function for the modes given as the remaining args."
   (mapcar (lambda (mode)
-	    (put mode 'versor:dwim dwim-function))
+	    (put mode 'versor-dwim dwim-function))
 	  modes))
 
-(versor:set-dwim-for-modes 'versor:dwim-lispishly
+(versor-set-dwim-for-modes 'versor-dwim-lispishly
 			   'emacs-lisp-mode
 			   'lisp-mode
 			   'lisp-interaction-mode
@@ -200,7 +200,7 @@ factored out of the calculations."
 			   'java-mode
 			   'perl-mode)
 
-(versor:set-dwim-for-modes 'versor:dwim-textually
+(versor-set-dwim-for-modes 'versor-dwim-textually
 			   'text-mode
 			   'tex-mode
 			   'latex-mode

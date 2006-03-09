@@ -1,5 +1,5 @@
 ;;;; versor-trim-whitespace.el -- trim whitespace after a versor command
-;;; Time-stamp: <2006-03-08 14:45:00 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:36 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -24,12 +24,12 @@
 
 (provide 'versor-trim-whitespace)
 
-(defvar versor:trim-whitespace t
+(defvar versor-trim-whitespace t
   "*Whether to adjust the whitespace around the place affected by each versor editing action.")
 
-(defun versor:trim-whitespace (whereabouts)
+(defun versor-trim-whitespace (whereabouts)
   "Trim the whitespace around WHEREABOUTS."
-  (when versor:trim-whitespace
+  (when versor-trim-whitespace
     (save-excursion
       (goto-char whereabouts)
       (let ((syntax-before (save-excursion

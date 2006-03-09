@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-03-08 15:10:47 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:35 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -157,12 +157,12 @@ coming in any order, and being in any quantity; thus, if using them to
 modify the buffer, it is usually necessary to sort them and deal with
 them in descending order of character position.")
 
-(defun versor:select-surrounding-call ()
+(defun versor-select-surrounding-call ()
   "Make the surrounding call into a versor selection."
   ;; mostly for debugging languide-find-surrounding-call
   (interactive)
-  (versor:as-motion-command
-   (versor:set-current-items (languide-find-surrounding-call))))
+  (versor-as-motion-command
+   (versor-set-current-items (languide-find-surrounding-call))))
 
 (defmacro those-rel-limit (those rel limit)
   `(let ((result nil)
@@ -205,9 +205,9 @@ them in descending order of character position.")
 	       (lambda (region)
 		 (delete-region (car region) (cdr region))))
 	      call-syntax)
-      (versor:trim-whitespace last-before-marker)
-      (versor:trim-whitespace first-after-marker)
-      (versor:set-current-item last-before-marker first-after-marker)
+      (versor-trim-whitespace last-before-marker)
+      (versor-trim-whitespace first-after-marker)
+      (versor-set-current-item last-before-marker first-after-marker)
       (set-marker last-before-marker nil)
       (set-marker first-after-marker nil))))
 

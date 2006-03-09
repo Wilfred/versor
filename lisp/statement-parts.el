@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2006-03-06 13:41:46 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:36 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -49,14 +49,14 @@
 (defun navigate-this-container ()
   "Navigate to the container of the current statement."
   (interactive)
-  (versor:as-motion-command
+  (versor-as-motion-command
    (navigate-this-whole) ; in case of assumptions made when moving outwards
    (let ((end (statement-container)))
      (when navigate-container-whole-statement
        (previous-statement 1)
        (setq navigated-latest-part 'container)
-       (versor:set-current-item (point) end)
-       (versor:display-highlighted-choice "container" (languide-parts))))))
+       (versor-set-current-item (point) end)
+       (versor-display-highlighted-choice "container" (languide-parts))))))
 
 (defvar statement-navigate-parts-cyclic nil
   "*Whether to step forwards from body (or tail if present) back round to head.")
@@ -80,7 +80,7 @@
 (defun statement-navigate-parts-next (&optional ignore)
   "Navigate to the next part of the statement."
   (interactive)
-  (versor:as-motion-command
+  (versor-as-motion-command
    (case navigated-latest-part
      ('container (navigate-this-framework))
      ('framework (navigate-this-whole))
@@ -98,7 +98,7 @@
 (defun statement-navigate-parts-previous (&optional ignore)
   "Navigate to the previous part of the statement."
   (interactive)
-  (versor:as-motion-command
+  (versor-as-motion-command
    (case navigated-latest-part
      ('container (navigate-this-head))
      ('framework (cond
@@ -146,7 +146,7 @@
   "Return whether the latest move was by languide."
   (or (eq last-command languide-last-statement-selector-command)
       (memq last-command languide-safe-commands)
-      (and (memq last-command versor:commands)
-	   (memq versor:last-vicarious-command languide-safe-commands))))
+      (and (memq last-command versor-commands)
+	   (memq versor-last-vicarious-command languide-safe-commands))))
 
 ;;; end of statement-parts.el

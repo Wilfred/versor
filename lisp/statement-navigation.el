@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-03-06 10:52:50 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:36 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -18,7 +18,7 @@
 (provide 'statement-navigation)
 (require 'cl)
 (require 'modal-functions)
-(require 'versor-commands) ; for versor:as-motion-command
+(require 'versor-commands) ; for versor-as-motion-command
 (require 'statement-cache)
 (require 'statement-parts)
 
@@ -110,7 +110,7 @@ Then, if N is greater than 1, move back N-1 more statements."
       (decf n))
     (languide:debug-message 'previous-statement "final move to beginning of statement")
     (languide:debug-message 'previous-statement "that gets us to %d" (point))
-    (let ((end (if (and versor:statement-up-to-next previous-end)
+    (let ((end (if (and versor-statement-up-to-next previous-end)
 		   previous-end
 		 (save-excursion
 		   (let ((start (point)))
@@ -127,9 +127,9 @@ There an element of DWIM to this:
   If already at the beginning, move to the beginning of the previous one.
 Then, if N is greater than 1, move back N-1 more statements."
   (interactive "p")
-  (versor:as-motion-command
+  (versor-as-motion-command
    (let ((end (previous-statement-internal n)))
-     (versor:set-current-item (point) end)
+     (versor-set-current-item (point) end)
      (establish-current-statement 'previous-statement end))))
 
 (defun next-statement-internal (n)
@@ -172,7 +172,7 @@ you should possibly use next-statement instead."
 (defun next-statement (n)
   "Move to the NTH next statement, and set up the statement variables."
   (interactive "p")
-  (versor:as-motion-command
+  (versor-as-motion-command
    (next-statement-internal n)
    (languide:debug-message 'next-statement
 			   "Finding both ends of the new current statement, currently at start=%d"
@@ -180,7 +180,7 @@ you should possibly use next-statement instead."
    (let* ((start (point))
 	  (end (save-excursion (end-of-statement-internal) (point))))
      (languide:debug-message 'next-statement "Going to end gets us %d..%d" start end)
-     (versor:set-current-item start end)
+     (versor-set-current-item start end)
      (establish-current-statement 'next-statement end))))
 
 (defvar statement-navigation-type 'comment

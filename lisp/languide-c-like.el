@@ -687,7 +687,7 @@ Otherwise return nil."
 		   )
 		  (is-multiple-statements
 		   ))))
-	  ))))))
+	  )))))
 
 (defstatement comment (c-mode)
   "Comment"

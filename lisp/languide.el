@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-03-09 11:02:56 john>
+;;; Time-stamp: <2006-03-09 14:52:35 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -76,7 +76,7 @@
 (provide 'languide)
 (require 'cl)
 (require 'modal-functions)
-(require 'versor-commands)		; for versor:as-motion-command
+(require 'versor-commands)		; for versor-as-motion-command
 (require 'versor-base-moves)		; for safe-scan-lists
 (require 'statement-navigation)
 (require 'statement-definition)

@@ -1,5 +1,5 @@
 ;;;; languide-insertions.el
-;;; Time-stamp: <2006-01-17 18:58:33 jcgs>
+;;; Time-stamp: <2006-03-09 14:52:35 john>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -66,7 +66,7 @@ It offers completion on possibilities drawn from a variety of sources."
 
 (defun languide-get-statement-insertion (&optional return-as-n-parts)
   "Choose a statement type, and return something usable for inserting the statement.
-Designed to be called from versor:insert-around etc."
+Designed to be called from versor-insert-around etc."
   (let* ((statement-type (languide-select-statement-type "Insert statement: "))
 	 (statement-description (assoc (intern statement-type) (statement-types)))
 	 (creator (assoc 'create statement-description)))
