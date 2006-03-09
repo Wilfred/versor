@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-03-03 13:10:11 jcgs>
+;;; Time-stamp: <2006-03-09 14:13:39 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -90,7 +90,17 @@
 (defun safe-backward-up-list (&rest args)
   "Like backward-up-list, but returns nil on error."
   (condition-case error-var
-      (apply 'backward-up-list args)
+      (progn
+	(apply 'backward-up-list args)
+	t)
+    (error nil)))
+
+(defun safe-backward-sexp (&rest args)
+  "Like backward-sexp, but returns nil on error."
+  (condition-case error-var
+      (progn
+	(apply 'backward-up-list args)
+	t)
     (error nil)))
 
 (defun safe-down-list (&rest args)
