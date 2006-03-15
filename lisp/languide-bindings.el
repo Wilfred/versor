@@ -1,5 +1,5 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2006-03-07 21:00:02 jcgs>
+;;; Time-stamp: <2006-03-14 12:23:48 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -56,6 +56,7 @@ These are the variables used in that region, but not defined it it."
   (let ((references (variable-references-in-region from to))
 	(bindings (variable-bindings-in-region from to))
 	(result nil))
+    (message "In %d..%d, references are %S; bindings are %S" from to references bindings)
     (dolist (reference references)
       (let* ((name (car reference))
 	     (binding (assoc name bindings)))
@@ -76,7 +77,7 @@ Where types are not declared, as in Lisp, nil can be given as the type.")
 (defmodel variable-reference (varname) "")
 
 (defmodel move-to-enclosing-scope-last-variable-definition
-  (&optional widest variables-needed allow-conversions)
+  (&optional allow-conversions)
   "Move to the end of the nearest set of variable bindings.
 This is the place at which you would naturally insert a new
 variable, allowing for its initial value referring to any
@@ -97,7 +98,13 @@ it could wrap the outermost forms of a \"defun\" with a \"let\".
 
 Optional third argument ALLOW-CONVERSIONS allows conversion of
 possible scoping points into actual ones. For example, in lisp, this
-means a \"progn\" can be changed to a \"let\".")
+means a \"progn\" can be changed to a \"let\".
+
+Returns t if it found a binding, nil if it went to the top level
+of the defun.")
+
+(defmodel variable-last-possibly-assigned-before (variable wherebefore)
+  "Return the position of the most recent assignment to VARIABLE before WHEREBEFORE.")
 
 (defmodel insert-variable-declaration (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
