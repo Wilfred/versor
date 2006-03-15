@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-03-09 14:52:30 john>
+;;; Time-stamp: <2006-03-14 17:14:58 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -99,7 +99,7 @@
   "Like backward-sexp, but returns nil on error."
   (condition-case error-var
       (progn
-	(apply 'backward-up-list args)
+	(apply 'backward-sexp args)
 	t)
     (error nil)))
 
@@ -141,6 +141,28 @@ Makes a two-part selection, of opening and closing brackets."
   (interactive "p"))
 
 (defmodal versor-backward-up-list (fundamental-mode) (arg)
+  "Like backward-up-list, but with some versor stuff around it.
+Makes a two-part selection, of opening and closing brackets."
+  (interactive "p")
+  (safe-backward-up-list arg)
+  (when versor-reformat-automatically
+    (save-excursion
+      (condition-case evar
+	  (let ((start (point)))
+	    (forward-sexp 1)
+	    (indent-region start (point) nil))
+	(error nil))))
+  ;; (message "main overlay at %d..%d" (point) (1+ (point)))
+  (let ((start (point))
+	(end (save-excursion (forward-sexp 1) (point))))
+    ;; TODO: should probably be versor-set-current-item
+    (make-versor-overlay start (1+ start))
+    ;; (message "extra overlay at %d..%d" (1- (point)) (point))
+    ;; TODO: should probably be versor-add-to-current-item when I've written one
+    (versor-extra-overlay (1- end) end)
+    (cons start end)))
+
+(defmodal versor-backward-up-list (lisp-mode emacs-lisp-mode lisp-interaction-mode) (arg)
   "Like backward-up-list, but with some versor stuff around it.
 Makes a two-part selection, of opening and closing brackets."
   (interactive "p")
