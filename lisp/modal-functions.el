@@ -1,5 +1,5 @@
 ;;;; modal-functions.el -- make a function which despatches on current major mode
-;;; Time-stamp: <2006-02-24 16:44:39 jcgs>
+;;; Time-stamp: <2006-03-14 15:18:27 jcgs>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -70,11 +70,32 @@ naming each major mode for which this function is implemented."
    (if after-form
        (list after-form))))
 
+(defun modal-function-name (function mode)
+  "Make a name for the implementation of FUNCTION for MODE."
+  (intern (concat (symbol-name mode) "-_-" (symbol-name function))))
+
+(defun find-modal-function (function mode)
+  "Find FUNCTION as defined in MODE."
+  (interactive
+   (let* ((function (completing-read "Function: "
+				     obarray
+				     'functionp
+				     t))
+	  (mode (completing-read "Mode: "
+				 obarray
+				 (function
+				  (lambda (sym)
+				    (and (commandp sym)
+					 (string-match "-mode" (symbol-name sym))))))))
+     (list function mode)))
+  (find-file (symbol-file (modal-function-name (intern function) (intern mode))))
+  (goto-char (point-min))
+  (re-search-forward (format find-function-regexp function)))
 
 (defun defmodal0 (fun mode args body)
   "Define FUNCTION, for MODE with ARGS and BODY.
 This is for use inside defmodal."
-  (let* ((this-name (intern (concat (symbol-name mode) "-_-" (symbol-name fun)))))
+  (let* ((this-name (modal-function-name fun mode)))
     ;; (message "Defining %S to be %S for %S with args %S and body %S" this-name fun mode args body)
     (list 'progn
 	  (append (list 'defun this-name args)
