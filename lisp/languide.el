@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-03-14 17:59:10 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -91,9 +91,10 @@
 			 ;;  beginning-of-statement-internal
 			  ;; end-of-statement-internal
 			  ;; continue-back-past-curly-ket
-			  previous-statement
-			  next-statement
-			  navigate-to))
+			  ;; previous-statement
+			  ;; next-statement
+			  ;; navigate-to
+			  ))
 
 (defun languide:debug-message (function format &rest args)
   (when (and languide:debug-messages
@@ -119,15 +120,18 @@ Returns point, if there was a bracket to go out of, else nil."
 
 (defun all-variables-in-scope-p (where variables)
   "Return whether at WHERE, all of VARIABLES are in scope."
-  (let ((variables-in-scope (variables-in-scope where)))
-    (message "Looking for whether %S are all in scope; variables in scope are %S" variables variables-in-scope)
-    (catch 'done
-      (while variables
-	(if (assoc (car variables) variables-in-scope)
-	    (setq variables (cdr variables))
-	  (message "%s was not in scope" (car variables))
-	  (throw 'done nil)))
-      t)))
+  (message "Looking for whether %S are all in scope at %d;" variables where)
+  (if variables
+      (let ((variables-in-scope (variables-in-scope where)))
+	(message "variables in scope are %S" variables-in-scope)
+	(catch 'done
+	  (while variables
+	    (if (assoc (car variables) variables-in-scope)
+		(setq variables (cdr variables))
+	      (message "%s was not in scope" (car variables))
+	      (throw 'done nil)))
+	  t))
+    t))
 
 (defmodel insert-compound-statement-open ()
   "Insert the start of a compound statement")
@@ -149,14 +153,15 @@ Returns point, if there was a bracket to go out of, else nil."
 A DOCSTRING may also be given.")
 
 (defmodel insert-function-call (name arglist)
-  "Insert a function call for a function called NAME taking ARGLIST")
+  "Insert a function call for a function called NAME taking ARGLIST.")
 
 (defmodel function-arglist-boundaries (&optional where)
   "Return a cons of the start and end of the argument list surrounding WHERE,
 or surrounding point if WHERE is not given.")
 
-(defmodel deduce-expression-type (value-text)
-  "Given VALUE-TEXT, try to deduce the type of it.")
+(defmodel deduce-expression-type (value-text where)
+  "Given VALUE-TEXT, try to deduce the type of it.
+Second arg WHERE gives the position, for context.")
 
 (defmodel move-before-defun ()
   "Move to before the current function definition.")
@@ -177,6 +182,8 @@ same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
 expression, return t. 
 Otherwise return nil.")
+
+(defun foo () (interactive) (message "region type %S" (languide-region-type (region-beginning) (region-end))))
 
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing..
