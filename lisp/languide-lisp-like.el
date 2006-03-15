@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-03-09 12:08:10 john>
+;;; Time-stamp: <2006-03-14 15:40:31 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -66,19 +66,20 @@
 
 (defun find-next-lisp-binding-outwards (&optional allow-conversions)
   "Move to the next enclosing binding.
-Returns whether it found one."
+Returns the position if it found one, or nil otherwise."
   (interactive)
   (let ((binding-pattern (if allow-conversions
 			     "\\((let\\*?\\\\)\\|\\((progn\\)>"
 			   "(let\\*?\\>")))
     (while (and (outward-once)
 		(not (looking-at binding-pattern))))
-    (looking-at binding-pattern)))
+    (if (looking-at binding-pattern)
+	(point)
+      nil)))
 
 (defmodal variables-in-scope (lisp-mode emacs-lisp-mode lisp-interaction-mode) (whereat)
   "Return the alist list of variables in scope at WHEREAT."
   ;; todo: make this spot lambda bindings too
-  ;; todo: add parameters to the list (last)
   (save-excursion
     (goto-char whereat)
     (beginning-of-defun)
@@ -87,6 +88,37 @@ Returns whether it found one."
 	  (parse-sexp-ignore-comments t)
 	  (variables nil))
       (goto-char whereat)
+      ;; first, check we are not in the preamble of a let form:
+      (when (or (looking-at "let\\*?")
+		(save-excursion
+		  (and (safe-backward-sexp)
+		       (looking-at "let\\*?"))))
+	(safe-backward-up-list 1))
+      ;; now, see whether we are in the bindings list of a let* form:
+      (let ((possible-current-binding (save-excursion
+					(safe-backward-up-list 1)
+					(safe-backward-sexp 1)
+					(and (looking-at "let\\*?")
+					     (match-string-no-properties 0)))))
+	(cond
+	 ((string= "let*" possible-current-binding)
+	  (message "Got some of our own")
+	  (while (setq next (safe-scan-sexps (point) -1))
+	    (goto-char next)
+	    (when (looking-at "(") (forward-char) (skip-to-actual-code))
+	    (let ((start (point)))
+	      (forward-sexp)
+	      (push (list (buffer-substring-no-properties start (point)))
+		    variables))
+	    (goto-char next))
+	  ;; avoid getting the same lot again
+	  (safe-backward-up-list 2)
+	  )
+	 ((string= "let" possible-current-binding)
+	  (message "Avoiding this bunch")
+	  ;; the bindings we are among are not in scope here, so get out from among them
+	  (safe-backward-up-list 2)))
+	)
       ;; (message "Looking for bindings between %d and %d" bod whereat)
       (while (find-next-lisp-binding-outwards)
 	(save-excursion
@@ -99,12 +131,14 @@ Returns whether it found one."
 	    (when (looking-at "(") (forward-char) (skip-to-actual-code))
 	    (let ((start (point)))
 	      (forward-sexp)
-	      (push (list (buffer-substring-no-properties start (point))) variables))
+	      (push (list (buffer-substring-no-properties start (point)))
+		    variables))
 	    (goto-char next))))
+      ;; got the let-forms, now get the funargs
       (goto-char bod)
       (down-list)
       (when (looking-at "def[um]")
-	  (when (looking-at "defmod[ae]l") (forward-sexp))
+	(when (looking-at "defmod[ae]l") (forward-sexp))
 	(forward-sexp 2)
 	(let ((limit (safe-scan-sexps (point) 1)))
 	  (down-list)
@@ -120,82 +154,102 @@ Returns whether it found one."
 	      (setq old (point))))))
       variables)))
 
+(defmodal adapt-binding-point (lisp-mode emacs-lisp-mode lisp-interaction-mode) (&optional allow-conversions)
+  "Make a binding point suitable to receive another binding."
+  (let ((binding-place (point)))
+    (save-excursion
+      (outward-once) 
+      (if (looking-at "(defun")
+	  (progn
+	    (goto-char binding-place)
+	    (insert-before-markers "(let (")
+	    (save-excursion ; so we finish at new variable insertion point
+	      (insert ")\n")
+	      (let ((old (point))
+		    new)
+		(while (setq new (safe-scan-sexps old 1)) ; move over body forms
+		  (setq old new))
+		(goto-char old))
+	      (insert ")")
+	      (backward-up-list)
+	      (indent-sexp)))
+	(outward-once)
+	(cond
+	 ((looking-at "\\((let\\)[^*]")
+	  ;; todo: add further condition, that one of the variables needed is bound in this set?
+	  (save-excursion
+	    (replace-match "\\1*" t nil nil 1)))
+	 ((and allow-conversions
+	       (looking-at "(\\(progn))"))
+	  (save-excursion
+	    (replace-match "let* ()" t t nil 1))))))))
+
 (defmodal move-to-enclosing-scope-last-variable-definition
   (lisp-mode emacs-lisp-mode lisp-interaction-mode)
-  (&optional widest variables-needed allow-conversions)
+  (&optional allow-conversions)
   "Move to the end of the nearest set of variable bindings.
 This is the place at which you would naturally insert a new
 variable, allowing for its initial value referring to any
 variable already declared.
 
-Optional first argument WIDEST lets you indicate that you want the
-widest scope possible, that is, the widest at which all the variables
-needed in the definition of the new variable are already defined. If
-WIDEST is a number, it is used to count how many scoping points to
-move outwards by.
-
-Optional second argument VARIABLES-NEEDED lists names of variables
-needed in the definition of the new one. This is used if you specify
-you want the widest scope.
-
 It may create a suitable place if there is none; for example, in Lisp
 it could wrap the outermost forms of a \"defun\" with a \"let\".
 
-Optional third argument ALLOW-CONVERSIONS allows conversion of
-possible scoping points into actual ones. For example, in lisp, this
-means a \"progn\" can be changed to a \"let\"."
-  (if (find-next-lisp-binding-outwards allow-conversions)
-      (progn
-	(when widest
-	  (let ((best-so-far (point)))
-	    ;; we've found a let, but let's see if we can find one
-	    ;; further out that still binds all the variables we need
-	    (catch 'far-enough
-	      (while (find-next-lisp-binding-outwards allow-conversions)
-		(when (numberp widest)
-		  (when (zerop widest) (throw 'far-enough nil))
-		  (setq widest (1- widest)))
-		(let ((end-of-bindings (save-excursion
-					 (down-list)
-					 (forward-sexp)
-					 (point))))
-		  (if (all-variables-in-scope-p end-of-bindings variables-needed)
-		      (setq best-so-far (point))
-		    (throw 'far-enough nil)))))
-	    (goto-char best-so-far)))
-	(when (looking-at "\\((let\\)[^*]")
-	  (save-excursion
-	    (replace-match "\\1*" t nil nil 1)))
-	(when (and allow-conversions
-		   (looking-at "(\\(progn))"))
-	  (save-excursion
-	    (replace-match "let* ()" t t nil 1)))
-	(down-list 2)
-	(let ((old (point))
-	      new)
-	  (while (setq new (safe-scan-sexps old 1))
-	    (setq old new))
-	  (goto-char old)))
-    ;; no let forms, so make a new one at the outer level of the defun
-    (down-list)
-    (forward-sexp 3)			; over "defun", name, args
-    (skip-to-actual-code)
-    (when (= (char-after) ?\")
-      (forward-sexp 1)			; over docstring
-      (skip-to-actual-code))
-    (when (looking-at "(interactive")
-      (skip-to-actual-code))
-    (insert " (let (")
-    (save-excursion	; so we finish at new variable insertion point
-      (insert ")\n")
-      (let ((old (point))
-	    new)
-	(while (setq new (safe-scan-sexps old 1)) ; move over body forms
-	  (setq old new))
-	(goto-char old))
-      (insert ")")
-      (backward-up-list)
-      (indent-sexp))))
+Optional argument ALLOW-CONVERSIONS allows conversion of possible
+scoping points into actual ones. For example, in lisp, this means a
+\"progn\" can be changed to a \"let\".
+
+Returns the start of the binding if it found a binding, nil if it went to the top level
+of the defun."
+  (let ((binding-point (find-next-lisp-binding-outwards allow-conversions)))
+    (if binding-point
+	(progn
+	  (down-list 2)
+	  (let ((old (point))
+		new)
+	    (while (setq new (safe-scan-sexps old 1))
+	      (setq old new))
+	    (goto-char old))
+	  binding-point)
+      ;; no let forms, so position ourselves to make a new one at the
+      ;; outer level of the defun
+      (down-list)
+      (forward-sexp 3)			; over "defun", name, args
+      (skip-to-actual-code)
+      (when (= (char-after) ?\")
+	(forward-sexp 1)		; over docstring
+	(skip-to-actual-code))
+      (when (looking-at "(interactive")
+	(forward-sexp 1)
+	(skip-to-actual-code))
+      nil)))
+
+(defmodal variable-last-possibly-assigned-before (lisp-mode emacs-lisp-mode lisp-interaction-mode) (variable wherebefore)
+  "Return the position of the most recent assignment to VARIABLE before WHEREBEFORE."
+  (save-excursion
+    (goto-char wherebefore)
+    (let ((bod (save-excursion (beginning-of-defun) (point))))
+      (catch 'got-assignment
+	(while (search-backward "(setq" bod t)
+	  (let* ((first-name (match-end 0))
+		 (end (progn (forward-sexp) (1- (point)))))
+	    (goto-char first-name)
+	    (catch 'scan-setq
+	      (while t
+		(skip-to-actual-code)
+		(cond
+		 ((>= (point) end) (throw 'scan-setq nil))
+		 ((string= (buffer-substring-no-properties (point)
+							   (save-excursion (forward-sexp) (point)))
+			   variable)
+		  (throw 'got-assignment (point)))
+		 (t (forward-sexp) (forward-sexp))))
+	      nil)))
+	(goto-char wherebefore)
+	(when (re-search-backward
+	       (format "(\\(rplaca\\|rplacd\\|incf\\|decf\\) +\\(%s\\)" variable)
+	       bod t)
+	  (throw 'got-assignment (point)))))))
 
 (defmodal insert-variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
@@ -324,12 +378,20 @@ as SYNTAX-BEFORE and SYNTAX-AFTER."
 
 (defmodal static-variable-p (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name where)
   "Return whether a static variable called NAME is visible at WHERE."
-  (save-excursion
-    (goto-char (point-min))
-    (re-search-forward (format "(\\(\\(defvar\\)\\|\\(defconst\\)\\|\\(defcustom\\)\\) +%s" name)
-		       (point-max) t)
-    ;; todo: should also look in everything we load with require
-    ))
+  (or (member name '("nil" "t"))
+      (documentation-property (intern name) 'variable-documentation)
+      (save-excursion
+	(goto-char (point-min))
+	(re-search-forward (format "(\\(\\(defvar\\)\\|\\(defconst\\)\\|\\(defcustom\\)\\) +%s" name)
+			   (point-max) t)
+	;; todo: should also look in everything we load with require
+	)))
+
+
+(defmodal deduce-expression-type (lisp-mode emacs-lisp-mode lisp-interaction-mode) (expr-string where)
+  "Deduce the static type of the expression represnted by EXPR-STRING.
+Easy -- Lisp has no static types."
+  nil)
 
 (defmodal variable-bindings-in-region (lisp-mode emacs-lisp-mode lisp-interaction-mode) (from to)
   "Return a list of the bindings between FROM and TO.
@@ -358,7 +420,7 @@ Each element is a list of:
 		   (names-end (1- (safe-scan-sexps (1- names-start) 1)))
 		   (name-start names-start)
 		   (name-end (safe-scan-sexps name-start 1)))
-	      (while (<= name-end names-end)
+	      (while (and name-end (<= name-end names-end))
 		(push (list (buffer-substring-no-properties name-start name-end)
 			    nil
 			    keyend scope-end
@@ -415,6 +477,7 @@ Each element is a list of:
 	       (preceding-char (char-after (1- where)))
 	       (pps (parse-partial-sexp bod where)))
 	  (if (and (not (= preceding-char open-bracket))
+		   (not (= preceding-char ?'))
 		   (not (fourth pps))	; inside string
 		   (not (fifth pps)))	; inside comment
 	      (push (list (match-string-no-properties 0) where) result))
