@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-03-14 17:25:57 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -73,25 +73,37 @@ counts as a potential scoping point, and gets converted to
   "Take the text around point as a variable definition, and put it into use."
   (interactive "d")
   (destructuring-bind (name value
-			    namestart nameend
-			    valuestart valueend)
+			    name-start name-end
+			    value-start value-end)
       (binding-around whereat)
     (with-narrowing-to-scope whereat
 			     (save-excursion
-			       (goto-char valueend)
+			       (goto-char value-end)
 			       (let ((ref (variable-reference name)))
 				 (while (search-forward value (point-max) t)
 				   (replace-match ref t t)))))))
 
-(defun languide-convert-region-to-variable (from to name &optional nearest)
+
+(defmodel adapt-binding-point ()
+  "Make a binding point suitable for the binding that has just been added to it.")
+
+(defun place-string (d) 
+  (if (integerp d)
+      (format "%d:\"%s\"" d (buffer-substring-no-properties d (+ 20 d)))
+    (format "%S" d)))
+
+(defun languide-convert-region-to-variable (from to name &optional nearest allow-conversions)
   "Take the expression between FROM and TO, and make it into a local variable called NAME.
 NAME is left on the top of the kill ring, as this command is meant for when you realize
 that you need to re-use the result of an expression.
 With optional NEAREST, use the narrowest binding point; otherwise use the widest scope
-in which all the variables used in the expression are defined."
+in which all the variables used in the expression are defined.
+With second optional ALLOW-CONVERSIONS, allow conversion of potential scoping points to
+real ones (such as converting lisp's \"progn\" to \"let ()\")."
   (interactive "r
 sVariable name: 
 P")
+  (when (string= name "") (setq name (symbol-name (gensym "foo_"))))
   (save-excursion
     (let ((value-text (buffer-substring-no-properties from to))
 	  (variables-needed (if nearest
@@ -100,8 +112,29 @@ P")
       (delete-region from to)
       (goto-char from)
       (insert name)
-      (move-to-enclosing-scope-last-variable-definition (not nearest) variables-needed)
-      (insert-variable-declaration name (deduce-expression-type value-text) value-text)
+      
+      (let ((binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions)))
+	(when (and binding-point
+		   (or (null nearest)
+		       (integerp nearest)))
+	  (let ((best-so-far (point)))
+	    (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
+	    (while (and (progn
+			  (goto-char binding-point)
+			  (setq binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions)))
+			(all-variables-in-scope-p (point) variables-needed)
+			(or (not (integerp nearest))
+			    (not (zerop (setq nearest (1- nearest))))))
+	      (setq best-so-far (point))
+	      (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
+	      )
+	    (when t binding-point
+	      ;; if there's no binding point,
+	      ;; move-to-enclosing-scope-last-variable-definition will
+	      ;; have left point in the right place
+	      (goto-char best-so-far)))))
+      (adapt-binding-point)
+      (insert-variable-declaration name (deduce-expression-type value-text from) value-text)
       (kill-new name))))
 
 (defun languide-convert-region-to-global (from to name)
@@ -126,7 +159,7 @@ sFunction name:
 sDocumentation: ")
   (let* ((body-text (buffer-substring-no-properties begin end))
 	 (arglist (free-variables-in-region begin end))
-	 (result-type (deduce-expression-type body-text))
+	 (result-type (deduce-expression-type body-text begin))
 	 (begin-marker (make-marker))
 	 )
     (delete-region begin end)
