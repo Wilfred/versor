@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-03-09 14:52:30 john>
+;;; Time-stamp: <2006-03-10 18:27:30 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -64,7 +64,7 @@
 					(goto-char statement-start)
 					(statement-navigate (cdr directions)))))
 		  ;; cache the data in case we want it again;
-		  (message "caching statement position %d..%S" (point) mark-candidate)
+		  (message "caching statement position %S" selected-parts)
 		  (statement-remember-part statement-start type
 					   part
 					   ;;(list (point) mark-candidate)
@@ -220,13 +220,15 @@ Intended for use from statement-navigate."
   "Execute BODYFORMS without changing the currently selected statement."
   `(let ((languide-last-statement-selector-command languide-last-statement-selector-command)
 	 (statement-latest-start statement-latest-start)
-	 (navigated-latest-part navigated-latest-part))
-    ,@bodyforms))
+	 (navigated-latest-part navigated-latest-part)
+	 (items (versor-get-current-items)))
+    ,@bodyforms
+    (versor-set-current-items items)))
 
 (defun statement ()
   "Select the next statement."
   (interactive)				; for testing
-  (without-changing-current-statement
+  (progn ; without-changing-current-statement
    (skip-to-actual-code)
    (if (looking-at (compound-statement-open))
        (progn
@@ -257,7 +259,7 @@ Intended for use from statement-navigate."
 If it is a simple statement, it is selected in its entirety.
 If it is a compound statement, the statements that make it up are selected,
 but the compound statement delimiters are not."
-  (without-changing-current-statement
+  (progn ; without-changing-current-statement
    (skip-to-actual-code)
    (if (not (looking-at (compound-statement-open)))
        (statement)
