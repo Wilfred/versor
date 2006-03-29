@@ -1,5 +1,5 @@
 ;;;; statement-cache.el -- cache statement data for statement-navigation.el
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-03-28 18:42:18 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -49,8 +49,8 @@ This is kept as a handy cache.")
 (defun statement-remember (start type &optional end)
   "Remember that there is a statement starting at START, of TYPE.
 See the variable statements-known."
-  (message "remembering %S at %S..%S" type start end)
-  (message "Backtrace from statement-remember: %s" (with-output-to-string (backtrace)))
+  ;; (message "remembering %S at %S..%S" type start end)
+  ;; (message "Backtrace from statement-remember: %s" (with-output-to-string (backtrace)))
   (if statements-known
       (if (< start (first (car statements-known)))
 	  ;; I think I can do the rest more clearly if I get this
@@ -71,14 +71,12 @@ See the variable statements-known."
 		     ;; statement part information if possible
 		     (or (not (eq (second statement) end))
 			 (not (eq (third statement) type))))
-		(message "Updating statement (%S %d..%d) to be (%S %d..%d)"
-			 (caddr statement) stastart (cadr statement)
-			 type stastart end)
+		;; (message "Updating statement (%S %S..%S) to be (%S %S..%S)" (caddr statement) stastart (cadr statement) type stastart end)
 		(rplacd statement (list end type))
 		(setq latest-statement-known statement
 		      done t))
 	       ((> stastart start)
-		(message "Found statement at %d which is beyond %d, so adding new one before that" stastart start)
+		;; (message "Found statement at %d which is beyond %d, so adding new one before that" stastart start)
 		(rplacd statements-prev
 			(setq statements
 			      (cons (setq latest-statement-known (list start end type))
