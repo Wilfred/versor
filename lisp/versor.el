@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-03-24 16:12:04 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -209,6 +209,10 @@ amongst the arguments:
 
   (when (memq 'menu keysets)
     (require 'versor-menu))
+
+  (when (memq 'research keysets)
+    (require 'versor-research)
+    (versor-research-start))
 
   (when (memq 'arrows keysets)
     (global-set-key [ left ]    'versor-prev)
