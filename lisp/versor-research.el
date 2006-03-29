@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-03-25 14:02:29 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -58,6 +58,7 @@
 
 (defun versor-research-pre-command-function ()
   "Set things up to see what happens during the coming command."
+  ;; (message "Resetting research vars")
   (setq versor-research-buffer-before-command (current-buffer)
 	versor-research-change-happened nil))
 
@@ -90,6 +91,9 @@ movements that came between them.")
     "Each entry is the list of non-versor movement commands leading
 directly to a non-versor edit.")
 
+(defvar versor-research-live-commentary nil
+  "*Whether to make a live commentary on versor and other activities.")
+
 (defun versor-research-post-command-function ()
   "Record what happened during this command."
   (when (and (eq (current-buffer) versor-research-buffer-before-command)
@@ -97,7 +101,9 @@ directly to a non-versor edit.")
     ;; we are not interested in buffer-switching commands, as they
     ;; are not versor commands
     (condition-case error-var
-	(let* ((command-was-versor (versor-command-p this-command))
+	(let* ((commentary (and versor-research-live-commentary
+				(not (string-match "inibu" (buffer-name)))))
+	       (command-was-versor (versor-command-p this-command))
 	       (command-type (if command-was-versor
 				 (if versor-research-change-happened
 				     (if (zerop (third versor-research-change-happened))
@@ -109,6 +115,8 @@ directly to a non-versor edit.")
 				       'non-versor-insertion
 				     'non-versor-deletion)
 				 'non-versor-move))))
+	  (when commentary
+	    (message "Command was %S (previous was %S)" command-type versor-research-previous-command-type))
 	  (if (eq command-type versor-research-previous-command-type)
 	      (push (cons this-command versor-research-change-happened)
 		    versor-research-same-type-command-chain)
@@ -119,6 +127,7 @@ directly to a non-versor edit.")
 	      (cond
 	       ((eq versor-research-previous-command-type 'versor-move)
 		;; this is the one we like -- a versor command after versor moves
+		(when commentary (message "versor edit after versor moves"))
 		(push versor-research-same-type-command-chain
 		      versor-research-versor-edit-after-versor-moves)
 		)
@@ -127,12 +136,13 @@ directly to a non-versor edit.")
 		(if (eq versor-research-previous-previous-command-type 'versor-move)
 		    (progn
 		      ;; non-versor move may have been an adjustment after a versor move
-
+		      (when commentary (message "versor edit after versor moves with manual adjustment"))
 		      (push (cons versor-research-same-type-command-chain
 				  versor-research-previous-same-type-command-chain)
 			    versor-research-versor-edit-after-versor-moves-with-manual-adjustment)
 
 		      )
+		  (when commentary (message "versor edit after non versor moves"))
 		  (push versor-research-same-type-command-chain
 			versor-research-versor-edit-after-non-versor-moves)
 
@@ -142,13 +152,17 @@ directly to a non-versor edit.")
 	       ((eq versor-research-previous-command-type 'non-versor-move)
 		;; old-fashioned non-versor emacs editing, but did they use versor first then adjust?
 		(if (eq versor-research-previous-previous-command-type 'versor-move) 
-		    (push (cons versor-research-same-type-command-chain
-				versor-research-previous-same-type-command-chain)
-			  versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment)
+		    (progn
+		      (when commentary (message "non versor edit after versor moves with manual adjustment"))
+		      (push (cons versor-research-same-type-command-chain
+				  versor-research-previous-same-type-command-chain)
+			    versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment))
+		  (when commentary (message "non versor edit after non versor moves"))
 		  (push versor-research-same-type-command-chain
 			versor-research-non-versor-edit-after-non-versor-moves)))
 	       ((eq versor-research-previous-command-type 'versor-move)
 		;; using versor to navigate but not to edit
+		(when commentary (message "non versor edit after versor moves"))
 		(push versor-research-same-type-command-chain
 		      versor-research-non-versor-edit-after-versor-moves))
 	       )))
@@ -162,9 +176,13 @@ directly to a non-versor edit.")
 
 (defun versor-research-after-change-function (from to old-length)
   "Part of looking at what happened during a command"
-  (setq versor-research-change-happened (list from to old-length)))
+  (when (eq (current-buffer) versor-research-buffer-before-command)
+    (setq versor-research-change-happened (list from to old-length)))
+  ;; (message "Change %S in %S" versor-research-change-happened (current-buffer))
+  )
 
 (defun versor-research-start ()
+  "Start recording lengths of sequences of consecutive commands of different kinds."
   (interactive)
   (add-hook 'pre-command-hook 'versor-research-pre-command-function)
   (add-hook 'post-command-hook 'versor-research-post-command-function)
@@ -188,6 +206,12 @@ directly to a non-versor edit.")
 	versor-research-non-versor-edit-after-non-versor-moves nil
 	versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment nil))
 
+(defun hook-memq (fn var)
+  "Check whether FN is part of VAR, allowing for the global hook mechanism."
+  (or (memq fn (symbol-value var))
+      (and (memq t (symbol-value var))
+	   (memq fn (default-value var)))))
+
 (defun versor-research-report ()
   (interactive)
   (with-output-to-temp-buffer "*Versor research report*"
@@ -203,9 +227,9 @@ directly to a non-versor edit.")
 		   (length versor-research-non-versor-edit-after-non-versor-moves)))
     (princ (format "Non-versor edits after versor moves with adjustments: %d\n"
 		   (length versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment)))
-    (let ((pre-command-ok (memq 'versor-research-pre-command-function pre-command-hook))
-	  (post-command-ok (memq 'versor-research-post-command-function post-command-hook))
-	  (after-change-ok (memq 'versor-research-after-change-function after-change-functions)))
+    (let ((pre-command-ok (hook-memq 'versor-research-pre-command-function 'pre-command-hook))
+	  (post-command-ok (hook-memq 'versor-research-post-command-function 'post-command-hook))
+	  (after-change-ok (hook-memq 'versor-research-after-change-function 'after-change-functions)))
       (if (and pre-command-ok post-command-ok after-change-ok)
 	  (princ "All hooks still in place\n")
 	(unless pre-command-ok (princ "Pre-command hook missing\n"))
