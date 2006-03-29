@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-03-09 14:52:30 john>
+;;; Time-stamp: <2006-03-28 17:17:59 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -24,6 +24,10 @@
 (provide 'versor-dimensions)
 
 (mapcar 'makunbound '(versor-current-level-name moves-moves versor-meta-level versor-level))
+
+(mapcar (lambda (nb-command) (autoload nb-command "nested-blocks" nil t))
+	'(nested-blocks-backward nested-blocks-forward
+	  nested-blocks-leave-backwards nested-blocks-enter))
 
 (defvar versor-meta-level 1
   "The current versor meta-level, as an index into moves-moves")
