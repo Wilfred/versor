@@ -1,5 +1,5 @@
 ;;;; statement-definition.el -- description mechanism for statement syntax in various languages
-;;; Time-stamp: <2006-02-28 16:10:02 jcgs>
+;;; Time-stamp: <2006-03-26 16:46:02 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -43,7 +43,8 @@ an if-then-else statement in C, Java, or Perl, we write
 which will look for \"if\", skip two expressions, move over an \"else\",
 and return the contents of the next expression.
 You can also give 'create as a part name, and follow it with a tempo template
-or a skeleton."
+or a skeleton; and likewise 'add-head, which wants a template/skeleton for
+adding just a statement head."
   (defstatement0 statement modes parts))
 
 (defun defstatement0 (statement modes parts)
@@ -69,7 +70,7 @@ or a skeleton."
     (cond
      ((memq type '(head body tail framework))
       (cons type `(statement-navigate ,@(cdr part))))
-     ((eq type 'create)
+     ((memq type '(create add-head))
       (mapcar 'make-statement-create-part
 	      part))
      (t
@@ -87,6 +88,7 @@ or a skeleton."
 	       (template (tempo-define-template (symbol-name name) (cdr part))))
 	  (list 'template template)))
        ((eq part-op 'skeleton)
+	;; todo: implement skeletons
 	;; (list 'skeleton ....)
 	)
        (t part))))
@@ -180,6 +182,7 @@ Optionally, the statement type can be passed in as second argument."
 	    (setq description (cdr description)))
 	  (when (eq (car (car description)) 'template)
 	    (message "Inserting template %S %S" (second (car description)) surrounding)
+	    ;; todo: allow these to be skeletons, as an alternative
 	    (tempo-insert-template (second (car description)) surrounding)
 	    (setq description (cdr description)))
 	  (when (eq (car (car description)) 'postcondition)
