@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-03-14 17:25:57 jcgs>
+;;; Time-stamp: <2006-03-27 16:00:43 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -23,23 +23,61 @@
 (require 'cl)
 (require 'languide)
 
+(defvar languide-auto-edit-overlays nil
+  "Highlights added by languide to show what it has done.
+Cleared at the start of each command.")
+
+(defvar languide-auto-edit-overlay-face (cons 'background-color "red")
+  "How to draw attention to what languide has done.")
+
+
+(defun languide-insertion (fn insertions)
+  "Handler for things like insert, but remembering that the insertions were done by languide."
+  (let ((start (point)))
+    (apply fn insertions)
+    (let* ((end (point))
+	   (overlay (make-overlay start end)))
+      (overlay-put overlay 'face languide-auto-edit-overlay-face)
+      (push overlay languide-auto-edit-overlays))))
+
+(defun languide-insert (&rest insertions)
+  "Like insert, but remembers that the insertions were done by languide."
+  (languide-insertion 'insert insertions))
+
+(defun languide-insert-before-markers (&rest insertions)
+  "Like insert-before-markers, but remembers that the insertions were done by languide."
+  (languide-insertion 'insert-before-markers insertions))
+
+(defun languide-remove-auto-edit-overlays ()
+  "Remove any languide-auto-edit-overlays."
+  (mapcar (lambda (o) (when (overlayp o) (delete-overlay o)))
+	  languide-auto-edit-overlays)
+  (setq languide-auto-edit-overlays nil))
+
+(add-hook 'pre-command-hook 'languide-remove-auto-edit-overlays)
+
 (defun languide-unify-statements (n)
   "Make the next N statements into a single statement."
   (interactive "NNumber of statements to combine: ")
   (save-excursion
-  (beginning-of-statement 1)
-  (insert-compound-statement-open)
-  (end-of-statement n)
-  (insert-compound-statement-close)))
+    (beginning-of-statement 1)
+    (let ((start (point)))
+      (insert-compound-statement-open)
+      (end-of-statement n)
+      (insert-compound-statement-close)
+      (indent-region start (point) nil))))
 
 (defun languide-unify-statements-region (a b)
   "Make the statements from A to B into a single statement."
   (interactive "r")
   (save-excursion
-    (goto-char b)
-    (insert-compound-statement-close)
-    (goto-char a)
-    (insert-compound-statement-open)))
+    (let ((end-marker (make-marker)))
+      (goto-char b)
+      (insert-compound-statement-close)
+      (set-marker end-marker (point))
+      (goto-char a)
+      (insert-compound-statement-open)
+      (indent-region a end-marker nil))))
 
 (defun languide-enclosing-scoping-point (n)
   "Move to the Nth-most closely enclosing scoping point.
@@ -87,6 +125,10 @@ counts as a potential scoping point, and gets converted to
 (defmodel adapt-binding-point ()
   "Make a binding point suitable for the binding that has just been added to it.")
 
+(defmodel adjust-binding-point (variables-needed)
+  "If appropriate, move to the first point at which all of VARIABLES-NEEDED are defined.
+Assumes being at the end of a group of bindings, ready to insert a binding.")
+
 (defun place-string (d) 
   (if (integerp d)
       (format "%d:\"%s\"" d (buffer-substring-no-properties d (+ 20 d)))
@@ -106,14 +148,13 @@ P")
   (when (string= name "") (setq name (symbol-name (gensym "foo_"))))
   (save-excursion
     (let ((value-text (buffer-substring-no-properties from to))
-	  (variables-needed (if nearest
-				nil
-			      (free-variables-in-region from to))))
+	  (variables-needed (free-variables-in-region from to)))
       (delete-region from to)
       (goto-char from)
       (insert name)
       
       (let ((binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions)))
+	;; see whether we can improve on the first binding point we find
 	(when (and binding-point
 		   (or (null nearest)
 		       (integerp nearest)))
@@ -128,13 +169,17 @@ P")
 	      (setq best-so-far (point))
 	      (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
 	      )
-	    (when t binding-point
+	    (when (null binding-point)
 	      ;; if there's no binding point,
 	      ;; move-to-enclosing-scope-last-variable-definition will
 	      ;; have left point in the right place
 	      (goto-char best-so-far)))))
       (adapt-binding-point)
-      (insert-variable-declaration name (deduce-expression-type value-text from) value-text)
+      (adjust-binding-point variables-needed)
+      (push (insert-variable-declaration name
+					 (deduce-expression-type value-text from)
+					 value-text)
+	    languide-auto-edit-overlays)
       (kill-new name))))
 
 (defun languide-convert-region-to-global (from to name)
@@ -245,12 +290,39 @@ them in descending order of character position.")
       (set-marker first-after-marker nil))))
 
 (defun languide-make-conditional (from to condition)
-  ;; todo: write languide-make-conditional -- try to use the existing skeleton or template
-  ;; remember to try use existing conditional
-  (let ((body-type (languide-region-type from to)))))
+  "Make the region between FROM and TO conditional upon CONDITION."
+  (interactive "r
+sCondition: ")
+  (let ((body-type (languide-region-type from to)))
+    (message "Body type from %d to %d is %s" from to body-type)
+    (cond
+     ((memq body-type '(compound-if-then-body if-then-body))
+      (let ((navigate-container-whole-statement t))
+	(navigate-this-container))
+      (navigate-this-head)
+      (let ((item (versor-get-current-item)))
+	(add-expression-term 'and condition (car item) (cdr item))))
+     ((memq body-type '(sequence t))
+      (languide-unify-statements-region from to)
+      (let ((inserter (cadar (get-statement-part 'if-then 'add-head)))
+	    (tempo-insert-region t)
+	    (old-marker (make-marker)))
+	(message "inserter is %S" inserter)
+	(goto-char from)
+	(insert condition)
+	;; we have to establish a region, for the template system to use,
+	;; but we don't want the user to be able to see this, so do it in
+	;; an underhand way
+	(set-marker old-marker (marker-position (mark-marker)))
+	(set-marker (mark-marker) from)
+	(funcall inserter)
+	(set-marker (mark-marker) old-marker)
+	))
+     (t (error "Not suitable for making conditional"))
+     )))
 
-(defun languide-make-repeating ()
-  ;; todo: write languide-make-repeating -- try to use the existing skeleton or template
+(defun languide-make-iterative ()
+  ;; todo: write languide-make-iterative -- try to use the existing skeleton or template
 )
 
 (defun languide-remove-control ()
