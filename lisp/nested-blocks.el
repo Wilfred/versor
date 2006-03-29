@@ -1,5 +1,5 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2006-02-24 17:27:52 jcgs>
+;;; Time-stamp: <2006-03-22 15:41:40 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -30,6 +30,7 @@
   '((latex-mode . "\\(\\\\begin{\\([a-z]+\\)}\\)\\|{")
     (html-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
     (html-helper-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
+    (sgml-mode . "\\(<\\([^/>][^>]*\\)>\\)\\|\\((\\)\\|\\(``\\)")
     (c-mode . "[{(]")
     (java-mode . "[{(]")
     (perl-mode . "[{(]")
@@ -42,6 +43,7 @@
   '((latex-mode . "\\(\\\\end{\\([a-z]+\\)}\\)\\|}")
     (html-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
     (html-helper-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
+    (sgml-mode . "\\(</\\([^>]+\\)>\\)\\|\\()\\)\\|\\(''\\)")
     (c-mode . "[})]")
     (java-mode . "[})]")
     (perl-mode . "[})]")
@@ -55,6 +57,7 @@
     (c-mode . "[({})]")
     (html-mode . "</?\\([^>]+\\)>")
     (html-helper-mode . "</?\\([^>]+\\)>")
+    (sgml-mode . "</?\\([^>]+\\)>")
     (bcpl-mode . "\\$[()]")
     (t . "[][}{)(]"))
   "Alist showing how nested blocks start or end in each mode.
@@ -68,6 +71,7 @@ automatically, given the nature, for example, of HTML blocks.")
   ;; todo: should have a way of saying that something is a start and an implicit end, like <li> in HTML and @section in LaTeX
   '((html-mode . "</?\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)")
     (html-helper-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\)")
+    (sgml-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\)")
     (t .  ";"))
   "Alist showing things that look like nested block structure but are not.")
 
