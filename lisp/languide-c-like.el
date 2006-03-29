@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-03-14 18:10:19 jcgs>
+;;; Time-stamp: <2006-03-28 20:58:03 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -478,19 +478,19 @@ this does not have to work."
     'defun)
    (t default)))
 
-(defmodal insert-compound-statement-open (c-mode perl-mode) ()
+(defmodal insert-compound-statement-open (c-mode java-mode perl-mode) ()
   "Insert a block start."
-  (insert "{ "))
+  (languide-insert "{\n"))
 
-(defmodal compound-statement-open (c-mode perl-mode) ()
+(defmodal compound-statement-open (c-mode java-mode perl-mode) ()
   "Return a block start."
    "{")
 
-(defmodal insert-compound-statement-close (c-mode perl-mode) ()
+(defmodal insert-compound-statement-close (c-mode java-mode perl-mode) ()
   "Insert a block end."
-  (insert "}"))
+  (languide-insert "\n}"))
 
-(defmodal compound-statement-close (c-mode perl-mode) ()
+(defmodal compound-statement-close (c-mode java-mode perl-mode) ()
   "Return a block end."
   "}")
 
@@ -696,13 +696,13 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 	    (let ((here (point)))
 	      (back-to-indentation)
 	      (= here (point))))
-    (insert "\n"))
+    (newline-and-indent))
   (if type
-      (insert type " ")
-    (insert "void "))
-  (insert name)
+      (languide-insert type " ")
+    (languide-insert "void "))
+  (languide-insert name)
   (when initial-value
-    (insert " = " initial-value ";")))
+    (languide-insert " = " initial-value ";")))
 
 (defmodal insert-variable-declaration (perl-mode) (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
@@ -713,9 +713,9 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 	      (back-to-indentation)
 	      (= here (point))))
     (insert "\n"))
-  (insert "my " name)
+  (languide-insert "my " name)
   (when initial-value
-    (insert " = " initial-value ";")))
+    (languide-insert " = " initial-value ";")))
 
 (defun c-arg-string (arg)
   "Return the string declaring ARG, which is in languide's format, which may be just the name, or (name . type)."
@@ -739,38 +739,38 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 
 (defmodal insert-function-declaration (c-mode java-mode) (name result-type arglist body &optional docstring)
   "Insert a function definition for a function called NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY."
-  (insert "\n" result-type " " name "(")
-  (insert (mapconcat 'c-arg-string
+  (languide-insert "\n" result-type " " name "(")
+  (languide-insert (mapconcat 'c-arg-string
 		     arglist
 		     ", "))
-  (insert ")\n")
+  (languide-insert ")\n")
   (when docstring
-    (insert "  /* " docstring " */\n"))
+    (languide-insert "  /* " docstring " */\n"))
   (let ((start (point)))
-    (insert "{\n")
-    (insert body)
-    (insert "\n}\n")
+    (languide-insert "{\n")
+    (languide-insert body)
+    (languide-insert "\n}\n")
     (goto-char start)
     (c-indent-exp t)))
 
 (defmodal insert-function-declaration (perl-mode) (name result-type arglist body)
   "Insert a function definition for a function called NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY."
-  (insert "sub " name "{\n"
+  (languide-insert "sub " name "{\n"
 	  "    my (")
   (let ((first t))
     (mapcar (lambda (arg)
-	      (unless first (insert " ") (setq first nil))
+	      (unless first (languide-insert " ") (setq first nil))
 	      (cond
 	       ((stringp arg)
-		(insert "$" arg))
+		(languide-insert "$" arg))
 	       ((symbolp arg)
-		(insert "$" (symbol-name arg)))
+		(languide-insert "$" (symbol-name arg)))
 	       ((consp arg)
 		;; todo: perl-specific clever stuff here
 		)
 	       ))
 	    arglist))
-  (insert ") = @_;\n"
+  (languide-insert ") = @_;\n"
 	  body
 	  "}\n"))
 
@@ -782,16 +782,16 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (let ((at-statement-start (save-excursion
 			      (skip-to-actual-code-backwards)
 			      (memq (char-before) '(?{ semicolon ?})))))
-    (insert name "(")
-    (insert (mapconcat (function
+    (languide-insert name "(")
+    (languide-insert (mapconcat (function
 			(lambda (arg)
 			  (if (consp arg)
 			      (car arg)
 			    arg)))
 		       arglist ", "))
-    (insert ")")
+    (languide-insert ")")
     (when at-statement-start
-      (insert ";\n")
+      (languide-insert ";\n")
       (save-excursion
 	;; (forward-line 1)
 	(c-indent-command)))))
@@ -826,34 +826,41 @@ descending order of character position."
 
 (defun find-tag-or-search (tag &optional function)
   "Find TAG, or if cannot be found through the tags table, try to find it anyway."
-  (unless (condition-case evar
-	      (progn
-		(find-tag tag)
-		t)
-	    (error nil))
-    (let ((old (point)))
-      (goto-char (point-min))
-      (if (re-search-forward
-	   (concat "^[a-z#]+.* \\*?" tag (if function "(" ""))
-	   (point-max) t)
-	  (beginning-of-line)
-	(goto-char old)))))
+  (condition-case evar
+      (progn
+	(find-tag tag)
+	t)
+    (error
+     (let ((old (point)))
+       (goto-char (point-min))
+       (if (re-search-forward (concat "^[a-z#]+.*\\s-\\*?"
+				      tag (if function "\\s-*(" ""))
+			      (point-max) t)
+	   (progn
+	     (beginning-of-line)
+	     t)
+	 (goto-char old)
+	 nil)))))
 
 (defun type-of-c-tag (tag)
   "Find TAG and return its type, or nil if not found."
-  (save-excursion
-    (and (find-tag-or-search tag)
-	 (let ((start (point)))
-	   (search-forward tag)
-	   (buffer-substring-no-properties start (match-beginning 0))))))
+  (save-window-excursion
+    (save-excursion
+      (and (find-tag-or-search tag)
+	   (let ((start (point)))
+	     (search-forward tag)
+	     (goto-char (match-beginning 0))
+	     (skip-syntax-backward "-")
+	     (buffer-substring-no-properties start (point)))))))
 
 (defun type-of-c-function (function)
   "Return the result type of FUNCTION."
-  (save-excursion
-    (and (find-tag-or-search function t)
-	 (let ((start (point)))
-	   (search-forward tag)
-	   (buffer-substring-no-properties start (match-beginning 0))))))
+  (save-window-excursion
+    (save-excursion
+      (and (find-tag-or-search function t)
+	   (let ((start (point)))
+	     (search-forward function)
+	     (buffer-substring-no-properties start (match-beginning 0)))))))
 
 (defun type-of-c-variable (variable where)
   "Return the type of VARIABLE."
@@ -877,12 +884,33 @@ descending order of character position."
       (setq i (1+ i)))
     (substring str i)))
 
-(defun modify-c-type (type modifier-op modifier-arg)
-  "To TYPE, apply a MODIFIER-OP and MODIFIER-ARG.
+(defvar structure-types-cache nil
+  "Alist of structure types we have looked at.
+Cdrs are alists of member names to types.")
+
+(defun modify-c-type (base-type modifier-op modifier-arg)
+  "To BASE-TYPE, apply a MODIFIER-OP and MODIFIER-ARG.
 The modifier can be structure accessors, etc."
-  ;; todo: write this monstrous type modifier
-  ;; look for modifiers such as [], ->, . etc
-  type)
+  (let* ((members-of-type-pair (assoc base-type structure-types-cache)))
+    (if members-of-type-pair
+	(cdr (assoc modifier-arg (cdr members-of-type-pair)))
+      (save-window-excursion
+	(save-excursion
+	  (find-tag-or-search base-type)
+	  (when (looking-at "typedef\\s-+") (goto-char (match-end 0)))
+	  (when (looking-at "struct\\s-+") (goto-char (match-end 0)))
+	  (forward-sexp)
+	  (let ((start (point))
+		(end (save-excursion (forward-sexp) (point)))
+		(members nil))
+	    (while (re-search-forward "\\(\\(?:struct\\s-+\\)?[a-z_]+\\s-*\\*?\\)\\([a-z_]+\\)\\s-*;"
+				      end t)
+	      (push (cons (match-string-no-properties 2)
+			  (match-string-no-properties 1))
+		    members))
+	    (push (cons base-type members)
+		  structure-types-cache)
+	    (cdr (assoc modifier-arg members))))))))
 
 (defmodal deduce-expression-type (c-mode java-mode) (value-text where)
   "Given VALUE-TEXT, try to deduce the type of it.
@@ -905,19 +933,40 @@ Second arg WHERE gives the position, for context."
     (message "\"%s\" appears to be a function call" value-text)
     (let* ((function-type (type-of-c-function (match-string-no-properties 1 value-text)))
 	   (remainder (remove-leading-expression (substring value-text (match-end 1))))
-	   )
-      (modify-c-type function-type remainder)))
+	   (is-struct-member (string-match "\\s-*\\([-.>&]+\\)\\s-*\\(.+\\)" remainder))
+	   (member-op (if is-struct-member (match-string-no-properties 1 remainder) nil))
+	   (member-member (if is-struct-member (match-string-no-properties 2 remainder) nil)))
+      (and member-op member-member
+	   (modify-c-type function-type member-op member-member))))
    ((string-match "\\([a-z][a-z0-9_]*\\)\\s-*\\([-.>&]+\\)\\s-*\\(.+\\)" value-text)
-    (message "\"%s\" appears to be a variable \"%s\" with modifier-op \"%s\" and modifier-arg \"%s\""
-	     value-text
-	     (match-string-no-properties 1 value-text)
-	     (match-string-no-properties 2 value-text)
-	     (match-string-no-properties 3 value-text))
-    (modify-c-type
-     (type-of-c-variable (match-string-no-properties 1 value-text) where)
-     (match-string-no-properties 2 value-text)
-     (match-string-no-properties 3 value-text)))
+    (message "match-data %S" (match-data))
+
+    (let* ((base-variable (match-string-no-properties 1 value-text))
+	   (member-op (match-string-no-properties 2 value-text))
+	   (member-member (match-string-no-properties 3 value-text))
+	   (base-variable-base-type (type-of-c-variable base-variable where)))
+      (and t (message "\"%s\" appears to be a variable \"%s\" of base type %s with modifier-op \"%s\" and modifier-arg \"%s\""
+		      value-text
+		      base-variable base-variable-base-type
+		      member-op
+		      member-member))
+      (modify-c-type base-variable-base-type member-op member-member)))
    (t "unknown")))
+
+(defun lisp-operator-to-c (lisp-operator)
+  (or (cdr (assoc lisp-operator
+		  '((and . "&&")
+		    (or . "||")
+		    (not . "!"))))
+      (symbol-name operator)))
+
+(defmodal add-expression-term (c-mode java-mode perl-mode)
+  (operator argument from to)
+  "Wrap an expression with OPERATOR and ARGUMENT around the region between FROM and TO."
+  (goto-char from)
+  (languide-insert "(")
+  (goto-char (1+ to))
+  (languide-insert (lisp-operator-to-c operator) argument ")"))
 
 (defmodal move-before-defun (c-mode java-mode perl-mode) ()
   "Move to before the current function definition."
@@ -950,7 +999,7 @@ Otherwise return nil."
 	 (min-depth (nth 6 ppe))
 	 (in-string (nth 3 ppe))
 	 (in-comment (nth 4 ppe)))
-    (message "depth=%d min-depth=%d" depth min-depth)
+    ;; (message "depth=%d min-depth=%d" depth min-depth)
     (if (or (/= depth 0)
 	    (< min-depth 0)
 	    in-string
@@ -958,15 +1007,15 @@ Otherwise return nil."
 	nil
       (let* ((possible-open-position nil)
 	     (preceding-is-open (save-excursion
-			  (goto-char from)
-			  (skip-to-actual-code-backwards)
-			  (backward-char 1)
-			  (setq possible-open-position (point))
-			  (looking-at (compound-statement-open))))
+				  (goto-char from)
+				  (skip-to-actual-code-backwards)
+				  (backward-char 1)
+				  (setq possible-open-position (point))
+				  (looking-at (compound-statement-open))))
 	     (following-is-close (save-excursion
-			  (goto-char to)
-			  (skip-to-actual-code)
-			  (looking-at (compound-statement-close)))))
+				   (goto-char to)
+				   (skip-to-actual-code)
+				   (looking-at (compound-statement-close)))))
 	(if (and preceding-is-open
 		 following-is-close)
 	    (let ((is-under-control
@@ -1059,10 +1108,16 @@ Otherwise return nil."
   (tail " *\\*/")
   (create (template "/* " r " */")))
 
+(defstatement progn (c-mode java-mode perl-mode)
+  "Sequential execution statement."
+  (head "{")
+  (body "{" (statements)))
+
 (defstatement if-then (c-mode java-mode perl-mode)
   "If statement without else clause."
   (head "if" (expression-contents))
   (body "if" (expression) (statement-contents))
+  (add-head (template & > "if (" r ")" n>))
   (framework (remember "if") (remember "(") (expressions) (remember ")")
 	     (skip-to-actual-code) (continue-if "{")
 	     (remember "{") (expressions) (remember "}"))
@@ -1126,9 +1181,8 @@ Otherwise return nil."
 
 (defstatement defun (c-mode java-mode)
   "Function definition"
-  (head)
-  (body)
-  (tail)
+  (head (upto ")"))
+  (body "{" (statements))
   (framework)
   (create (template & >  (p "Function result type: ") (p "Function name: ")
 		    "("  (p "Function argument: ") ")"
@@ -1199,5 +1253,16 @@ Otherwise return nil."
 (defstatement and (perl-mode c-mode java-mode)
   "Not expression."
   (begin-end "(!" ")"))
+
+;; now define the whole statements, systematically
+(mapcar (lambda (mode)
+	  (let ((statements (get mode 'statements)))
+	    (mapcar (lambda (statement)
+		      (unless (assoc 'whole (cdr statement))
+			(rplacd statement
+				(cons '(whole (end-of-statement-internal))
+				      (cdr statement)))))
+		    statements)))
+	'(perl-mode c-mode java-mode))
 
 ;;; end of languide-c-like.el
