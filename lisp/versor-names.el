@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-03-26 15:18:05 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -91,7 +91,7 @@
 (defun versor-find-level-by-single-name (name)
   "Return the index of the level called NAME as a cons of (meta-level . level).
 If this occurs in several meta-levels, including the current one, use the occurrece
-in the caurrent one."
+in the current one."
   (let* ((meta-level-index versor-meta-level))
     (catch 'found
       (while t
