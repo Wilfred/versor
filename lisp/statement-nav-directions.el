@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-03-10 18:27:30 jcgs>
+;;; Time-stamp: <2006-03-28 18:58:04 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -221,9 +221,16 @@ Intended for use from statement-navigate."
   `(let ((languide-last-statement-selector-command languide-last-statement-selector-command)
 	 (statement-latest-start statement-latest-start)
 	 (navigated-latest-part navigated-latest-part)
-	 (items (versor-get-current-items)))
-    ,@bodyforms
-    (versor-set-current-items items)))
+	 (items (mapcar (function
+			 (lambda (item-o)
+			   (if (consp item-o)
+			       item-o
+			     (cons (overlay-start item-o)
+				   (overlay-end item-o)))))
+			(versor-get-current-items))))
+     (let ((result (progn ,@bodyforms)))
+       (versor-set-current-items items)
+       result)))
 
 (defun statement ()
   "Select the next statement."
@@ -241,18 +248,20 @@ Intended for use from statement-navigate."
 
 (defun statements ()
   "Select the statements up to the next closing bracket."
-  (interactive)				; mostly for testing, but it might come in useful in its own right
-  (without-changing-current-statement
-   (let ((start (point)))
-     (message "(statements) starting at %d" start)
-     (skip-to-actual-code)
-     (while (not (looking-at (compound-statement-close)))
-       (message "forward one statement")
-       (next-statement-internal 1)
-       (skip-to-actual-code))
-     (set-mark-candidate start)
-     (message "(statements) ending at %d" (point))
-     (cons start (point)))))
+  (interactive)	; mostly for testing, but it might come in useful in its own right
+  (let* ((start (point))
+	 (selected (without-changing-current-statement
+		    (message "(statements) starting at %d" start)
+		    (skip-to-actual-code)
+		    (while (not (looking-at (compound-statement-close)))
+		      (message "forward one statement")
+		      (next-statement-internal 1)
+		      (skip-to-actual-code))
+		    (set-mark-candidate start)
+		    (message "(statements) ending at %d" (point))
+		    (cons start (point)))))
+    (goto-char (cdr selected))
+    selected))
 
 (defun statement-contents ()
   "Select the contents of next statement.
