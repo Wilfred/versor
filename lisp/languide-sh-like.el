@@ -1,5 +1,5 @@
 ;;;; languide-sh-like.el -- shell etc definitions for language-guided editing
-;;; Time-stamp: <2006-03-06 16:56:27 jcgs>
+;;; Time-stamp: <2006-03-28 21:30:34 jcgs>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -33,6 +33,7 @@ will go back another statement."
 This need be valid only after an end-of-statement-internal.
 It should move point forward such that another end-of-statement-internal
 will go forward another statement."
+  (forward-char 1)			; todo: this is probably wrong
 )
 
 (defmodal beginning-of-statement-internal (sh-mode) ()
@@ -43,12 +44,41 @@ Do not do auxiliary stuff that might be associated with this."
 (defmodal end-of-statement-internal (sh-mode) ()
   "Move to the end of the current statement.
 Do not do auxiliary stuff that might be associated with this."
-)
+  (interactive)
+  (let ((type (identify-statement nil)))
+    (cond
+     ((memq type '(if-then if-then-else))
+      (message "on \"if\", looking for \"fi\"")
+      (while (not (looking-at "fi"))
+	(next-statement-internal 1)
+	(message "Moved forward a statement, now looking at %s..." (buffer-substring-no-properties (point) (+ 24 (point))))
+	)
+
+      )
+     ((null type)
+      (let ((eol (line-end-position))
+	    (semicolon (save-excursion (or (search-forward ";" nil t)
+					   (point-max)))))
+	(goto-char (min eol semicolon))
+	)))))
 
 (defmodal identify-statement (sh-mode) (default)
   "Note what kind of statement we are at the start of.
 Need not work if not at the start of a statement.
 If the statement cannot be identified, return DEFAULT."
+  (cond
+   ((looking-at "[a-z_]+\\s-*=") 'assignment)
+   ((looking-at "case") 'switch)
+   ((looking-at "[^(]+)") 'case)
+   ((looking-at "if")
+    'if-then				; todo: spot if-then-else
+    )
+   ((looking-at "while") 'while)
+   ((looking-at "exit") 'return)
+   ((looking-at "shift") 'shift)
+   ((looking-at "export") 'export)
+   (t default)
+   )
 )
 
 (defmodal compound-statement-open (sh-mode) ()
@@ -57,6 +87,7 @@ If the statement cannot be identified, return DEFAULT."
 
 (defmodal compound-statement-close (sh-mode) ()
   "Return a block end."
+  "\\(fi\\)\\|\\(done\\)\\|\\(esac\\)"
 )
 
 (defmodal insert-compound-statement-open (sh-mode) ()
