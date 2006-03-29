@@ -1,7 +1,7 @@
 ;;;; languide-html-like.el -- HTML definitions for language-guided editing
-;;; Time-stamp: <2004-01-26 16:31:21 john>
+;;; Time-stamp: <2006-03-28 21:06:20 jcgs>
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -26,6 +26,8 @@
   (head "<!-- *")
   (body "<!-- *" (upto " *-->"))
   (tail " *-->")
+  (framework (remember "<!--") (remember "-->"))
+  (whole (remember "<!--") (remember (upto "-->")) (remember "-->"))
   (create (template "<!-- " r " -->")))
 
 (defstatement paragraph (html-helper-mode html-mode)
@@ -41,6 +43,7 @@
   (head "<blockquote" (upto ">"))
   (body "<blockquote[^>]*>" (upto "</blockquote>>"))
   (create
+   ;; todo: are these right? lots of >>>>s!
    (precondition (not-within "<blockquote[^>]*>" "</blockquote>>>"))
    (template & "<blockquote>" r "</blockquote>>>> o")))
 
@@ -67,3 +70,5 @@
   (create
    (precondition (not-within "<a[^>]*>" "</a>"))
    (template "<a href=\"" p "\">" r "</a>")))
+
+;; end of languide-html-like.el
