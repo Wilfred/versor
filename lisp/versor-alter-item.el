@@ -1,5 +1,5 @@
 ;;;; versor-alter-item.el -- choose possible value for the current item
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-03-27 17:52:30 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -25,13 +25,20 @@
 (require 'modal-functions)
 (require 'languide)			; for variables-in-scope
 
+(defun versor-alterations-show-status ()
+  "Show the status of the alterations system, in the mode line."
+  (setq versor-current-meta-level-name
+	(propertize "altering" 'face (cons 'foreground-color "red"))
+	versor-current-level-name
+	(propertize (car (aref versor-alterations-types versor-alterations-type-index))
+		    'face (cons 'foreground-color "red")))
+  (force-mode-line-update t))
+
 (defun versor-alterations:set-current ()
   "Set the current alterations posssibility.
 This writes it into the buffer and points versor's item at it, and updates the display."
   (versor-alterations-trim-index)
-  (setq versor-current-meta-level-name "altering"
-	versor-current-level-name (car (aref versor-alterations-types versor-alterations-type-index)))
-  (force-mode-line-update t)
+  (versor-alterations-show-status )
   (let* ((old-item (versor-get-current-item))
 	 (new-text (car (aref versor-alterations-values versor-alterations-index))))
     ;; todo: make this use versor-get-current-items, and change all of them
@@ -196,7 +203,7 @@ some of which expect an argument."
     (list (list (buffer-substring-no-properties (car item) (cdr item))))))
 
 (defun get-statement-types (&optional mode)
-  "Get the statement types, as an alist, for the current mode, or MODE if given."
+  "Get the statement types, as an alist, for the current mode, or for MODE if given."
   (let* ((raw-statements (get (or mode major-mode) 'statements))
 	 (statement-names nil))
     (while raw-statements
@@ -265,6 +272,12 @@ We set it to t at the start of an alteration, which tells the first
 change to record the undo list up to the deletion of the original
 selection.")
 
+(defvar versor-alterations-old-meta-level-name nil
+  "The value of versor-current-meta-level-name before we started alterations.")
+
+(defvar versor-alterations-old-level-name nil
+  "The value of versor-current-level-name before we started alterations.")
+
 (defun versor-begin-altering-item ()
   "Start selecting amonst possible values for the selected item.
 Sets up mapping for the arrow keys, such that they now change the
@@ -281,6 +294,9 @@ have at the time."
 				       (car versor-alterations-old-item)
 				       (cdr versor-alterations-old-item))
 	 versor-alterations-old-undo t
+	 versor-alterations-old-meta-level-name versor-current-meta-level-name
+	 versor-alterations-old-level-name versor-current-level-name
+	 versor-current-meta-level-name (propertize "altering" 'face (cons 'foreground-color "red"))
 	 versor-alterations-types (apply 'vector (versor-get-alterations-possibility-types))
 	 versor-alterations-type-index 0)
    (versor-alterations-trim-index)
@@ -288,22 +304,25 @@ have at the time."
    ;; look among the possible values we can alter the selection to, to
    ;; find the first one that is the same as the initial value of the
    ;; selection
+   ;; (message "Possible types are %S" versor-alterations-types)
    (catch 'done
      (while (< versor-alterations-type-index (length versor-alterations-types))
        (setq versor-alterations-index 0
 	     versor-alterations-values (versor-alterations:get-type-values t))
-       (message "For type %d, values are %S" versor-alterations-type-index versor-alterations-values)
+       ;; (message "For type %d, values are %S" versor-alterations-type-index versor-alterations-values)
        (let ((n (length versor-alterations-values)))
 	 (while (< versor-alterations-index n)
-	   (if (string= versor-alterations-old-value
-			(car (aref versor-alterations-values versor-alterations-index)))
-	       (throw 'done nil))
+	   (when (string= versor-alterations-old-value
+			  (car (aref versor-alterations-values versor-alterations-index)))
+	     ;; (message "Got one in type %d" versor-alterations-type-index)
+	     (throw 'done nil))
 	   (incf versor-alterations-index)))
        (incf versor-alterations-type-index))
      (message "Could not find an alteration possibility matching the initial selection"))
    (versor-alterations:show-current)
    (versor-set-current-item (car versor-alterations-old-item)
-			    (cdr versor-alterations-old-item))))
+			    (cdr versor-alterations-old-item))
+   (versor-alterations-show-status)))
 
 (defun versor-end-altering-item ()
   "Take the currently selected value of the item, and quit alteration mode."
