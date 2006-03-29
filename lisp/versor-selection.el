@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-03-28 18:06:58 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -60,13 +60,15 @@ other emacs commands.")
       (make-versor-overlay start end))))
 
 (defun versor-set-current-items (items)
-  "Set the ITEMS, given as conses."
+  "Set the ITEMS, given as conses (or existing overlays) ."
   (mapcar 'delete-overlay versor-items)
   (if (null items)
       (setq versor-items nil)
     (setq versor-items
 	  (mapcar (lambda (item)
-		    (let ((overlay (make-overlay (car item) (cdr item))))
+		    (let ((overlay (if (overlayp item)
+				       item
+				     (make-overlay (car item) (cdr item)))))
 		      (overlay-put overlay 'face
 				   (if versor-use-face-attributes
 				       'versor-item
