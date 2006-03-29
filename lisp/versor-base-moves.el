@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-03-14 17:14:58 jcgs>
+;;; Time-stamp: <2006-03-27 19:10:40 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -170,6 +170,7 @@ Makes a two-part selection, of opening and closing brackets."
   (when versor-reformat-automatically
     (condition-case evar
 	(indent-sexp)
+      ;; todo: use (indent-region start end nil) instead
       (error nil)))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
@@ -675,7 +676,6 @@ PROPERTIES is given as an alist."
 
 (defun versor-next-row (n)
   "Move to the next row."
-  ;; todo: handling of last row isn't right yet
   (interactive "p")
   (forward-char 1)
   (let* ((ender (versor-row-ender))
@@ -684,18 +684,20 @@ PROPERTIES is given as an alist."
 		  (match-beginning 0)))
 	 (row-starter (versor-row-starter)))
     (while (> n 0)
-      (if (not (re-search-forward row-starter limit t))
-	  (error "No more next rows")
-	(decf n)))
+      (if (re-search-forward row-starter limit t)
+	  (decf n)		
+	(setq n 0)))
     (let ((start-ender (point))
 	  (start-starter (match-beginning 0)))
       (save-excursion
 	(if ender
 	    (re-search-forward ender limit t)
 	  (forward-char 1)
-	  (re-search-forward (versor-row-starter) limit t)
-	  (goto-char (1- (match-beginning 0))))
+	  (if (re-search-forward (versor-row-starter) limit t)
+	    (goto-char (1- (match-beginning 0)))
+	  (goto-char limit)))
 	(versor-set-current-item start-starter (point)))
+      (goto-char start-starter)
       (skip-to-actual-code))))
 
 (defun versor-last-row ()
