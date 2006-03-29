@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-03-09 14:52:30 john>
+;;; Time-stamp: <2006-03-27 10:50:26 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -110,5 +110,19 @@ The function name is left at the top of the kill ring."
      (languide-make-conditional (versor-overlay-start item)
 				(versor-overlay-end item)
 				condition))))
+
+(defun versor-make-iterative (continue-condition)
+  "Make the current selection iterative."
+  (interactive "sContinue condition: ")
+  (versor-as-motion-command
+   (let ((item (versor-get-current-item)))
+     (languide-make-iterative (versor-overlay-start item)
+			      (versor-overlay-end item)
+			      continue-condition))))
+
+(defun versor-remove-control ()
+  "Remove the control around the current selection."
+  (interactive)
+  (languide-remove-control))
 
 ;;; end of versor-language-edits.el
