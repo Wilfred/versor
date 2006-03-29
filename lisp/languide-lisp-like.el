@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-03-14 15:40:31 jcgs>
+;;; Time-stamp: <2006-03-28 21:08:28 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -41,12 +41,26 @@
   (unless (looking-at "(") (backward-up-list 1))
   (forward-sexp 1))
 
+(defvar lisp-mode-statement-identities
+  '(("when" . if-then)
+    ("if" . if-then-else)
+    ("setq" . assignment)
+    ("let" . variable-declaration)
+    ("let*" . variable-declaration)
+    ("progn" . progn)
+    ("defun" . defun))
+  "Alist of lisp functors which are recognized by languide.
+Maps strings to symbols.")
+
 (defmodal identify-statement (lisp-mode emacs-lisp-mode lisp-interaction-mode) (default)
   "Identify a Lisp form or function."
   (if (looking-at "(\\([-:_a-z0-9]+\\)")
-      (let ((string (match-string 1)))
+      (let ((string (match-string-no-properties 1)))
 	(message "Seems to be a %s" string)
-	string
+	(or (cdr (assoc string lisp-mode-statement-identities))
+	    ;; (intern string)
+	    'function-call
+	    )
 	)
     default))
 
@@ -55,14 +69,14 @@
 					  lisp-interaction-mode)
   ()
   "Insert a progn."
-  (insert "(progn "))
+  (languide-insert "(progn "))
 
 (defmodal insert-compound-statement-close (lisp-mode
 					   emacs-lisp-mode
 					   lisp-interaction-mode)
   ()
   "Insert a progn's closing bracket."
-  (insert ")"))
+  (languide-insert ")"))
 
 (defun find-next-lisp-binding-outwards (&optional allow-conversions)
   "Move to the next enclosing binding.
@@ -162,15 +176,15 @@ Returns the position if it found one, or nil otherwise."
       (if (looking-at "(defun")
 	  (progn
 	    (goto-char binding-place)
-	    (insert-before-markers "(let (")
+	    (languide-insert-before-markers "(let (")
 	    (save-excursion ; so we finish at new variable insertion point
-	      (insert ")\n")
+	      (languide-insert ")\n")
 	      (let ((old (point))
 		    new)
 		(while (setq new (safe-scan-sexps old 1)) ; move over body forms
 		  (setq old new))
 		(goto-char old))
-	      (insert ")")
+	      (languide-insert ")")
 	      (backward-up-list)
 	      (indent-sexp)))
 	(outward-once)
@@ -259,14 +273,14 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
     (insert "\n"))
   (lisp-indent-line)
   (save-excursion
-    (insert "(" name " " initial-value ")"))
+    (languide-insert "(" name " " initial-value ")"))
   (indent-sexp))
 
 (defmodal insert-global-variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
   "Insert a definition for a global variable called NAME, of TYPE, with INITIAL-VALUE.
 TYPE and INITIAL-VALUE may be null, but the NAME is required.
 In fact, TYPE is not meaningful as this is the definition for Lisp."
-  (insert "\n(defvar " name " " initial-value "\n  \"\")\n"))
+  (languide-insert "\n(defvar " name " " initial-value "\n  \"\")\n"))
 
 (defun arg-name (arg)
   "Return just the name of ARG, which is in languide's format, which may be just the name, or (name . type)."
@@ -283,30 +297,30 @@ In fact, TYPE is not meaningful as this is the definition for Lisp."
 (defun insert-lisp-arglist-elements (arglist)
   "Insert the elements of ARGLIST.
 They are in languide's format, which may be just the name, or (name . type)."
-  (insert (mapconcat 'arg-name arglist " ")))
+  (languide-insert (mapconcat 'arg-name arglist " ")))
 
 (defmodal insert-function-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   (name result-type arglist
 	body &optional docstring)
   "Insert a function definition for NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY.
 A DOCSTRING may also be given."
-  (insert "(defun " name " (")
+  (languide-insert "(defun " name " (")
   (insert-lisp-arglist-elements arglist)
-  (insert ")")
+  (languide-insert ")")
   (newline-and-indent)
   (when (and (stringp docstring)
 	     (not (zerop (length docstring))))
-    (insert "\"" docstring "\"")
+    (languide-insert "\"" docstring "\"")
     (newline-and-indent))
-  (insert body ")\n\n")
+  (languide-insert body ")\n\n")
   (beginning-of-defun)
   (indent-sexp))
 
 (defmodal insert-function-call (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name arglist)
   "Insert a function call for a function called NAME taking ARGLIST"
-  (insert "(" name " ")
+  (languide-insert "(" name " ")
   (insert-lisp-arglist-elements arglist)
-  (insert ")"))
+  (languide-insert ")"))
 
 (defmodal languide-find-surrounding-call (lisp-mode emacs-lisp-mode lisp-interaction-mode) ()
   "Return a list of the function call syntax around point.
@@ -371,6 +385,14 @@ as SYNTAX-BEFORE and SYNTAX-AFTER."
 (defmodal deduce-expression-type (lisp-mode emacs-lisp-mode lisp-interaction-mode) (value-text)
   "Given VALUE-TEXT, try to deduce the type of it."
   nil)					; nice and easy for dynamically typed languages!
+
+(defmodal add-expression-term (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
+  (operator argument from to)
+  "Wrap an expression with OPERATOR and ARGUMENT around the region between FROM and TO."
+  (goto-char to)
+  (languide-insert ")")
+  (goto-char from)
+  (languide-insert "(" (symbol-name operator) " " argument " "))
 
 (defmodal move-before-defun (lisp-mode emacs-lisp-mode lisp-interaction-mode) ()
   "Move to before the current function definition."
@@ -497,6 +519,24 @@ that is, is something that could be made into a compound statement or
 expression, return t. 
 Otherwise return nil.")
 
+(defmodal adjust-binding-point (lisp-mode emacs-lisp-mode lisp-interaction-mode) (variables-needed)
+  "If appropriate, move to the first point at which all of VARIABLES-NEEDED are defined.
+Assumes being at the end of a group of bindings, ready to insert a binding."
+  (while (and (safe-backward-sexp)
+	      (let ((this (save-excursion
+			    (down-list)
+			    (let ((start (point)))
+			      (forward-sexp)
+			      (message "considering %s" (buffer-substring-no-properties start (point)))
+			      (if (not (member (buffer-substring-no-properties start (point))
+					       variables-needed))
+				  nil
+				(point))))))
+		(if (null this)
+		    t
+		  (goto-char this)
+		  (up-list))))))
+
 (defstatement comment (lisp-mode
 		       emacs-lisp-mode
 		       lisp-interaction-mode)
@@ -508,52 +548,53 @@ Otherwise return nil.")
 
 (defstatement defun (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   ""
-  (keyword "defun")
+  ;; (keyword "defun")
   (head "(defun +" (expression-contents 2))
-  (body "(defun +" (expression 2) (expressions))
+  (body "(defun +" (expression 2) (skip-to-actual-code) (expressions))
   (create (template & "(defun " (p "Function name to define: ")
 		    " (" (p "Argument list: ") ")" n>
 		    "\"" (p "Documentation string: ") "\"" n>
-		    r> ")" n)))
+		    r> ")" n))
+  (begin-end "(defun ()\n \"\"\n" ")"))
 
 (defstatement defvar (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   ""
-  (keyword "defvar")
+  ;; (keyword "defvar")
   (head "(defvar +" (expression-contents 2))
-  (body "(defvar +" (expression 2) (expressions))
+  (body "(defvar +" (expression 2) (skip-to-actual-code) (expressions))
   (create (template "(defvar " (p "Variable name to define: ")
 		    "\"" (p "Documentation string: ") "\"" n>
 		    r> ")" n)))
 
 (defstatement progn (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   "General compound statement for Lisps"
-  (keyword "progn")
+  ;; (keyword "progn")
   (head "(progn" (expression-contents))
-  (body "(progn" (expressions))
+  (body "(progn" (skip-to-actual-code) (expressions))
   (create (template & > "(progn " p n>
 		    r ")")))
 
 (defstatement save-excursion (emacs-lisp-mode lisp-interaction-mode)
   ""
-  (keyword "save-excursion")
+  ;; (keyword "save-excursion")
   (head "(save-excursion" (expression-contents))
-  (body "(save-excursion" (expressions))
+  (body "(save-excursion" (skip-to-actual-code) (expressions))
   (create (template & > "(save-excursion " p n>
 		    r ")")))
 
 (defstatement save-window-excursion (emacs-lisp-mode lisp-interaction-mode)
   "Emacs-lisp \"save-window-excursion\" special form"
-  (keyword "save-window-excursion")
+  ;; (keyword "save-window-excursion")
   (head "(save-window-excursion" (expression-contents))
-  (body "(save-window-excursion" (expressions))
+  (body "(save-window-excursion" (skip-to-actual-code) (expressions))
   (create (template & > "(save-window-excursion " p n>
 		    r ")")))
 
 (defstatement while-do (emacs-lisp-mode lisp-interaction-mode)
   "Emacs-lisp \"while\" special form"
-  (keyword "while")
+  ;; (keyword "while")
   (head "(while" (expression-contents))
-  (body "(while" (expression) (expressions))
+  (body "(while" (expression) (skip-to-actual-code) (expressions))
   (create (template & > "(while " p n>
 		    r ")"))
   (begin-end "(while " ")")
@@ -561,9 +602,9 @@ Otherwise return nil.")
 
 (defstatement unless (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   "Emacs-lisp \"unless\" special form."
-  (keyword "unless")
+  ;; (keyword "unless")
   (head "(unless" (expression-contents))
-  (body "(unless" (expression) (expression-contents))
+  (body "(unless" (expression) (skip-to-actual-code) (expression-contents))
   (create (precondition (require 'cl))
 	  (template & > "(unless " p n>
 		    r ")"))
@@ -572,43 +613,44 @@ Otherwise return nil.")
 
 (defstatement condition-chain (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   ""
-  (keyword "cond")
+  ;; (keyword "cond")
   (head "(cond *")
-  (body "(cond *" (expressions))
+  (body "(cond *" (skip-to-actual-code) (expressions))
   (create (template & > "(cond" n> "(" p ")" n> "(t (" p " " p ")))")))
 
 (defstatement function-call (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   ""
   (head "(" (expression))
-  (body "(" (expression) (expressions))
+  (body "(" (expression) (skip-to-actual-code) (expressions))
   (create (template > "(" p ")"))
   (begin-end "(" ")"))
 
 (defstatement variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   ""
-  (keyword "let")
+  ;; (keyword "let")
   (head "(let *(" (expressions))
-  (body "(let *" (expression) (expressions))
+  (body "(let *" (expression) (skip-to-actual-code) (expressions))
   (framework
    (remember "(") (remember "let") (remember "(") (expressions) (remember ")")
    (expressions) (remember ")"))
   (create
    (template & > "(let ((" (p "Variable name: ") p "))" n> r n> ")"))
-  (begin-end "(let (()) " ")"))
+  (begin-end "(let (())\n " ")"))
 
 (defstatement assignment (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   "Assignment statement"
-  (keyword "setq")
+  ;; (keyword "setq")
   (head "(setq" (expression-contents))
-  (body "(setq" (expression) (expression))
+  (body "(setq" (expression) (skip-to-actual-code) (expression))
   (create (template & > "(setq " (p "Variable name: ") " "
 		    r ")")))
 
 (defstatement if-then (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   "If statement without else clause."
-  (keyword "when")
+  ;; (keyword "when")
   (head "(when" (expression-contents))
-  (body "(when" (expression) (expressions))
+  (body "(when" (expression) (skip-to-actual-code) (expressions))
+  (add-head (template & > "(if " r ")" n>))
   (create (precondition (require 'cl))
 	  (template & > "(when " p n>
 		    r ")"))
@@ -617,10 +659,11 @@ Otherwise return nil.")
 
 (defstatement if-then-else (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   "If statement with else clause."
-  (keyword "if")
-  (head "(if" (expression-contents))
-  (body "(if" (expression) (expression-contents))
-  (tail "(if" (expression) (expression) (expression-contents))
+  ;; (keyword "if")
+  (head "(if" (expression))
+  (body "(if" (expression) (skip-to-actual-code) (expression))
+  (tail "(if" (expression) (expression) (skip-to-actual-code) (expressions))
+  (add-head (template & > "(if " r ")" n>))
   (create (template & > "(if " p n>
 		    r n>
 		    p ")"))
@@ -629,19 +672,38 @@ Otherwise return nil.")
 
 (defstatement and (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   "And expression."
-  (keyword "and")
+  ;; (keyword "and")
   (begin-end "(and " ")")
   (begin-end-with-dummy "(and true " ")"))
 
 (defstatement or (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   "Or expression."
-  (keyword "or")
+  ;; (keyword "or")
   (begin-end "(or " ")")
   (begin-end-with-dummy "(or false " ")"))
 
 (defstatement not (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   "Not expression."
-  (keyword "not")
+  ;; (keyword "not")
   (begin-end "(not " ")"))
+
+;; Now put a "framework" and a "whole" in place for each statement
+;; type -- these are the same for all lisp "statements":
+(mapcar (lambda (mode)
+	  (let ((statements (get mode 'statements)))
+	    (mapcar (lambda (statement)
+		      (unless (assoc 'framework (cdr statement))
+			(rplacd statement
+				(cons '(framework (remember "(")
+						  (remember (expression))
+						  (expressions)
+						  (remember ")"))
+				      (cdr statement))))
+		      (unless (assoc 'whole (cdr statement))
+			(rplacd statement
+				(cons '(whole (expression))
+				      (cdr statement)))))
+		    statements)))
+	'(lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode))
 
 ;;; end of languide-lisp-like.el
