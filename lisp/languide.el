@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-03-14 17:59:10 jcgs>
+;;; Time-stamp: <2006-03-27 19:02:31 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -163,6 +163,9 @@ or surrounding point if WHERE is not given.")
   "Given VALUE-TEXT, try to deduce the type of it.
 Second arg WHERE gives the position, for context.")
 
+(defmodel add-expression-term (operator argument from to)
+  "Wrap an expression with OPERATOR and ARGUMENT around the region between FROM and TO.")
+
 (defmodel move-before-defun ()
   "Move to before the current function definition.")
 
@@ -183,21 +186,35 @@ that is, is something that could be made into a compound statement or
 expression, return t. 
 Otherwise return nil.")
 
-(defun foo () (interactive) (message "region type %S" (languide-region-type (region-beginning) (region-end))))
+(defun show-region-type (start end)
+  "For debugging languide-region-type"
+  (interactive "r")
+  (message "region type %S"
+	   (languide-region-type (or start (region-beginning))
+				 (or end (region-end)))))
+
+(defun versor-show-region-type-hook-function ()
+  (when (eq major-mode 'c-mode)
+    (let ((item (versor-get-current-item)))
+      (show-region-type (car item) (cdr item)))))
+
+;; (add-hook 'versor-post-command-hook 'versor-show-region-type-hook-function)
+;; (remove-hook 'versor-post-command-hook 'versor-show-region-type-hook-function)
 
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing..
 Returns whether it did anything."
-  (let* ((bod (save-excursion (beginning-of-defun) (point)))
-	 (parse-results (parse-partial-sexp bod (point)
-					    0
-					    nil
-					    nil
-					    nil))
-	 (in-comment-or-string (nth 8 parse-results)))
-    (if in-comment-or-string
-	(goto-char in-comment-or-string)
-      nil)))
+  (unless (memq major-mode '(texinfo-mode))
+    (let* ((bod (save-excursion (beginning-of-defun) (point)))
+	   (parse-results (parse-partial-sexp bod (point)
+					      0
+					      nil
+					      nil
+					      nil))
+	   (in-comment-or-string (nth 8 parse-results)))
+      (if in-comment-or-string
+	  (goto-char in-comment-or-string)
+	nil))))
 
 (defun skip-to-actual-code (&optional limit)
   "Skip forward, over any whitespace or comments, to the next actual code.
