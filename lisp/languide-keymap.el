@@ -1,5 +1,5 @@
 ;;;; languide-keymap.el -- keymap and menu setup for languide
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-03-28 09:04:41 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -24,8 +24,11 @@
     ["Convert selection to function" versor-convert-selection-to-function t]
     ["Surround selection with function call" versor-surround-selection-with-call t]
     ["Remove function call" versor-remove-function-call t]
+    ["Remove control" versor-remove-control]
     ["Unify statements" versor-unify-statements t]
     ["Comment selection" versor-comment-selection t]
+    ["Make selection conditional" versor-make-conditional t]
+    ["Make selection iterative" versor-make-conditional t]
     ["Move to enclosing scoping point" versor-enclosing-scoping-point t]
     ["Move to enclosing decision point" versor-enclosing-decision-point t]
     ["Employ variable" versor-employ-variable t]
@@ -33,6 +36,8 @@
 
 (easy-menu-define versor-languide-menu nil
   "Versor languide menu" (cons "Versor languide" versor-languide-menu-items))
+
+;; todo: put it on the main menu
 
 (defun versor-languide-menu ()
   "Run the versor languide menu."
@@ -44,14 +49,25 @@
 
 (fset 'languide-map languide-map)
 
-(define-key languide-map "v" 'versor-convert-selection-to-variable)
+(define-key languide-map "=" 'versor-convert-selection-to-variable)
 (define-key languide-map "f" 'versor-convert-selection-to-function)
 (define-key languide-map "g" 'versor-convert-selection-to-global-variable)
 (define-key languide-map "(" 'versor-surround-selection-with-call)
 (define-key languide-map ")" 'versor-remove-function-call)
 (define-key languide-map "{" 'versor-unify-statements)
-(define-key languide-map "=" 'versor-enclosing-scoping-point)
-(define-key languide-map "?" 'versor-enclosing-decision-point)
+; (define-key languide-map "=" 'versor-enclosing-scoping-point)
+(define-key languide-map "?" 'versor-make-conditional)
 (define-key languide-map ";" 'versor-comment-selection)
+
+(define-key global-map "\M-#" 'languide-map)
+
+;; todo: make languide toolbar -- see example from info:
+;; (defvar info-tool-bar-map
+;;    (if (display-graphic-p)
+;;       (let ((tool-bar-map (make-sparse-keymap)))
+;; 	(tool-bar-add-item-from-menu 'Info-exit "close" Info-mode-map)
+;; 	(tool-bar-add-item-from-menu 'Info-prev "left_arrow" Info-mode-map)
+;; ...
+
 
 ;;; end of languide-keymap.el
