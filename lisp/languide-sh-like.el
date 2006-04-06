@@ -1,5 +1,5 @@
 ;;;; languide-sh-like.el -- shell etc definitions for language-guided editing
-;;; Time-stamp: <2006-03-28 21:30:34 jcgs>
+;;; Time-stamp: <2006-03-29 20:51:01 john>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -39,21 +39,39 @@ will go forward another statement."
 (defmodal beginning-of-statement-internal (sh-mode) ()
   "Move to the beginning of the statement.
 Do not do auxiliary stuff that might be associated with this."
-)
+  (interactive)
+  (let ((bol (line-beginning-position))
+	(semicolon (if (search-backward ";" nil t)
+		       (match-end 0)
+		     (point-min))))
+    (goto-char (max bol semicolon))
+    (skip-to-actual-code)))
 
 (defmodal end-of-statement-internal (sh-mode) ()
   "Move to the end of the current statement.
 Do not do auxiliary stuff that might be associated with this."
   (interactive)
+  (message "Starting by going to beginning from %d" (point))
+  (beginning-of-statement-internal)
   (let ((type (identify-statement nil)))
+    (message "Statement type at %d is %S" (point) type)
     (cond
-     ((memq type '(if-then if-then-else))
-      (message "on \"if\", looking for \"fi\"")
-      (while (not (looking-at "fi"))
-	(next-statement-internal 1)
-	(message "Moved forward a statement, now looking at %s..." (buffer-substring-no-properties (point) (+ 24 (point))))
-	)
-
+     ((memq type '(if-then if-then-else switch for while))
+      (let ((end (compound-statement-close)))
+	(message "Is compound, moving over contained statements until %s" end)
+	;; get onto first substatement
+	(cond
+	 ;; todo: these searches should be special ones that skip comments, etc
+	 ((memq type '(for while)) (re-search-forward "\\<do\\>"))
+	 ((eq type 'if) (re-search-forward "\\<then\\>")))
+	(skip-to-actual-code)
+	(while (not (looking-at end))
+	  (next-statement-internal 1)
+	  (message "Moved forward a statement, now looking at %s..." (buffer-substring-no-properties (point) (+ 24 (point))))
+	  (skip-to-actual-code)
+	  )
+	(goto-char (match-end 0)))
+      
       )
      ((null type)
       (let ((eol (line-end-position))
@@ -69,14 +87,15 @@ If the statement cannot be identified, return DEFAULT."
   (cond
    ((looking-at "[a-z_]+\\s-*=") 'assignment)
    ((looking-at "case") 'switch)
-   ((looking-at "[^(]+)") 'case)
    ((looking-at "if")
     'if-then				; todo: spot if-then-else
     )
    ((looking-at "while") 'while)
+   ((looking-at "for") 'for)
    ((looking-at "exit") 'return)
    ((looking-at "shift") 'shift)
    ((looking-at "export") 'export)
+   ((looking-at "[-a-z0-9_*.$]+).*$") 'case)
    (t default)
    )
 )
