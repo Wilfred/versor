@@ -1,5 +1,5 @@
 ;;;; languide-keymap.el -- keymap and menu setup for languide
-;;; Time-stamp: <2006-03-28 09:04:41 jcgs>
+;;; Time-stamp: <2006-04-06 16:05:40 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -57,6 +57,8 @@
 (define-key languide-map "{" 'versor-unify-statements)
 ; (define-key languide-map "=" 'versor-enclosing-scoping-point)
 (define-key languide-map "?" 'versor-make-conditional)
+(define-key languide-map "@" 'versor-make-iterative)
+(define-key languide-map "^" 'versor-remove-control)
 (define-key languide-map ";" 'versor-comment-selection)
 
 (define-key global-map "\M-#" 'languide-map)
