@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-03-31 20:41:02 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -87,7 +87,7 @@ Argument 1 means the current statement, 2 the next, etc."
 (defun previous-statement-internal (n)
   "Move to the NTH previous statement.
 If calling this from a program, other than inside statement navigation,
-you should possibly use next-statement instead.
+you should possibly use previous-statement instead.
 There an element of DWIM to this:
   If not at the beginning of the statement, move to the beginning of it.
   If already at the beginning, move to the beginning of the previous one.
@@ -95,6 +95,8 @@ Then, if N is greater than 1, move back N-1 more statements."
   (let ((starting-point (point))
 	(previous-end nil))
     (languide:debug-message 'previous-statement "Going back %d statements" n)
+    ;; first, try going back to the start of a statement, to see
+    ;; whether we end up where we started:
     (beginning-of-statement-internal)
     (when (= (point) starting-point) ; this means we were already at the start, so go back another
       (languide:debug-message 'previous-statement "Was already at start, going back an extra one")
@@ -108,14 +110,17 @@ Then, if N is greater than 1, move back N-1 more statements."
       (beginning-of-statement-internal)
       (languide:debug-message 'previous-statement "Now gone back another statement, to %d" (point))
       (decf n))
-    (languide:debug-message 'previous-statement "final move to beginning of statement")
-    (languide:debug-message 'previous-statement "that gets us to %d" (point))
+    (languide:debug-message 'previous-statement "final move to %d \"%s\" to beginning of statement" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
     (let ((end (if (and versor-statement-up-to-next previous-end)
 		   previous-end
 		 (save-excursion
 		   (let ((start (point)))
+		     (languide:debug-message 'previous-statement "Looking for end of statement, from %d" start)
 		     (condition-case nil
-			 (end-of-statement-internal)
+			 (progn
+			   (end-of-statement-internal)
+			   (languide:debug-message 'previous-statement "That got us to %d for end of statement" (point))
+		       )
 		       (error (message "Could not find end of statement")))
 		     (point))))))
       end)))
@@ -173,7 +178,9 @@ you should possibly use next-statement instead."
   "Move to the NTH next statement, and set up the statement variables."
   (interactive "p")
   (versor-as-motion-command
-   (next-statement-internal n)
+   (unless (eq navigated-latest-part 'body)
+     (next-statement-internal n)
+     (setq navigated-latest-part 'whole))
    (languide:debug-message 'next-statement
 			   "Finding both ends of the new current statement, currently at start=%d"
 			   (point))
