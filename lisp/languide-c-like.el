@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-03-28 20:58:03 jcgs>
+;;; Time-stamp: <2006-03-31 20:49:50 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -117,6 +117,13 @@ Need only work if already at or just beyond the end of a statement."
   (goto-char (safe-scan-sexps (point) -1))
 )
 
+(defvar c-like-function-type-modifiers
+  (concat "\\(" (mapconcat 'identity
+			   '("static" "struct" "extern" "public" "private")
+			   "\\)\\|\\(")
+	  "\\)")
+  "Things that can appear before the actual types of functions.")
+
 (defun continue-back-past-curly-ket (starting-point)
   "Continue to back to the start of a C statement, having got back to a closing curly bracket."
   ;; taken out-of-line for readability of surrounding code
@@ -176,6 +183,25 @@ Need only work if already at or just beyond the end of a statement."
       (goto-char (safe-scan-sexps (point) -2))
       )
 
+     ((save-excursion ; don't disturb things for the next clause's test
+	;; todo: add handling for java's "throws", etc
+	;; we are looking for the cases like:
+	;;   void function (...) { ... } *
+	(goto-char (safe-scan-sexps close -2))
+	(looking-at "("))
+      (languide:debug-message 'continue-back-past-curly-ket "got start of arglist")
+      ;; re-do the movement that we did inside the save-excursion
+      ;; above, and then carry on back past the function name and type
+      (goto-char (safe-scan-sexps close -4))
+      (languide:debug-message 'continue-back-past-curly-ket "Hope to be at function type and name at %d: \"%s\"" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+      (let ((type-possible-start-start (point)))
+	(while (progn
+		 (backward-word 1)
+		 (looking-at c-like-function-type-modifiers))
+	  (setq type-possible-start-start (point)))
+	(goto-char type-possible-start-start)))
+      
+
      ;; if it wasn't an else, try going back another sexp
      ((progn
 	(goto-char (safe-scan-sexps close -3))
@@ -207,7 +233,7 @@ Need only work if already at or just beyond the end of a statement."
 (defvar debug-overlays nil)
 
 (defun debug-overlay (from to text colour)
-  (when nil 
+  (when nil t 
     (let ((o (make-overlay from to)))
       (overlay-put o 'face (cons 'background-color colour))
       (overlay-put o 'before-string (format "[%s:" text))
@@ -263,15 +289,25 @@ Need only work if already at or just beyond the end of a statement."
 	;; go back if at "do { ... }  * while (...)", but not if at
 	;; "while (...) do { ... } *"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	(continue-back-past-curly-ket
-	 starting-point	   ; is this the right place to start it from?
-	 ))
+	 ;; starting-point	   ; is this the right place to start it from? no, I don't think so
+	 (point)
+	 )
+	(languide:debug-message 'beginning-of-statement-internal "gone back from close as possible ender, to %d" (point))
+	)
 
        ((looking-at ";")
 	(goto-char (match-end 0))
 	(let ((following-code (skip-to-actual-code)))
 	  (debug-overlay (point) (1+ (point)) "found semicolon as possible ender" "cyan")
 	  (languide:debug-message 'beginning-of-statement-internal "found semicolon as possible ender at %d, code following it is at %d" (point) following-code)
-	  ;; not sure what's going on here, document it!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	  ;; We have looked back from point, and found that the
+	  ;; nearest thing that could be the end of the previous
+	  ;; statement is a semicolon. then we've gone forward to the
+	  ;; first thing that is not a space or comment, and by
+	  ;; comparing a that position with that of the semicolon, we
+	  ;; can work out whether we have just gone straight to the
+	  ;; start of the current statement, or whether it is some
+	  ;; other case, such as the else part of an if-then-else
 	  (if (<= following-code starting-point)
 	      (progn
 		;; this is the "abcd;    fg*hi" case
@@ -289,9 +325,11 @@ Need only work if already at or just beyond the end of a statement."
 	    (progn
 	      ;; this is the "abcd;  *  fghi" case
 	      (debug-overlay (point) (1+ (point)) "code following semicolon is after where we started, go back another statement" "pale green")
-	      (languide:debug-message 'beginning-of-statement-internal "code following semicolon is after where we started, go back another statement")
+	      (languide:debug-message 'beginning-of-statement-internal "code following semicolon is after where we started, so we were in the space between two statements; therefore go back another statement")
 	      (goto-char (- possible-ender 1))
-	      (beginning-of-statement-internal))))
+	      (languide:debug-message 'beginning-of-statement-internal "beginning-of-statement-internal recursing")
+	      (beginning-of-statement-internal)
+	      (languide:debug-message 'beginning-of-statement-internal "beginning-of-statement-internal done recursing"))))
 	(when (save-excursion ; this is old version, is it right????????????????
 		(parse-partial-sexp (point) starting-point
 				    nil	; targetdepth
@@ -316,8 +354,10 @@ Need only work if already at or just beyond the end of a statement."
 	(languide:debug-message 'beginning-of-statement-internal
 				"in blank area at %d..%d" (point) (1+ starting-point))
       (languide:debug-message 'beginning-of-statement-internal
-			      "final step of b-o-s-i: not in blank")
-      (skip-to-actual-code starting-point))
+			      "final step of b-o-s-i: not in blank; at %d: \"%s\"" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+      (skip-to-actual-code starting-point)
+      (languide:debug-message 'beginning-of-statement-internal "skip-to-actual-code with limit of %d got to %d: \"%s\"" starting-point (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+      )
       (debug-overlay (point) starting-point "Finished" "purple"))
   (languide:debug-message 'beginning-of-statement-internal
 			  "beginning-of-statement-internal finished at %d" (point)))
@@ -507,29 +547,31 @@ this does not have to work."
     (while in-comment-or-string
       ;; todo: this is wrong, it can find a preceding and closed container
       ;; (search-backward "{" (point-min) t) ; leaves point at end of match
-      (backward-up-list)
-      (let ((result (save-excursion (parse-partial-sexp bod (point)
-							0 ; target-depth
-							nil ; stop-before
-							nil ; state
-							nil ; stop-comment
-							))))
-	(languide:debug-message 'statement-container "parse-partial-sexp returned %S" result)
-	(setq in-comment-or-string (or
-				    ;; emacs19 doesn't give us that handy 8th element!
-				    (nth 8 result)
+      (if (backward-up-list)
+	  (let ((result (save-excursion (parse-partial-sexp bod (point)
+							    0 ; target-depth
+							    nil	; stop-before
+							    nil	; state
+							    nil	; stop-comment
+							    ))))
+	    (languide:debug-message 'statement-container "parse-partial-sexp returned %S" result)
+	    (setq in-comment-or-string (or
+					;; emacs19 doesn't give us that handy 8th element!
+					(nth 8 result)
 
-				    ;;					(languide-c-inside-for-control)
-				    ;;					(if (nth 3 result) t nil)
-				    ;;					(nth 4 result)
+					;;					(languide-c-inside-for-control)
+					;;					(if (nth 3 result) t nil)
+					;;					(nth 4 result)
 
-				    ))
-	(when in-comment-or-string (goto-char in-comment-or-string))
-	(languide:debug-message 'statement-container "in-comment-or-string=%S" in-comment-or-string)
-	;;	    (if in-comment-or-string
-	;;		(forward-char 1))
+					))
+	    (when in-comment-or-string (goto-char in-comment-or-string))
+	    (languide:debug-message 'statement-container "in-comment-or-string=%S" in-comment-or-string)
+	    ;;	    (if in-comment-or-string
+	    ;;		(forward-char 1))
 
-	))
+	    )
+	;; could not move out any more; set flag so we terminate now
+	(setq in-comment-or-string nil)))
     ;; We are now at the opening brace (or have reached the outermost level, and were there anyway)
     (safe-scan-sexps (point) 1)))
 
@@ -1150,6 +1192,9 @@ Otherwise return nil."
   "While statement."
   (head "while" (expression-contents))
   (body "while" (expression) (statement-contents))
+  (framework (remember "while") (remember "(") (expressions) (remember ")")
+	     (skip-to-actual-code) (continue-if "{")
+	     (remember "{") (expressions) (remember "}"))
   (create (template & > "while (" p ") {" n>
 		    r "}"))
   (begin-end "while () {" "}")
