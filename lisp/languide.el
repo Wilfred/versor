@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-03-27 19:02:31 jcgs>
+;;; Time-stamp: <2006-03-31 20:33:48 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -86,7 +86,7 @@
 
 ;;;; debugging
 
-(defvar languide:debug-messages t)
+(defvar languide:debug-messages nil)
 (defvar debug-functions '(
 			 ;;  beginning-of-statement-internal
 			  ;; end-of-statement-internal
@@ -100,7 +100,8 @@
   (when (and languide:debug-messages
 	     (or (null debug-functions)
 		 (memq function debug-functions)))
-    (message "%S: %s" function (apply 'format format args)))
+    (message "%S: %s (press key)" function (apply 'format format args))
+    (read-char))
   (when (numberp languide:debug-messages)
     (sit-for languide:debug-messages)))
 
@@ -225,16 +226,16 @@ Returns the new point."
   (backward-out-of-comment)
   (while (progn
 	   (skip-syntax-forward "->")
-	   ;; (message "now at %d" (point))
+	   (languide:debug-message 'skip-to-actual-code "now at %d" (point))
 	   (if (looking-at "\\s<")
 	       (progn
-		 (message "at comment start")
+		 (languide:debug-message 'skip-to-actual-code "at comment start at %d" (point))
 		 (re-search-forward "\\s>" limit t))
 	     (if (and (stringp comment-start-skip)
 		      (stringp comment-end)
 		      (looking-at comment-start-skip))
 		 (progn
-		   (message "at comment-start")
+		   (languide:debug-message 'skip-to-actual-code "at comment-start-skip at %d" (point))
 		   (goto-char (match-end 0))
 		   (search-forward comment-end limit t))
 	       nil))))
