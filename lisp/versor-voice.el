@@ -1,5 +1,5 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2006-03-28 08:47:34 jcgs>
+;;; Time-stamp: <2006-04-06 08:34:27 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -28,6 +28,17 @@
   "Vocal movement commands for versor.
 Generated automatically from the movement dimensions table, moves-moves.")
 
+(defun singular (plural)
+  "Try to make a plausible singular form of PLURAL."
+  (cond
+   ((string-match "\\([a-z]+\\)s" plural)
+    (match-string 1 plural))
+   ((string-match "\\([a-z]+\\)ren" plural)
+    (match-string 1 plural))
+   ((string-match "\\([a-z]+\\)en" plural)
+    (match-string 1 plural))
+   (t plural)))
+
 (defun define-versor-vocal ()
   "Define the vocal commands."
   (interactive)
@@ -48,7 +59,9 @@ Generated automatically from the movement dimensions table, moves-moves.")
 	       :test 'equal))
 
     (dolist (action '("first" "previous" "next" "last"))
-      (let* ((action-function-name (intern (concat action "-" level)))
+      (let* ((unit (singular level))
+	     (action-function-name (intern (format "versor-voice-%s-%s" action unit)))
+	     (action-voice-command (format "%s %s" action unit))
 	     (action-function-body `(lambda (n)
 				      ,(format "Move to the %s %s" action level)
 				      (interactive "p")
@@ -59,7 +72,7 @@ Generated automatically from the movement dimensions table, moves-moves.")
 					(funcall action n)))))
 	(unless (boundp action-function-name)
 	  (fset action-function-name action-function-body))
-	(pushnew action-function-name
+	(pushnew (cons action-voice-command action-function-name)
 		 vr-versor-dimension-command-list
 		 :test 'equal))))
 
