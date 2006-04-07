@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-03-27 19:10:40 jcgs>
+;;; Time-stamp: <2006-04-07 16:43:54 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -470,17 +470,39 @@ Stay within the current sentence."
 	(setq n 0))
       (decf n))))
 
+(defun end-of-phrase (&rest ignore)
+  "Move to the end of the current phrase."
+  (interactive)
+  (let ((sentence (save-excursion
+		    (forward-sentence 1)
+		    (point))))
+    (if (re-search-forward phrase-end sentence t)
+      (goto-char (match-beginning 0))
+      (goto-char (1- sentence)))))
+
 (defun backward-phrase (n)
   "Move backward a phrase.
 Stay within the current sentence."
   (interactive "p")
-  (let ((sentence (save-excursion
-		    (backward-sentence 1)
-		    (point))))
+  (let* ((old-point (point))
+	 (sentence (save-excursion
+		     (backward-sentence 1)
+		     (point)))
+	 (using-sentence-start nil)
+	 (in-end-area (save-excursion
+			(re-search-backward phrase-end sentence t)
+			(if (>= (match-end 0) old-point)
+			    (match-beginning 0)
+			  nil))))
+    (when in-end-area
+      (goto-char in-end-area))
     (while (> n 0)
       (unless (re-search-backward phrase-end sentence 'stay)
-	(setq n 0))
-      (decf n))))
+	(setq n 0
+	      using-sentence-start t))
+      (decf n))
+    (unless using-sentence-start
+      (goto-char (match-end 0)))))
 
 ;; left over from trying a buffer selection dimension
 ;; (defun next-buffer ()
@@ -551,6 +573,35 @@ PROPERTIES is given as an alist."
    (row-starter . "@item")
    (cell-starter . "@tab")))
 
+(versor-set-mode-properties
+ 'csv-mode
+ '((table-starter . (lambda (a b)
+		      (goto-char (point-min))
+		      (set-match-data (list (point) (point)))))
+   (table-ender . (lambda (a b)
+		    (goto-char (point-max))
+		    (set-match-data (list (point) (point)))))
+   (row-starter . (lambda (a b)
+		    (beginning-of-line 1)
+		    (set-match-data (list (point) (point)))))
+   (row-ender . (lambda (a b)
+		  (end-of-line 1)
+		  (set-match-data (list (point) (point)))))
+   (next-row . (lambda (n)
+		 (beginning-of-line (1+ n))))
+   (previous-row . (lambda (n)
+		     (beginning-of-line (- 1 n))))
+   (cell-starter . (lambda (a b)
+		     (csv-forward-field 1)
+		     (set-match-data (list (point) (point)))))
+   (cell-ender . (lambda (a b)
+		   (csv-backward-field 1)
+		   (set-match-data (list (point) (point)))))
+   (next-cell . (lambda (n)
+		  (csv-forward-field n)))
+   (previous-cell . (lambda (n)
+		      (csv-backward-field n)))))
+
 (defun versor-table-starter ()
   "Return the table starter regexp for the current major mode."
   (or (get major-mode 'table-starter)
@@ -570,6 +621,14 @@ PROPERTIES is given as an alist."
   "Return the row ender regexp for the current major mode."
    (get major-mode 'row-ender))
 
+(defun versor-row-next ()
+  "Return the next row function for the current major mode."
+   (get major-mode 'next-row))
+
+(defun versor-row-previous ()
+  "Return the previous row function for the current major mode."
+   (get major-mode 'previous-row))
+
 (defun versor-cell-starter ()
   "Return the cell starter regexp for the current major mode."
   (or (get major-mode 'cell-starter)
@@ -579,12 +638,34 @@ PROPERTIES is given as an alist."
   "Return the cell ender regexp for the current major mode."
   (get major-mode 'cell-ender))
 
+(defun versor-cell-next ()
+  "Return the next cell function for the current major mode."
+   (get major-mode 'next-cell))
+
+(defun versor-cell-previous ()
+  "Return the previous cell function for the current major mode."
+   (get major-mode 'previous-cell))
+
+
+(defun re-search-forward-callable (regexp &optional bound noerror)
+  "Like re-search-forward, but REGEXP can be a function.
+If so, it is called on the other two arguments."
+  (if (functionp regexp)
+      (funcall regexp bound noerror)
+    (re-search-forward regexp bound noerror)))
+
+(defun re-search-backward-callable (regexp &optional bound noerror)
+  "Like re-search-backward, but REGEXP can be a function.
+If so, it is called on the other two arguments."
+  (if (functionp regexp)
+      (funcall regexp bound noerror)
+    (re-search-backward regexp bound noerror)))
+
 (defun versor-first-cell ()
   "Move to the first cell of the current row."
-  ;; todo: finish this properly
   (interactive)
-  (if (and (search-backward (versor-row-starter) (point-min) t)
-	   (re-search-forward (versor-cell-starter) (point-max) t))
+  (if (and (re-search-backward-callable (versor-row-starter) (point-min) t)
+	   (re-search-forward-callable (versor-cell-starter) (point-max) t))
       t
     (error "Could not locate first cell.")))
 
@@ -592,52 +673,64 @@ PROPERTIES is given as an alist."
   "Move to the previous cell."
   ;; todo: limit to within this row? or at least not include the row markup line
   (interactive "p")
-  (let* ((cell-starter (versor-cell-starter)))
-    (while (> n -1)
-      (backward-char 1)
-      (re-search-backward cell-starter (point-min) t)
-      (setq n (1- n)))
-    (let ((start-starter (point))
-	  (start-ender (match-end 0))
-	  (ender (versor-cell-ender)))
-      (save-excursion
-	(if ender
-	    (re-search-forward ender (point-max) t)
-	  (forward-char 1)
-	  (re-search-forward (versor-cell-starter) (point-max) t)
-	  (goto-char (1- (match-beginning 0))))
-	(versor-set-current-item start-starter (point)))
-      (goto-char start-ender)
-      (skip-to-actual-code))))
+  (let ((direct-action (versor-cell-previous)))
+    (if direct-action
+	(funcall direct-action n)
+      (let* ((cell-starter (versor-cell-starter)))
+	(while (> n -1)
+	  (backward-char 1)
+	  (re-search-backward-callable cell-starter (point-min) t)
+	  (setq n (1- n)))
+	(let ((start-starter (point))
+	      (start-ender (match-end 0))
+	      (ender (versor-cell-ender)))
+	  (save-excursion
+	    (if ender
+		(re-search-forward-callable ender (point-max) t)
+	      (forward-char 1)
+	      (re-search-forward-callable (versor-cell-starter) (point-max) t)
+	      (goto-char (1- (match-beginning 0))))
+	    (versor-set-current-item start-starter (point)))
+	  (goto-char start-ender)
+	  (skip-to-actual-code))))))
 
 (defun versor-next-cell (n)
   "Move to the next cell."
   ;; todo: limit to within this row? or at least not include the row markup line
   (interactive "p")
-  (forward-char 1)
-  (let* ((starter (versor-cell-starter))
-	 (ender (versor-cell-ender)))
-    (while (> n 0)
-      (if (not (re-search-forward starter (point-max) t))
-	  (error "No more next cells")
-	(decf n)))
-    (let ((starter-start (match-beginning 0))
-	  (starter-end (point)))
-      (save-excursion
-	(if ender
-	    (re-search-forward ender (point-max) t)
-	  (forward-char 1)
-	  (re-search-forward (versor-cell-starter) (point-max) t)
-	  (goto-char (1- (match-beginning 0))))
-	(versor-set-current-item starter-start (point)))
-      (skip-to-actual-code))))
+  (let ((direct-action (versor-cell-next)))
+    (if direct-action
+	(funcall direct-action n)
+      (forward-char 1) ; so we can search for next starter even if already on one
+      (let* ((starter (versor-cell-starter))
+	     (ender (versor-cell-ender)))
+	(while (> n 0)
+	  (message "Searching from %d for starter %S" (point) starter)
+	  (if (not (re-search-forward-callable starter (point-max) t))
+	      (error "No more next cells")
+	    (decf n)))
+	(let ((starter-start (match-beginning 0))
+	      (starter-end (point)))
+	  (message "starter runs %d..%d, ender is %S" starter-start starter-end ender)
+	  (save-excursion
+	    (if ender
+		(re-search-forward-callable ender (point-max) t)
+	      (message "No ender, improvising by going just before next %S" starter)
+	      (forward-char 1)
+	      (re-search-forward-callable (versor-cell-starter) (point-max) t)
+	      (goto-char (1- (match-beginning 0))))
+	    (message "got %d as end position" (point))
+	    (versor-set-current-item starter-start (point)))
+	  (goto-char starter-end)
+	  (skip-to-actual-code)
+	  (message "went to starter-end %d and skipped to %d" starter-end (point)))))))
 
 (defun versor-last-cell ()
   "Move to the last cell of the current row."
   (interactive)
   ;; todo: finish this properly
-  (if (and (re-search-forward (versor-row-ender) (point-max) t)
-	   (re-search-backward (versor-cell-starter) (point-min) t))
+  (if (and (re-search-forward-callable (versor-row-ender) (point-max) t)
+	   (re-search-backward-callable (versor-cell-starter) (point-min) t))
       (goto-char (match-end 0))
     (error "Could not locate last cell")))
 
@@ -646,66 +739,72 @@ PROPERTIES is given as an alist."
   (interactive)
   ;; todo: finish this properly
   (if (and (search-backward (versor-table-starter) (point-min) t)
-	   (re-search-forward (versor-row-starter) (point-max) t))
+	   (re-search-forward-callable (versor-row-starter) (point-max) t))
       t
     (error "Could not locate first row")))
 
 (defun versor-previous-row (n)
   "Move to the previous row."
   (interactive "p")
-  (let* ((limit (save-excursion
-		  (re-search-backward (versor-table-starter) (point-min) t)
-		  (match-end 0)))
-	 (row-starter (versor-row-starter))
-	 (ender (versor-row-ender)))
-    (while (> n -1)
-      (backward-char 1)
-      (re-search-backward row-starter limit t)
-      (setq n (1- n)))
-      (let ((start-starter (point))
-	    (start-ender (match-end 0)))
-	(save-excursion
-	  (if ender
-	      (re-search-forward ender (point-max) t)
-	    (forward-char 1)
-	    (re-search-forward (versor-row-starter) (point-max) t)
-	    (goto-char (1- (match-beginning 0))))
-	  (versor-set-current-item start-starter (point)))
-	(goto-char start-ender)
-	(skip-to-actual-code))))
+  (let ((direct-action (versor-row-previous)))
+    (if direct-action
+	(funcall direct-action n)
+      (let* ((limit (save-excursion
+		      (re-search-backward-callable (versor-table-starter) (point-min) t)
+		      (match-end 0)))
+	     (row-starter (versor-row-starter))
+	     (ender (versor-row-ender)))
+	(while (> n -1)
+	  (backward-char 1)
+	  (re-search-backward-callable row-starter limit t)
+	  (setq n (1- n)))
+	(let ((start-starter (point))
+	      (start-ender (match-end 0)))
+	  (save-excursion
+	    (if ender
+		(re-search-forward-callable ender (point-max) t)
+	      (forward-char 1)
+	      (re-search-forward-callable (versor-row-starter) (point-max) t)
+	      (goto-char (1- (match-beginning 0))))
+	    (versor-set-current-item start-starter (point)))
+	  (goto-char start-ender)
+	  (skip-to-actual-code))))))
 
 (defun versor-next-row (n)
   "Move to the next row."
   (interactive "p")
-  (forward-char 1)
-  (let* ((ender (versor-row-ender))
-	 (limit (save-excursion
-		  (re-search-forward (versor-table-ender) (point-max) t)
-		  (match-beginning 0)))
-	 (row-starter (versor-row-starter)))
-    (while (> n 0)
-      (if (re-search-forward row-starter limit t)
-	  (decf n)		
-	(setq n 0)))
-    (let ((start-ender (point))
-	  (start-starter (match-beginning 0)))
-      (save-excursion
-	(if ender
-	    (re-search-forward ender limit t)
-	  (forward-char 1)
-	  (if (re-search-forward (versor-row-starter) limit t)
-	    (goto-char (1- (match-beginning 0)))
-	  (goto-char limit)))
-	(versor-set-current-item start-starter (point)))
-      (goto-char start-starter)
-      (skip-to-actual-code))))
+  (let ((direct-action (versor-row-next)))
+    (if direct-action
+	(funcall direct-action n)
+      (forward-char 1)
+      (let* ((ender (versor-row-ender))
+	     (limit (save-excursion
+		      (re-search-forward-callable (versor-table-ender) (point-max) t)
+		      (match-beginning 0)))
+	     (row-starter (versor-row-starter)))
+	(while (> n 0)
+	  (if (re-search-forward-callable row-starter limit t)
+	      (decf n)		
+	    (setq n 0)))
+	(let ((start-ender (point))
+	      (start-starter (match-beginning 0)))
+	  (save-excursion
+	    (if ender
+		(re-search-forward-callable ender limit t)
+	      (forward-char 1)
+	      (if (re-search-forward-callable (versor-row-starter) limit t)
+		  (goto-char (1- (match-beginning 0)))
+		(goto-char limit)))
+	    (versor-set-current-item start-starter (point)))
+	  (goto-char start-ender)
+	  (skip-to-actual-code))))))
 
 (defun versor-last-row ()
   "Move to the last row of the current table."
   (interactive)
   ;; todo: finish this properly
   (if (and (search-forward (versor-table-ender) (point-max) t)
-	   (re-search-backward (versor-row-starter) (point-min) t))
+	   (re-search-backward-callable (versor-row-starter) (point-min) t))
       (goto-char (match-end 0))
     (error "Could not locate last row")))
 
