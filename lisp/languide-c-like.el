@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-03-31 20:49:50 jcgs>
+;;; Time-stamp: <2006-04-10 13:55:51 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -38,7 +38,7 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
 	(re-search-backward "[{;}]"
 			    bod		; (point-min)
 			    t)	      ; leaves point at start of match
-	(languide:debug-message 'languide-c-back-to-possible-ender "Found a \"%s\" at %d" (match-string 0) (point))
+	(languide-debug-message 'languide-c-back-to-possible-ender "Found a \"%s\" at %d" (match-string 0) (point))
 	;; having found a character that can end a C statement,
 	;; we now parse from the start of the defun up to the
 	;; position of the character, to see whether the character
@@ -49,7 +49,7 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
 							  nil ; state
 							  nil ; stop-comment
 							  ))))
-	  (languide:debug-message 'languide-c-back-to-possible-ender "parse-partial-sexp returned %S" result)
+	  (languide-debug-message 'languide-c-back-to-possible-ender "parse-partial-sexp returned %S" result)
 	  (setq in-comment-or-string (or
 				      ;; emacs19 doesn't give us that handy 8th element!
 				      (nth 8 result)
@@ -57,7 +57,7 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
 				      (nth 4 result)
 				      (languide-c-inside-for-control)
 				      ))
-	  (languide:debug-message 'languide-c-back-to-possible-ender "in-comment-or-string=%S" in-comment-or-string)
+	  (languide-debug-message 'languide-c-back-to-possible-ender "in-comment-or-string=%S" in-comment-or-string)
 	  (if in-comment-or-string
 	      (if (numberp in-comment-or-string)
 		  (goto-char in-comment-or-string)
@@ -129,12 +129,12 @@ Need only work if already at or just beyond the end of a statement."
   ;; taken out-of-line for readability of surrounding code
   (let* ((close (point))
 	 (following-code (skip-to-actual-code)))
-    (languide:debug-message 'continue-back-past-curly-ket "From starting-point at %d, found close at %d, following code at %d is \"%s\"" starting-point close following-code (buffer-substring following-code (+ following-code 20)))
+    (languide-debug-message 'continue-back-past-curly-ket "From starting-point at %d, found close at %d, following code at %d is \"%s\"" starting-point close following-code (buffer-substring following-code (+ following-code 20)))
     (cond
      ;; first two cases are those where a keyword can follow a closing brace
      ;; and still be within a statement
      ((looking-at "\\<while\\>")
-      (languide:debug-message 'continue-back-past-curly-ket "Got \"while\" at %d, looking back to see which kind" (point))
+      (languide-debug-message 'continue-back-past-curly-ket "Got \"while\" at %d, looking back to see which kind" (point))
       ;; might be
       ;;   do { ... } * while ( ... )
       ;; or
@@ -142,20 +142,20 @@ Need only work if already at or just beyond the end of a statement."
       ;; and so must go back to check for the "do"
       ;; (languide-previous-substatement) ; we know it's a compound statement, or we wouldn't be in this function
       (goto-char (safe-scan-sexps (point) -2))
-      (languide:debug-message 'continue-back-past-curly-ket "Going back to check for \"do\"  gets us to %d:\"%s\"" (point) (buffer-substring (point) (+ (point) 20)))
+      (languide-debug-message 'continue-back-past-curly-ket "Going back to check for \"do\"  gets us to %d:\"%s\"" (point) (buffer-substring (point) (+ (point) 20)))
       (if (looking-at "\\<do\\>")
-	  (languide:debug-message 'continue-back-past-curly-ket "at \"do\", so remaining there")
-	(languide:debug-message 'continue-back-past-curly-ket "was not \"do\", going back to code after closing brace")
+	  (languide-debug-message 'continue-back-past-curly-ket "at \"do\", so remaining there")
+	(languide-debug-message 'continue-back-past-curly-ket "was not \"do\", going back to code after closing brace")
 	;; go back to the "while"
 	(goto-char following-code)))
      ((looking-at "\\<else\\>")
       ;; where we started was:
       ;;   if ( ... ) { ... } * else { ... }
       ;; and so we must go back over the "then", the condition, and the keyword
-      (languide:debug-message 'continue-back-past-curly-ket "Got \"else\" following closing brace, so going back")
+      (languide-debug-message 'continue-back-past-curly-ket "Got \"else\" following closing brace, so going back")
       ;; (languide-previous-substatement) ; we know it's a compound statement, or we wouldn't be in this function
       (goto-char (safe-scan-sexps (point) -3))
-      (languide:debug-message 'continue-back-past-curly-ket "That got us to \"%s\" which I hope is an \"if\"" (buffer-substring (point) (+ (point) 20))))
+      (languide-debug-message 'continue-back-past-curly-ket "That got us to \"%s\" which I hope is an \"if\"" (buffer-substring (point) (+ (point) 20))))
 
      ;; having dealt with both the "{ ... } <keyword>" cases,
      ;; now see whether we started inside a statement that follows a closing brace
@@ -164,7 +164,7 @@ Need only work if already at or just beyond the end of a statement."
       ;;   { ... } ab*cd // where the { ... } is a free-standing compound statement, or anything else
       ;; so we want to go to:
       ;;   { ... } *abcd
-      (languide:debug-message 'continue-back-past-curly-ket "We started inside the statement following a closing brace, so go to the start of that statement")
+      (languide-debug-message 'continue-back-past-curly-ket "We started inside the statement following a closing brace, so go to the start of that statement")
       (goto-char following-code))
 
      ;; next, try going back a statement and a keyword
@@ -177,7 +177,7 @@ Need only work if already at or just beyond the end of a statement."
 	;; let's see if that's got us to:
 	;;   if (...) { ... } *else { ... }
 	(looking-at "\\<else\\>"))
-      (languide:debug-message 'continue-back-past-curly-ket "Got else")
+      (languide-debug-message 'continue-back-past-curly-ket "Got else")
       (goto-char (safe-scan-sexps close -2)) ; re-do the movement that we did inside the save-excursion above
       (languide-previous-substatement)
       (goto-char (safe-scan-sexps (point) -2))
@@ -189,11 +189,11 @@ Need only work if already at or just beyond the end of a statement."
 	;;   void function (...) { ... } *
 	(goto-char (safe-scan-sexps close -2))
 	(looking-at "("))
-      (languide:debug-message 'continue-back-past-curly-ket "got start of arglist")
+      (languide-debug-message 'continue-back-past-curly-ket "got start of arglist")
       ;; re-do the movement that we did inside the save-excursion
       ;; above, and then carry on back past the function name and type
       (goto-char (safe-scan-sexps close -4))
-      (languide:debug-message 'continue-back-past-curly-ket "Hope to be at function type and name at %d: \"%s\"" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+      (languide-debug-message 'continue-back-past-curly-ket "Hope to be at function type and name at %d: \"%s\"" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
       (let ((type-possible-start-start (point)))
 	(while (progn
 		 (backward-word 1)
@@ -206,7 +206,7 @@ Need only work if already at or just beyond the end of a statement."
      ((progn
 	(goto-char (safe-scan-sexps close -3))
 	(looking-at "\\<\\(if\\)\\|\\(while\\)\\|\\(for\\)\\|\\(until\\)\\>"))
-      (languide:debug-message 'continue-back-past-curly-ket "Got if/while/for/until, staying there")
+      (languide-debug-message 'continue-back-past-curly-ket "Got if/while/for/until, staying there")
       )
 
      (t
@@ -216,18 +216,18 @@ Need only work if already at or just beyond the end of a statement."
       ;;   until ( ... ) { ... }
       ;;   for ( ... ) { ... }
       ;; or it could just be a free-standing code block
-      (languide:debug-message 'continue-back-past-curly-ket "Other case of closing brace, at \"%s\"" (buffer-substring (point) (+ (point) 20)))
+      (languide-debug-message 'continue-back-past-curly-ket "Other case of closing brace, at \"%s\"" (buffer-substring (point) (+ (point) 20)))
 
 
-      (languide:debug-message 'continue-back-past-curly-ket "Other case; going back to look before the brace... got \"%s\"" (buffer-substring (point) (+ (point) 20)))
-      (languide:debug-message 'continue-back-past-curly-ket "Remaining there contentedly")
+      (languide-debug-message 'continue-back-past-curly-ket "Other case; going back to look before the brace... got \"%s\"" (buffer-substring (point) (+ (point) 20)))
+      (languide-debug-message 'continue-back-past-curly-ket "Remaining there contentedly")
       (cond
 
 
        (t
-	(languide:debug-message 'continue-back-past-curly-ket "Before the brace was not if/while/for/until/else; assuming plain block")
+	(languide-debug-message 'continue-back-past-curly-ket "Before the brace was not if/while/for/until/else; assuming plain block")
 	(goto-char (safe-scan-sexps close -1))))))
-    (languide:debug-message 'continue-back-past-curly-ket "finished classifying code at close")
+    (languide-debug-message 'continue-back-past-curly-ket "finished classifying code at close")
     ))
 
 (defvar debug-overlays nil)
@@ -255,14 +255,14 @@ Need only work if already at or just beyond the end of a statement."
 	       (c-beginning-of-defun 1)
 	       (point))))
     (debug-overlay bod starting-point "back to bod" "red")
-    (languide:debug-message 'beginning-of-statement-internal "")
-    (languide:debug-message 'beginning-of-statement-internal "Starting beginning-of-statement-internal-c-perl at %d, with beginning-of-defun at %d" starting-point bod)
+    (languide-debug-message 'beginning-of-statement-internal "")
+    (languide-debug-message 'beginning-of-statement-internal "Starting beginning-of-statement-internal-c-perl at %d, with beginning-of-defun at %d" starting-point bod)
 
     (languide-c-back-to-possible-ender bod)
 
     (let ((possible-ender (point)))
       (debug-overlay possible-ender (1+ possible-ender) "possible-ender" "orange")
-      (languide:debug-message 'beginning-of-statement-internal "now at possible ender %d: \"%s\", which is not in a comment or string" (point) (buffer-substring (point) (min (point-max) (+ (point) 20))))
+      (languide-debug-message 'beginning-of-statement-internal "now at possible ender %d: \"%s\", which is not in a comment or string" (point) (buffer-substring (point) (min (point-max) (+ (point) 20))))
 
       ;; We've now found a statement delimiter, and checked that it is a
       ;; real one, and not part of a string or comment. Now we might make
@@ -272,7 +272,7 @@ Need only work if already at or just beyond the end of a statement."
       (cond
        ((looking-at "{")
 	(debug-overlay (point) (1+ (point)) "found open as possible ender" "cyan")
-	(languide:debug-message 'beginning-of-statement-internal "found open as possible ender")
+	(languide-debug-message 'beginning-of-statement-internal "found open as possible ender")
 	;; move one character forward (into the braced area) so that
 	;; when we skip whitespace and comments, we will be at the
 	;; start of the first statement in the braces
@@ -280,7 +280,7 @@ Need only work if already at or just beyond the end of a statement."
 
        ((looking-at "}")
 	(debug-overlay (point) (1+ (point)) "found close as possible ender" "cyan")
-	(languide:debug-message 'beginning-of-statement-internal "found close as possible ender at %d" (point))
+	(languide-debug-message 'beginning-of-statement-internal "found close as possible ender at %d" (point))
 	(forward-char 1)
 	;; this will take us back past the rest of the statement
 	;; todo: which is wrong in some cases, so fix that! Only go
@@ -292,14 +292,14 @@ Need only work if already at or just beyond the end of a statement."
 	 ;; starting-point	   ; is this the right place to start it from? no, I don't think so
 	 (point)
 	 )
-	(languide:debug-message 'beginning-of-statement-internal "gone back from close as possible ender, to %d" (point))
+	(languide-debug-message 'beginning-of-statement-internal "gone back from close as possible ender, to %d" (point))
 	)
 
        ((looking-at ";")
 	(goto-char (match-end 0))
 	(let ((following-code (skip-to-actual-code)))
 	  (debug-overlay (point) (1+ (point)) "found semicolon as possible ender" "cyan")
-	  (languide:debug-message 'beginning-of-statement-internal "found semicolon as possible ender at %d, code following it is at %d" (point) following-code)
+	  (languide-debug-message 'beginning-of-statement-internal "found semicolon as possible ender at %d, code following it is at %d" (point) following-code)
 	  ;; We have looked back from point, and found that the
 	  ;; nearest thing that could be the end of the previous
 	  ;; statement is a semicolon. then we've gone forward to the
@@ -313,11 +313,11 @@ Need only work if already at or just beyond the end of a statement."
 		;; this is the "abcd;    fg*hi" case
 		(goto-char following-code)
 		(debug-overlay (point) (1+ (point)) "code following semicolon is behind or at where we started, so here we are" "pale green")
-		(languide:debug-message 'beginning-of-statement-internal "code following semicolon is behind or at where we started, so here we are")
+		(languide-debug-message 'beginning-of-statement-internal "code following semicolon is behind or at where we started, so here we are")
 		(if (looking-at "else")
 		    (progn
 		      ;; this is the "if (xyz) abcd;    el*se mnop;" case
-		      (languide:debug-message 'beginning-of-statement-internal "Looking at else")
+		      (languide-debug-message 'beginning-of-statement-internal "Looking at else")
 		      (goto-char (- possible-ender 1)) ; just into the "then" statement
 		      (beginning-of-statement-internal)
 		      ;;;;;;;;;;;;;;;; probably more to do here?
@@ -325,11 +325,11 @@ Need only work if already at or just beyond the end of a statement."
 	    (progn
 	      ;; this is the "abcd;  *  fghi" case
 	      (debug-overlay (point) (1+ (point)) "code following semicolon is after where we started, go back another statement" "pale green")
-	      (languide:debug-message 'beginning-of-statement-internal "code following semicolon is after where we started, so we were in the space between two statements; therefore go back another statement")
+	      (languide-debug-message 'beginning-of-statement-internal "code following semicolon is after where we started, so we were in the space between two statements; therefore go back another statement")
 	      (goto-char (- possible-ender 1))
-	      (languide:debug-message 'beginning-of-statement-internal "beginning-of-statement-internal recursing")
+	      (languide-debug-message 'beginning-of-statement-internal "beginning-of-statement-internal recursing")
 	      (beginning-of-statement-internal)
-	      (languide:debug-message 'beginning-of-statement-internal "beginning-of-statement-internal done recursing"))))
+	      (languide-debug-message 'beginning-of-statement-internal "beginning-of-statement-internal done recursing"))))
 	(when (save-excursion ; this is old version, is it right????????????????
 		(parse-partial-sexp (point) starting-point
 				    nil	; targetdepth
@@ -338,7 +338,7 @@ Need only work if already at or just beyond the end of a statement."
 		(= (point) starting-point))
 	  (debug-overlay (min starting-point (point)) (max starting-point (point))
 			 "no code between it and where we were" "blue")
-	  (languide:debug-message 'beginning-of-statement-internal
+	  (languide-debug-message 'beginning-of-statement-internal
 				  "no code between it and where we were (%d); am now at %d"
 				  starting-point (point))
 	  (backward-char 1)
@@ -346,20 +346,20 @@ Need only work if already at or just beyond the end of a statement."
 
     ;; now we're at a real statement delimiter
     (debug-overlay (point) (1+ (point)) "back to real delimiter" "yellow")
-    (languide:debug-message 'beginning-of-statement-internal
+    (languide-debug-message 'beginning-of-statement-internal
 			    "Now at real delimiter, skip to code; am at %d, starting-point is %d"
 			    (point) starting-point)
     ;;;;;;;;;;;;;;;; why this "unless"? find out, and comment it!
     (if (blank-between (point) (1+ starting-point))
-	(languide:debug-message 'beginning-of-statement-internal
+	(languide-debug-message 'beginning-of-statement-internal
 				"in blank area at %d..%d" (point) (1+ starting-point))
-      (languide:debug-message 'beginning-of-statement-internal
+      (languide-debug-message 'beginning-of-statement-internal
 			      "final step of b-o-s-i: not in blank; at %d: \"%s\"" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
       (skip-to-actual-code starting-point)
-      (languide:debug-message 'beginning-of-statement-internal "skip-to-actual-code with limit of %d got to %d: \"%s\"" starting-point (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+      (languide-debug-message 'beginning-of-statement-internal "skip-to-actual-code with limit of %d got to %d: \"%s\"" starting-point (point) (buffer-substring-no-properties (point) (+ 24 (point))))
       )
       (debug-overlay (point) starting-point "Finished" "purple"))
-  (languide:debug-message 'beginning-of-statement-internal
+  (languide-debug-message 'beginning-of-statement-internal
 			  "beginning-of-statement-internal finished at %d" (point)))
 
 (defmodal end-of-statement-internal (c-mode perl-mode java-mode) ()
@@ -370,21 +370,21 @@ Need only work if already at or just beyond the end of a statement."
 	(bod (save-excursion
 	       (c-beginning-of-defun 1)
 	       (point))))
-    (languide:debug-message 'end-of-statement-internal "Starting end-of-statement-internal at %d, with beginning-of-defun at %d" old bod)
+    (languide-debug-message 'end-of-statement-internal "Starting end-of-statement-internal at %d, with beginning-of-defun at %d" old bod)
     ;; (if (looking-at "{") (backward-char 1))
     (let ((in-comment-or-string t))
       ;; keep looking for the possible start of a statement, and checking that
       ;; it is not part of a comment or string
       (while in-comment-or-string
 	(re-search-forward "[{;}]" (point-max) t) ; leaves point at end of match
-	(languide:debug-message 'end-of-statement-internal "Found a \"%s\" at %d" (match-string 0) (point))
+	(languide-debug-message 'end-of-statement-internal "Found a \"%s\" at %d" (match-string 0) (point))
 	(let ((result (save-excursion (parse-partial-sexp bod (point)
 							  0 ; target-depth
 							  nil ; stop-before
 							  nil ; state
 							  nil ; stop-comment
 							  ))))
-	  (languide:debug-message 'end-of-statement-internal "parse-partial-sexp returned %S" result)
+	  (languide-debug-message 'end-of-statement-internal "parse-partial-sexp returned %S" result)
 	  (setq in-comment-or-string (or
 				      ;; emacs19 doesn't give us that handy 8th element!
 				      (nth 8 result)
@@ -392,24 +392,24 @@ Need only work if already at or just beyond the end of a statement."
 				      (if (nth 3 result) t nil)
 				      (nth 4 result)
 				      ))
-	  (languide:debug-message 'end-of-statement-internal "in-comment-or-string=%S" in-comment-or-string)
+	  (languide-debug-message 'end-of-statement-internal "in-comment-or-string=%S" in-comment-or-string)
 	  (if in-comment-or-string
 	      (forward-char 1)))))
 
-    (languide:debug-message 'end-of-statement-internal "Now at %d=%c, which is not in a comment or string; the latest match, which is \"%s\", starts at %d"
+    (languide-debug-message 'end-of-statement-internal "Now at %d=%c, which is not in a comment or string; the latest match, which is \"%s\", starts at %d"
 			    (point) (char-after (point)) (match-string 0) (match-beginning 0))
     (cond
      ((= (char-after (1- (point))) ?{)
-      (languide:debug-message 'end-of-statement-internal "Found block start")
+      (languide-debug-message 'end-of-statement-internal "Found block start")
       (backward-char 1)
       (forward-sexp 1)))
     (cond
      ((save-excursion
-	(languide:debug-message 'end-of-statement-internal "skipping from %d to look for else" (point))
+	(languide-debug-message 'end-of-statement-internal "skipping from %d to look for else" (point))
 	(skip-to-actual-code)
-	(languide:debug-message 'end-of-statement-internal "skipped to %d to look for else" (point))
+	(languide-debug-message 'end-of-statement-internal "skipped to %d to look for else" (point))
 	(looking-at "else"))
-      (languide:debug-message 'end-of-statement-internal "Found ELSE")
+      (languide-debug-message 'end-of-statement-internal "Found ELSE")
       (forward-sexp 1)
       (end-of-statement-internal)
       )
@@ -424,12 +424,12 @@ Need only work if already at or just beyond the end of a statement."
 	      (if (looking-at "[ \t\r\n]")
 		  (skip-to-actual-code))
 	      (looking-at "[;}]"))
-	(languide:debug-message 'end-of-statement-internal "That WHILE is part of a DO")
+	(languide-debug-message 'end-of-statement-internal "That WHILE is part of a DO")
 	(skip-to-actual-code)
 	(forward-sexp 2)
 	(if (looking-at "[ \t\r\n]")
 	    (skip-to-actual-code))))))
-  (languide:debug-message 'end-of-statement-internal
+  (languide-debug-message 'end-of-statement-internal
 			  "end-of-statement-internal finished at %d" (point)))
 
 (defvar c-binding-regexp-1
@@ -466,7 +466,7 @@ We must be at the start of the statement already, otherwise
 this does not have to work."
   (cond
    ((looking-at "\\(do\\)\\|\\(for\\)\\|\\(while\\)\\|\\(if\\)\\|\\(return\\)\\|\\(switch\\)\\|\\(continue\\)\\|\\(default\\)\\|\\(case\\)")
-    (languide:debug-message 'identify-statement "identify-statement-c-mode found %s" (match-string 0))
+    (languide-debug-message 'identify-statement "identify-statement-c-mode found %s" (match-string 0))
     (let ((keyword-string (buffer-substring-no-properties (match-beginning 0) (match-end 0))))
       (cond
        ((string= keyword-string "if")
@@ -554,7 +554,7 @@ this does not have to work."
 							    nil	; state
 							    nil	; stop-comment
 							    ))))
-	    (languide:debug-message 'statement-container "parse-partial-sexp returned %S" result)
+	    (languide-debug-message 'statement-container "parse-partial-sexp returned %S" result)
 	    (setq in-comment-or-string (or
 					;; emacs19 doesn't give us that handy 8th element!
 					(nth 8 result)
@@ -565,7 +565,7 @@ this does not have to work."
 
 					))
 	    (when in-comment-or-string (goto-char in-comment-or-string))
-	    (languide:debug-message 'statement-container "in-comment-or-string=%S" in-comment-or-string)
+	    (languide-debug-message 'statement-container "in-comment-or-string=%S" in-comment-or-string)
 	    ;;	    (if in-comment-or-string
 	    ;;		(forward-char 1))
 

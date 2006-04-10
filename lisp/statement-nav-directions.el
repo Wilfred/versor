@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-03-28 18:58:04 jcgs>
+;;; Time-stamp: <2006-04-10 15:58:05 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,9 @@
 
 (provide 'statement-nav-directions)
 
+(defconst languide-parts '("container" "framework" "whole" "head" "body" "tail")
+  "The parts we can navigate to.")
+
 (defun navigate-to (part)
   "Navigate to PART of the current statement."
   (setq navigated-latest-part part)
@@ -38,11 +41,11 @@
 	 (prelocated (latest-move-was-languide))
 	 (statement-start (if prelocated
 			      (progn
-				(languide:debug-message 'navigate-to "re-using statement position from latest-statement-known=%S" latest-statement-known)
+				(languide-debug-message 'navigate-to "re-using statement position from latest-statement-known=%S" latest-statement-known)
 				(car latest-statement-known))
 			    (progn
 			      (beginning-of-statement-internal)
-			      (languide:debug-message 'navigate-to "navigate-to %S found statement begins \"%s\""
+			      (languide-debug-message 'navigate-to "navigate-to %S found statement begins \"%s\""
 						      part (buffer-substring (point) (+ 20 (point))))
 			      (point))))
 	 (remembered (statement-find-part statement-start part)))

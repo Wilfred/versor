@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-03-28 18:06:58 jcgs>
+;;; Time-stamp: <2006-04-10 14:49:34 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -71,7 +71,7 @@ other emacs commands.")
 				     (make-overlay (car item) (cdr item)))))
 		      (overlay-put overlay 'face
 				   (if versor-use-face-attributes
-				       'versor-item
+				       'versor-item-face
 				     'region))
 		      overlay))
 		  items))
@@ -195,7 +195,7 @@ You should normally call versor-set-current-item rather than this."
       (setq versor-items (list overlay))
       (overlay-put overlay 'face
 		   (if versor-use-face-attributes
-		       'versor-item
+		       'versor-item-face
 		     'region)
 		   )))
   (move-overlay (versor-item-overlay) start end (current-buffer)))
@@ -205,7 +205,7 @@ You should normally call versor-set-current-item rather than this."
   (let ((overlay (make-overlay start end (current-buffer))))
     (overlay-put overlay 'face
 		 (if versor-use-face-attributes
-		     'versor-item
+		     'versor-item-face
 		   'region))
     (rplacd versor-items
 	    (cons overlay

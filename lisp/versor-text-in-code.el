@@ -1,5 +1,5 @@
 ;;; versor-text-in-code.el -- versatile cursor handling of strings and comments
-;;; Time-stamp: <2006-04-10 10:17:19 john>
+;;; Time-stamp: <2006-04-10 16:09:43 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -68,18 +68,20 @@ Meant to go on post-command-hook."
 			versor-meta-level versor-text-meta-level
 			versor-level versor-text-level)
 		  (versor-set-status-display t)
-		  (message "Arrived in comment or string, using %s:%s"
-			   (versor-meta-level-name versor-meta-level)
-			   (versor-level-name versor-level)))
+		  (when versor-announce-text-in-code
+		    (message "Arrived in comment or string, using %s:%s"
+			     (versor-meta-level-name versor-meta-level)
+			     (versor-level-name versor-level))))
 	      (progn
 		(setq versor-text-meta-level versor-meta-level
 		      versor-text-level versor-level
 		      versor-meta-level versor-non-text-meta-level
 		      versor-level versor-non-text-level)
 		(versor-set-status-display t)
-		(message "Left comment or string, returning to %s:%s"
-			 (versor-meta-level-name versor-meta-level)
-			 (versor-level-name versor-level))))))
+		(when versor-announce-text-in-code 
+		  (message "Left comment or string, returning to %s:%s"
+			   (versor-meta-level-name versor-meta-level)
+			   (versor-level-name versor-level)))))))
       (error (message "Error in versor-text-in-code")))))
 
 (add-hook 'post-command-hook 'versor-text-in-code-function)

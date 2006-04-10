@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-04-10 10:23:09 john>
+;;; Time-stamp: <2006-04-10 14:50:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -74,11 +74,11 @@ The result is in the form of a property list."
       (let ((attr-value (versor-action (versor-current-level)
 				       versor-item-attribute)))
 	(when attr-value
-	  (set-face-attribute 'versor-item nil
+	  (set-face-attribute 'versor-item-face nil
 			      versor-item-attribute
 			      attr-value))))
      ((consp versor-item-attribute)
-      (apply 'set-face-attribute 'versor-item nil
+      (apply 'set-face-attribute 'versor-item-face nil
 	     (versor-gather-level-attributes (versor-current-level)
 					     versor-item-attribute)))))
   (let ((old-pair (assoc major-mode versor-mode-current-levels)))
@@ -96,7 +96,7 @@ The result is in the form of a property list."
 		 (format "[%s]" string)
 	       (copy-sequence string))))
 	(put-text-property 0 (length strong)
-			   'face 'versor-item
+			   'face 'versor-item-face
 			   strong)
 	strong)
     (if versor-highlight-with-brackets

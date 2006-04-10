@@ -1,5 +1,5 @@
 ;;;; languide-custom.el -- customization definitions for languide
-;;; Time-stamp: <2006-04-10 10:12:13 john>
+;;; Time-stamp: <2006-04-10 15:59:05 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -18,34 +18,72 @@
 (provide 'languide-custom)
 
 (defgroup languide nil
-  "Languide-guided editing."
+  "Languide-guided editing.
+This includes things like turning pieces of inline code into separate functions,
+detecting automatically what arguments need to be passed to them."
   :group 'editing
   :prefix "languide-")
 
-(defvar languide-auto-edit-overlay-face (cons 'background-color "red")
-  "How to draw attention to what languide has done.")
+(defface languide-auto-edit-overlay-face
+  '((t (:background "red")))
+  "How to draw attention to what languide has done.
+When languide does something that involves changes away from point,
+it shows the changed text in this face, until the next user input."
+  :group 'languide)
 
-(defvar languide:debug-messages nil)
-(defvar debug-functions '(
-			 ;;  beginning-of-statement-internal
-			  ;; end-of-statement-internal
-			  ;; continue-back-past-curly-ket
-			  ;; previous-statement
-			  ;; next-statement
-			  ;; navigate-to
-			  ))
+(defcustom languide-debug-messages nil
+  "*Whether languide should tell you what it is doing, in great detail.
+You should need to set this only if working on the internals of languide.
+See also languide-debug-functions."
+  :type '(restricted-sexp :match-alternatives
+			 (integerp 't 'nil))
+  :group 'languide)
 
+(defcustom languide-debug-functions '(
+				      ;;  beginning-of-statement-internal
+				      ;; end-of-statement-internal
+				      ;; continue-back-past-curly-ket
+				      ;; previous-statement
+				      ;; next-statement
+				      ;; navigate-to
+				      )
+  "Which functions languide-debug-messages should output messages for.
+You should need to set this only if working on the internals of languide."
+  :group 'languide
+  :type '(set (const beginning-of-statement-internal)
+	      (const continue-back-past-curly-ket)
+	      (const end-of-statement-internal)
+	      (const identify-statement)
+	      (const languide-c-back-to-possible-ender)
+	      (const navigate-to)
+	      (const next-statement)
+	      (const next-statement-internal)
+	      (const previous-statement)
+	      (const skip-to-actual-code)
+	      (const statement-container)))
 
-(defvar navigate-container-whole-statement t
-  "*Whether to include the whole statement as the container.")
+(defcustom navigate-container-whole-statement t
+  "*Whether to include the whole statement as the container.
+If this is non-nil, when you select the container of a statement,
+the whole containing statement is selected, rather than just the
+part of it containing the statement. For example, if you have
+  if (a) {
+    b;
+    c;
+  }
+and are on \"b\" and select the container of b, you will get the
+whole if statement, rather than just the block body."
+  :type 'boolean
+  :group 'languide)
 
-(defvar statement-navigate-parts-cyclic nil
-  "*Whether to step forwards from body (or tail if present) back round to head.")
+(defcustom statement-navigate-parts-cyclic nil
+  "*Whether to step forwards from body (or tail if present) back round to head."
+  :type 'boolean
+  :group 'languide)
 
-(defvar statement-navigate-parts-include-container t
-  "*Whether to step forwards from body (or tail if present) or back from head, to container.")
-
-(defvar languide-parts '("container" "framework" "whole" "head" "body" "tail")
-  "The parts we can navigate to.")
+(defcustom statement-navigate-parts-include-container t
+  "*Whether to step forwards from body (or tail if present) or back from head, to container."
+  :type 'boolean
+  :group 'languide)
 
 ;;; end of languide-custom.el
