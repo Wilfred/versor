@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-03-27 16:00:43 jcgs>
+;;; Time-stamp: <2006-04-10 10:10:15 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -26,10 +26,6 @@
 (defvar languide-auto-edit-overlays nil
   "Highlights added by languide to show what it has done.
 Cleared at the start of each command.")
-
-(defvar languide-auto-edit-overlay-face (cons 'background-color "red")
-  "How to draw attention to what languide has done.")
-
 
 (defun languide-insertion (fn insertions)
   "Handler for things like insert, but remembering that the insertions were done by languide."

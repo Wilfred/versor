@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-03-24 16:12:04 jcgs>
+;;; Time-stamp: <2006-04-10 10:18:14 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -124,22 +124,10 @@ This is for choosing before, after, around or inside.")
 
 (fset 'versor-insertion-placement-keymap versor-insertion-placement-keymap)
 
-(defvar versor-statement-up-to-next nil
-  "Whether to make a statement extend all the way to the start of the next one.")
-
 (defvar versor-altering-map (make-sparse-keymap "Versor alter item")
   "Keymap for altering the selected item.")
 
 (fset 'versor-altering-map versor-altering-map)
-
-(defvar versor-item-face (make-face 'versor-item)
-  "Face to use for versor items")
-
-(when versor-use-face-attributes
-  (set-face-attribute 'versor-item nil :inherit 'region))
-
-(unless window-system
-  (set-face-attribute 'versor-item nil :underline t))
 
 (defun versor-setup (&rest keysets)
   "Set up the versor (versatile cursor) key system.

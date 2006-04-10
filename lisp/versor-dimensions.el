@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-03-28 17:17:59 jcgs>
+;;; Time-stamp: <2006-04-07 14:46:27 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -252,6 +252,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (first backward-sentence)
 		       (previous backward-phrase)
 		       (next forward-phrase)
+		       (end-of-item end-of-phrase)
 		       (last forward-sentence)
 		       (dwim versor-dwim-textually)))
 

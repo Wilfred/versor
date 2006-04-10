@@ -1,5 +1,5 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <2006-02-24 10:07:54 jcgs>
+;;; Time-stamp: <2006-04-10 10:19:46 john>
 
 (provide 'flexi-choose)
 ;; if this is loaded before we are, put it into our menu
@@ -155,9 +155,6 @@ This makes most sense if SINGLE is sorted."
 (defvar choices-per-step 6
   "*The number of possible choices per choice step for treewise choosers.")
 
-(defvar choices-display-full t
-  "*Whether to display in full the range of choices at each level of a treewise chooser.")
-
 (defun number-items (string-list)
   "Prepend a number to the items of STRING-LIST."
   (let ((i 0)
@@ -227,12 +224,6 @@ This makes most sense if SINGLE is sorted."
 	   ((<= n (* max-per-step max-per-step max-per-step)) (ceiling (expt (float n) (/ 1.0 3.0))))
 	   (t max-per-step))))
     per-step))
-
-(defvar flexi-choose-upstring "[Up]"
-  "The label to indicate going back up the tree.")
-
-(defvar flexi-choose-topstring "[Top]"
-  "The label to indicate going straight back up to the top of the tree.")
 
 (defun choose-in-steps (prompt choices &optional display-modifier)
   "With PROMPT, get the user to choose one of CHOICES.

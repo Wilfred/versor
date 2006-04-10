@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-04-07 16:43:54 john>
+;;; Time-stamp: <2006-04-10 10:21:48 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -291,23 +291,6 @@ Makes a two-part selection, of opening and closing brackets."
 	    onto (safe-scan-sexps onto 1)))
     (parse-partial-sexp prevprev prev
 			0 t)))
-
-(defvar versor-allow-move-to-end-of-last 'dwim
-  "*Whether to allow moving to the end of the last sexp in a list.
-  Otherwise, versor-next stops at the start of it, and refuses to do
-  another forward move.
-  Setting this non-nil does what you probably want in practice, although
-  setting it nil is probably cleaner in some abstract sort of way.
-  Setting it non-nil and not t will make the last move within a list
-  go to just before the closing syntax of the list, which is where you
-  typically want to be to type the next sexp in.")
-
-(defvar versor-move-out-when-at-end t
-  "If non-nil, trying to move further on when already at the end of
-  the last thing in a container (see versor-allow-move-to-end-of-last)
-  will move to just after the end of the container. Can be convenient in
-  practice, although it breaks the symmetry of the next<-->previous
-  operations.")
 
 (defmodel next-sexp  (n)
   "Move forward N sexps.

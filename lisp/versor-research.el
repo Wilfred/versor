@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-03-25 14:02:29 jcgs>
+;;; Time-stamp: <2006-04-10 10:16:36 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -90,9 +90,6 @@ movements that came between them.")
 (defvar versor-research-non-versor-edit-after-non-versor-moves nil
     "Each entry is the list of non-versor movement commands leading
 directly to a non-versor edit.")
-
-(defvar versor-research-live-commentary nil
-  "*Whether to make a live commentary on versor and other activities.")
 
 (defun versor-research-post-command-function ()
   "Record what happened during this command."

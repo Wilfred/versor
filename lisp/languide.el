@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-03-31 20:33:48 jcgs>
+;;; Time-stamp: <2006-04-10 12:28:09 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -76,6 +76,7 @@
 (provide 'languide)
 (require 'cl)
 (require 'modal-functions)
+(require 'languide-custom)
 (require 'versor-commands)		; for versor-as-motion-command
 (require 'versor-base-moves)		; for safe-scan-lists
 (require 'statement-navigation)
@@ -86,28 +87,18 @@
 
 ;;;; debugging
 
-(defvar languide:debug-messages nil)
-(defvar debug-functions '(
-			 ;;  beginning-of-statement-internal
-			  ;; end-of-statement-internal
-			  ;; continue-back-past-curly-ket
-			  ;; previous-statement
-			  ;; next-statement
-			  ;; navigate-to
-			  ))
-
 (defun languide:debug-message (function format &rest args)
   (when (and languide:debug-messages
 	     (or (null debug-functions)
 		 (memq function debug-functions)))
-    (message "%S: %s (press key)" function (apply 'format format args))
+    (message "%s: %s (press key)" function (apply 'format format args))
     (read-char))
   (when (numberp languide:debug-messages)
     (sit-for languide:debug-messages)))
 
 (defun outward-once ()
-  "Move outward one level of brackets, going backward.
-Returns point, if there was a bracket to go out of, else nil."
+  "move outward one level of brackets, going backward.
+returns point, if there was a bracket to go out of, else nil."
   (interactive)
   (let ((where (safe-scan-lists (point) -1 1)))
     (if where
@@ -115,16 +106,16 @@ Returns point, if there was a bracket to go out of, else nil."
 	  (goto-char where)
 	  where)
       (progn
-	;; todo: find why I thought I wanted to do this
+	;; todo: find why i thought i wanted to do this
 	;; (goto-char (point-min))
 	nil))))
 
 (defun all-variables-in-scope-p (where variables)
-  "Return whether at WHERE, all of VARIABLES are in scope."
-  (message "Looking for whether %S are all in scope at %d;" variables where)
+  "return whether at where, all of variables are in scope."
+  (message "looking for whether %s are all in scope at %d;" variables where)
   (if variables
       (let ((variables-in-scope (variables-in-scope where)))
-	(message "variables in scope are %S" variables-in-scope)
+	(message "variables in scope are %s" variables-in-scope)
 	(catch 'done
 	  (while variables
 	    (if (assoc (car variables) variables-in-scope)
@@ -135,62 +126,62 @@ Returns point, if there was a bracket to go out of, else nil."
     t))
 
 (defmodel insert-compound-statement-open ()
-  "Insert the start of a compound statement")
+  "insert the start of a compound statement")
 
 (defmodel compound-statement-open ()
-  "Return a block start.")
+  "return a block start.")
 
 (defmodel insert-compound-statement-close ()
-  "Insert the end of a compound statement")
+  "insert the end of a compound statement")
 
 (defmodel compound-statement-close ()
-  "Return a block end.")
+  "return a block end.")
 
 (defmodel statement-container ()
-  "Select the container of the current statement.")
+  "select the container of the current statement.")
 
 (defmodel insert-function-declaration (name result-type arglist body &optional docstring)
-  "Insert a function definition for NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY.
-A DOCSTRING may also be given.")
+  "insert a function definition for name, returning result-type, taking arglist, and implemented by body.
+a docstring may also be given.")
 
 (defmodel insert-function-call (name arglist)
-  "Insert a function call for a function called NAME taking ARGLIST.")
+  "insert a function call for a function called name taking arglist.")
 
 (defmodel function-arglist-boundaries (&optional where)
-  "Return a cons of the start and end of the argument list surrounding WHERE,
-or surrounding point if WHERE is not given.")
+  "return a cons of the start and end of the argument list surrounding where,
+or surrounding point if where is not given.")
 
 (defmodel deduce-expression-type (value-text where)
-  "Given VALUE-TEXT, try to deduce the type of it.
-Second arg WHERE gives the position, for context.")
+  "given value-text, try to deduce the type of it.
+second arg where gives the position, for context.")
 
 (defmodel add-expression-term (operator argument from to)
-  "Wrap an expression with OPERATOR and ARGUMENT around the region between FROM and TO.")
+  "wrap an expression with operator and argument around the region between from and to.")
 
 (defmodel move-before-defun ()
-  "Move to before the current function definition.")
+  "move to before the current function definition.")
 
 (defmodel languide-trim-whitespace (syntax-before syntax-after)
-  "Trim whitespace around point, in a language-dependent way.
-The syntax classes of the non-space chars around point are passed in
-as SYNTAX-BEFORE and SYNTAX-AFTER.")
+  "trim whitespace around point, in a language-dependent way.
+the syntax classes of the non-space chars around point are passed in
+as syntax-before and syntax-after.")
 
 (defmodel languide-region-type (from to)
-  "Try to work out what type of thing the code between FROM and TO is.
-Results can be things like if-then-body, if-then-else-tail, progn-whole,
-while-do-head, defun-body, and so on. If one of these is returned, the
+  "try to work out what type of thing the code between from and to is.
+results can be things like if-then-body, if-then-else-tail, progn-whole,
+while-do-head, defun-body, and so on. if one of these is returned, the
 code must be exactly that (apart from leading and trailing
 whitespace).
-If it is not recognizable as anything in particular, but ends at the
+if it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
 expression, return t. 
-Otherwise return nil.")
+otherwise return nil.")
 
 (defun show-region-type (start end)
-  "For debugging languide-region-type"
+  "for debugging languide-region-type"
   (interactive "r")
-  (message "region type %S"
+  (message "region type %s"
 	   (languide-region-type (or start (region-beginning))
 				 (or end (region-end)))))
 
@@ -203,9 +194,9 @@ Otherwise return nil.")
 ;; (remove-hook 'versor-post-command-hook 'versor-show-region-type-hook-function)
 
 (defun backward-out-of-comment ()
-  "If in a comment, move to just before it, else do nothing..
-Returns whether it did anything."
-  (unless (memq major-mode '(texinfo-mode))
+  "if in a comment, move to just before it, else do nothing..
+returns whether it did anything."
+  (unless (memq major-mode '(texinfo-mode html-mode html-helper-mode))
     (let* ((bod (save-excursion (beginning-of-defun) (point)))
 	   (parse-results (parse-partial-sexp bod (point)
 					      0
@@ -218,10 +209,10 @@ Returns whether it did anything."
 	nil))))
 
 (defun skip-to-actual-code (&optional limit)
-  "Skip forward, over any whitespace or comments, to the next actual code.
-This assumes that we start in actual code too.
-LIMIT, if given, limits the movement.
-Returns the new point."
+  "skip forward, over any whitespace or comments, to the next actual code.
+this assumes that we start in actual code too.
+limit, if given, limits the movement.
+returns the new point."
   (interactive)
   (backward-out-of-comment)
   (while (progn

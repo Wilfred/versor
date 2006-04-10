@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-04-10 10:23:09 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -25,10 +25,6 @@
 (require 'versor-dimensions)
 
 ;; Display the current meta-dimension and dimension etc
-
-(defvar versor-multi-line-level-display (and (boundp 'emacs-major-version)
-					     (>= emacs-major-version 21))
-  "*Whether to use multi-line indication of the current meta-level and level.")
 
 (defun versor-gather-level-attributes (level attributes)
   "For LEVEL, gather the ATTRIBUTES.
@@ -91,9 +87,6 @@ The result is in the form of a property list."
 	      versor-mode-current-levels)
       (rplaca (cdr old-pair) versor-meta-level)
       (rplacd (cdr old-pair) versor-level))))
-
-(defvar versor-highlight-with-brackets (not versor-use-face-attributes)
-  "*Whether to use brackets around highlighted items in status feedback.")
 
 (defun versor-highlighted-string (string)
   "Return a highlighted version of STRING."

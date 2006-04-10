@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-04-10 10:14:25 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -33,11 +33,6 @@
   "Whether we have currently reversed the navigation directions.
 This is useful if you cannot use \"shift-next\" for \"previous\".
 It is enabled by the variable versor-reversible, which see.")
-
-(defvar versor-mode-line-begin-string " <"
-  "String corresponding to bracket for beginning of versor markers according to versor-reversed.")
-(defvar versor-mode-line-end-string (if versor-reversible "==>" ">")
-  "String corresponding to bracket for end of versor markers according to versor-reversed.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; more structure ;;;;
@@ -632,12 +627,6 @@ With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
 (versor-definesert "|" (lambda (n) (versor-statement-insertion-strings 'or)) "or")
 (versor-definesert "!" (lambda (n) (versor-statement-insertion-strings 'not)) "not")
 (versor-definesert "=" (lambda (n) (versor-statement-insertion-strings 'variable-declaration)) "variable declaration")
-
-(defvar versor-statement-insertion-with-dummy-value nil
-  "*Whether versor statement insertion puts a placeholder value in when adding something.
-This tries to avoid changing the semantics, for example, it uses
-\"true\" when adding \"and\" or \"if\".
-You can then change the value, using the versor alterations system.")
 
 (defun versor-statement-insertion-strings (statement)
   "Return the insertion strings for STATEMENT in the current language."

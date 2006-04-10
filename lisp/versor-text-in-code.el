@@ -1,5 +1,5 @@
 ;;; versor-text-in-code.el -- versatile cursor handling of strings and comments
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-04-10 10:17:19 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -47,13 +47,6 @@ Local to each buffer.")
 	  versor-non-text-level
 	  versor-text-meta-level
 	  versor-text-level))
-
-(defvar versor-text-faces '(font-lock-string-face font-lock-comment-face)
-  "Faces which versor regards as being text rather than code.
-See versor-text-in-code-function.")
-
-(defvar versor-text-in-code t
-  "*Whether versor should switch dimensions for string literals and comments.")
 
 (defun versor-text-in-code-function ()
   "Detect whether we have landed in a comment or string, and set versor up accordingly.

@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2006-03-28 18:02:46 jcgs>
+;;; Time-stamp: <2006-04-10 10:12:13 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -43,9 +43,6 @@
   (interactive)
   (navigate-to 'framework))
 
-(defvar navigate-container-whole-statement t
-  "*Whether to include the whole statement as the container.")
-
 (defun navigate-this-container ()
   "Navigate to the container of the current statement."
   (interactive)
@@ -57,12 +54,6 @@
        (setq navigated-latest-part 'container)
        (versor-set-current-item (point) end)
        (versor-display-highlighted-choice "container" (languide-parts))))))
-
-(defvar statement-navigate-parts-cyclic nil
-  "*Whether to step forwards from body (or tail if present) back round to head.")
-
-(defvar statement-navigate-parts-include-container t
-  "*Whether to step forwards from body (or tail if present) or back from head, to container.")
 
 (defun get-statement-part (type part)
   "For the major mode, get statement description of TYPE, PART thereof."
@@ -120,8 +111,7 @@
 
 (make-variable-buffer-local 'navigated-latest-part)
 
-(defvar languide-parts '("container" "framework" "whole" "head" "body" "tail")
-  "The parts we can navigate to.")
+
 
 (defun languide-parts ()
   "The parts we can navigate to."
