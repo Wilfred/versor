@@ -117,6 +117,21 @@ Statement handling
                                 enclosing decision point, that is, a
                                 suitable place for putting a new condition.
 
+Setup
+
+* Configuration::               Configuring Languide
+
+Configuration
+
+* Auto-edit overlay face::        How to draw attention to changes away
+                                  from point
+* Whole statement as container::  On selecting a container, whether to
+                                  make that the whole statement
+* Cyclic::                        Whether statement part selection
+                                  should be cyclic
+* IncludeContainer::              Whether statement containers count
+                                  as selectable statement parts
+
 @end detailmenu
 @end menu
 
@@ -353,6 +368,77 @@ useful.
 
 To install Languide, unpack the tarball into a suitable directory, and
 put that directory on your load-path.
+
+@menu
+* Configuration::               Configuring Languide
+@end menu
+
+@node  Configuration,  , Setup, Setup
+@comment  node-name,  next,  previous,  up
+@section Configuration
+
+@menu
+* Auto-edit overlay face::        How to draw attention to changes away
+                                  from point
+* Whole statement as container::  On selecting a container, whether to
+                                  make that the whole statement
+* Cyclic::                        Whether statement part selection
+                                  should be cyclic
+* IncludeContainer::              Whether statement containers count
+                                  as selectable statement parts
+@end menu
+
+@node Auto-edit overlay face, Whole statement as container, Configuration, Configuration
+@comment  node-name,  next,  previous,  up
+@subsection Auto-edit overlay face
+
+Type: face
+
+Default value: '@code{((t (:background "red")))}
+
+How to draw attention to what languide has done.
+When languide does something that involves changes away from point,
+it shows the changed text in this face, until the next user input.
+
+@node Whole statement as container, Cyclic, Auto-edit overlay face, Configuration
+@comment  node-name,  next,  previous,  up
+@subsection Whole statement as container
+
+Type: boolean
+
+Default value: @code{t}
+
+Whether to include the whole statement as the container.
+If this is non-nil, when you select the container of a statement,
+the whole containing statement is selected, rather than just the
+part of it containing the statement. For example, if you have
+  if (a) {
+    b;
+    c;
+  }
+and are on ``b'' and select the container of b, you will get the
+whole if statement, rather than just the block body.
+
+@node Cyclic, IncludeContainer, Whole statement as container, Configuration
+@comment  node-name,  next,  previous,  up
+@subsection Navigate statement parts cyclically
+
+Type: boolean
+
+Default value: @code{nil}
+
+Whether to step forwards from body (or tail if present) back round to head.
+
+@node IncludeContainer,  , Cyclic, Configuration
+@comment  node-name,  next,  previous,  up
+@subsection Navigate Statement Parts includes container
+
+Type: boolean
+
+Default value: @code{}t
+
+Whether to step forwards from body (or tail if present) or back from head, to container.
+
 
 @node Extension, Languide and Versor, Setup, Top
 @chapter Extending Languide: how to define languages and statements
