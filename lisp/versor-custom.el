@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-04-10 16:14:26 john>
+;;; Time-stamp: <2006-04-11 14:18:47 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -25,7 +25,7 @@
 
 (defgroup versor nil
   "Switch cursor keys between different sorts of movement, and do some high-level editing."
-  :group 'editing
+  :group 'convenience
   :prefix "versor-")
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -122,7 +122,7 @@ aspect) of the block cursor."
 (defcustom versor-item-attribute
   (if (< emacs-major-version 21)
       nil
-    :background)
+    '(:background))
   "*An attribute to use to indicate the current item.
 This is looked up in the current dimension, to get the value to set it to.
 For example, if versor-item-attribute is :background, :background is looked
@@ -135,6 +135,14 @@ You can only use this from Emacs 21 onwards."
   "*Whether to try to display the whole item after each movement.
 This recenters the text, if possible, so both the start and the end
 of it are visible."
+  :group 'versor
+  :type 'boolean)
+
+(defcustom versor-reversible (not (eq window-system 'x))
+  "*Whether we allow reversing.
+This is useful if you cannot use \"shift-next\" for \"previous\".
+These seem to work OK on X but not on Windows; not sure about
+other platforms/terminals yet."
   :group 'versor
   :type 'boolean)
 
@@ -155,10 +163,10 @@ of it are visible."
   :group 'versor-status)
 
 (when versor-use-face-attributes
-  (set-face-attribute 'versor-item nil :inherit 'region))
+  (set-face-attribute 'versor-item-face nil :inherit 'region))
 
 (unless window-system
-  (set-face-attribute 'versor-item nil :underline t))
+  (set-face-attribute 'versor-item-face nil :underline t))
 
 ;;;;;;;;;;;;;;;;;
 ;;;; general ;;;;

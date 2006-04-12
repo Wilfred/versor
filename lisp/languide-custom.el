@@ -1,5 +1,5 @@
 ;;;; languide-custom.el -- customization definitions for languide
-;;; Time-stamp: <2006-04-10 15:59:05 john>
+;;; Time-stamp: <2006-04-11 14:21:23 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -21,7 +21,7 @@
   "Languide-guided editing.
 This includes things like turning pieces of inline code into separate functions,
 detecting automatically what arguments need to be passed to them."
-  :group 'editing
+  :group 'convenience
   :prefix "languide-")
 
 (defface languide-auto-edit-overlay-face
@@ -29,6 +29,30 @@ detecting automatically what arguments need to be passed to them."
   "How to draw attention to what languide has done.
 When languide does something that involves changes away from point,
 it shows the changed text in this face, until the next user input."
+  :group 'languide)
+
+(defcustom navigate-container-whole-statement t
+  "*Whether to include the whole statement as the container.
+If this is non-nil, when you select the container of a statement,
+the whole containing statement is selected, rather than just the
+part of it containing the statement. For example, if you have
+  if (a) {
+    b;
+    c;
+  }
+and are on \"b\" and select the container of b, you will get the
+whole if statement, rather than just the block body."
+  :type 'boolean
+  :group 'languide)
+
+(defcustom statement-navigate-parts-cyclic nil
+  "*Whether to step forwards from body (or tail if present) back round to head."
+  :type 'boolean
+  :group 'languide)
+
+(defcustom statement-navigate-parts-include-container t
+  "*Whether to step forwards from body (or tail if present) or back from head, to container."
+  :type 'boolean
   :group 'languide)
 
 (defcustom languide-debug-messages nil
@@ -61,29 +85,5 @@ You should need to set this only if working on the internals of languide."
 	      (const previous-statement)
 	      (const skip-to-actual-code)
 	      (const statement-container)))
-
-(defcustom navigate-container-whole-statement t
-  "*Whether to include the whole statement as the container.
-If this is non-nil, when you select the container of a statement,
-the whole containing statement is selected, rather than just the
-part of it containing the statement. For example, if you have
-  if (a) {
-    b;
-    c;
-  }
-and are on \"b\" and select the container of b, you will get the
-whole if statement, rather than just the block body."
-  :type 'boolean
-  :group 'languide)
-
-(defcustom statement-navigate-parts-cyclic nil
-  "*Whether to step forwards from body (or tail if present) back round to head."
-  :type 'boolean
-  :group 'languide)
-
-(defcustom statement-navigate-parts-include-container t
-  "*Whether to step forwards from body (or tail if present) or back from head, to container."
-  :type 'boolean
-  :group 'languide)
 
 ;;; end of languide-custom.el
