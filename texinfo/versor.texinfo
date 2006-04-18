@@ -31,6 +31,7 @@ are preserved on all copies.
 
 @c store these by makeinfo, copying them into subdirs of htdocs, tarring them up and doing 
 @c scp htdocs.tar.gz jcg_sturdy@emacs-versor.sourceforge.net:/home/groups/e/em/emacs-versor 
+@c then log in to emacs-versor.sourceforge.net and unpack them
 @ifinfo
 This file documents versor, the versatile cursor system.
 
@@ -959,11 +960,15 @@ input to GNUemacs.
 
 These commands are divided into two groups, one of them acting on
 expressions (as used in both functional and imperative languages) and
-one acting on statements, as used in imperative languages. 
+one acting on statements, as used in imperative languages.
+
+There are also facilities by which languide can tell you when it has
+spotted something it knows about.
 
 @menu
 * Expression handling::         Commands working on expressions
 * Statement handling::          Commands working on statements
+* Languide Feedback::           Feedback from Languide
 * Summary of refactoring::      Key bindings for refactoring
 @end menu
 
@@ -1055,7 +1060,7 @@ In the normal Versor key bindings, this command is bound to
 
 
 
-@node  Statement handling, Summary of refactoring, Expression handling, Refactoring
+@node  Statement handling, Languide Feedback, Expression handling, Refactoring
 @comment  node-name,  next,  previous,  up
 @section Statement handling
 
@@ -1123,7 +1128,16 @@ for putting a new condition. This is largely used as an internal
 function by Languide, but is also exposed for direct use in case it is
 useful.
 
-@node  Summary of refactoring,  , Statement handling, Refactoring
+@node  Languide Feedback, Summary of refactoring, Statement handling, Refactoring
+@comment  node-name,  next,  previous,  up
+@section Feedback from Languide
+
+If you set the hook variable @code{versor-post-command-hook} to
+include the function @code{versor-show-region-type-hook-function},
+Languide will tell you when you have selected a piece of code that it
+may have a specific way of handling.
+
+@node  Summary of refactoring,  , Languide Feedback, Refactoring
 @comment  node-name,  next,  previous,  up
 @section Summary of refactoring commands
 
