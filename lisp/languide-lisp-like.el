@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-03-28 21:08:28 jcgs>
+;;; Time-stamp: <2006-04-18 12:20:19 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -409,12 +409,6 @@ as SYNTAX-BEFORE and SYNTAX-AFTER."
 	;; todo: should also look in everything we load with require
 	)))
 
-
-(defmodal deduce-expression-type (lisp-mode emacs-lisp-mode lisp-interaction-mode) (expr-string where)
-  "Deduce the static type of the expression represnted by EXPR-STRING.
-Easy -- Lisp has no static types."
-  nil)
-
 (defmodal variable-bindings-in-region (lisp-mode emacs-lisp-mode lisp-interaction-mode) (from to)
   "Return a list of the bindings between FROM and TO.
 Each element is a list of:
@@ -506,6 +500,17 @@ Each element is a list of:
 	  (goto-char end)))
       result)))
 
+(defun count-sexps (from to)
+  "Return the number of sexps between FROM and TO."
+  (let ((i 0))
+    (while (and from
+		(< from to))
+      (setq from (safe-scan-sexps from 1)
+	    i (1+ i)))
+    (if from
+	i
+      (1- i))))
+
 (defmodal languide-region-type (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   (from to)
   "Try to work out what type of thing the code between FROM and TO is.
@@ -517,7 +522,34 @@ If it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
 expression, return t. 
-Otherwise return nil.")
+Otherwise return nil."
+  (let* ((pps (save-excursion (parse-partial-sexp from to))))
+    (cond
+     ((and (zerop (nth 0 pps))		; same level at both ends
+	   (>= (nth 6 pps) 0))		; no dip in level between ends
+      (let* ((n-parts (count-sexps from to))
+	     (f-start (scan-lists from 1 -1))
+	     (f-end (scan-sexps f-start 1))
+	     (functor (intern
+		       (buffer-substring-no-properties f-start f-end)))
+	     (surrounding-start (scan-lists from -1 1))
+	     (surrounding-end (scan-sexps surrounding-start 1))
+	     (sf-start (scan-lists surrounding-start 1 -1))
+	     (sf-end (scan-sexps s-start 1))
+	     (surrounding-functor (intern (buffer-substring-no-properties sf-start sf-end)))
+	     (s-members (count-sexps sf-start (1- surrounding-end)))
+	     (which-s-member (count-sexps s-start from)))
+	(message "functor %S; surrounding-functor %S, of which we are %d of %d" functor surrounding-functor which-member s-members)
+	(cond
+	 ((eq functor 'defun) defun-body)
+	 ;; todo: lots more to do here
+	 ((memq functor '(progn save-excursion save-window-excursion)) 'progn-whole)
+	 ((and (eq surrounding-functor 'if-then-else)
+	       (= which-s-member 4))
+	  'if-then-else-tail)
+	 (t t))))
+     (t nil)))
+  )
 
 (defmodal adjust-binding-point (lisp-mode emacs-lisp-mode lisp-interaction-mode) (variables-needed)
   "If appropriate, move to the first point at which all of VARIABLES-NEEDED are defined.
