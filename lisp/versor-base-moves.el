@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-04-10 10:21:48 john>
+;;; Time-stamp: <2006-04-14 16:23:26 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -167,7 +167,8 @@ Makes a two-part selection, of opening and closing brackets."
 Makes a two-part selection, of opening and closing brackets."
   (interactive "p")
   (safe-backward-up-list arg)
-  (when versor-reformat-automatically
+  (when (and versor-reformat-automatically
+	     (buffer-modified-p))
     (condition-case evar
 	(indent-sexp)
       ;; todo: use (indent-region start end nil) instead
