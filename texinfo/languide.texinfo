@@ -412,10 +412,10 @@ Whether to include the whole statement as the container.
 If this is non-nil, when you select the container of a statement,
 the whole containing statement is selected, rather than just the
 part of it containing the statement. For example, if you have
-  if (a) {
+  if (a) @{
     b;
     c;
-  }
+  @}
 and are on ``b'' and select the container of b, you will get the
 whole if statement, rather than just the block body.
 
