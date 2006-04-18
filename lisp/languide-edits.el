@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-04-10 10:10:15 john>
+;;; Time-stamp: <2006-04-17 10:44:42 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -33,7 +33,7 @@ Cleared at the start of each command.")
     (apply fn insertions)
     (let* ((end (point))
 	   (overlay (make-overlay start end)))
-      (overlay-put overlay 'face languide-auto-edit-overlay-face)
+      (overlay-put overlay 'face 'languide-auto-edit-overlay-face)
       (push overlay languide-auto-edit-overlays))))
 
 (defun languide-insert (&rest insertions)
@@ -277,6 +277,14 @@ them in descending order of character position.")
       (set-marker first-after-marker first-after)
       (mapcar (function
 	       (lambda (region)
+		 ;; if this region is a symbol, remember it as probably
+		 ;; being the function name
+		 (when (save-excursion
+			 (goto-char (car region))
+			 (skip-syntax-forward "w_")
+			 (>= (point) (cdr region)))
+		   (kill-new (buffer-substring-no-properties
+			      (car region) (cdr region))))
 		 (delete-region (car region) (cdr region))))
 	      call-syntax)
       (versor-trim-whitespace last-before-marker)
@@ -314,7 +322,7 @@ sCondition: ")
 	(funcall inserter)
 	(set-marker (mark-marker) old-marker)
 	))
-     (t (error "Not suitable for making conditional"))
+     (t (error "Not suitable for making conditional: %S" body-type))
      )))
 
 (defun languide-make-iterative ()
