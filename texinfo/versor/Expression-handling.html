@@ -1,0 +1,70 @@
+<html lang="en">
+<head>
+<title>Expression handling - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Refactoring.html#Refactoring" title="Refactoring">
+<link rel="prev" href="Refactoring.html#Refactoring" title="Refactoring">
+<link rel="next" href="Statement-handling.html#Statement-handling" title="Statement handling">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Expression-handling"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Statement-handling.html#Statement-handling">Statement handling</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Refactoring.html#Refactoring">Refactoring</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Refactoring.html#Refactoring">Refactoring</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h3 class="section">5.1 Expression handling, expressions, and functions</h3>
+
+<p>
+This group of commands manipulates value handling constructs in source
+code.  For example, you can select an expression (using the Versor
+selection), and turn it into a variable, so that you can re-use the
+same value.  Likewise, you can convert an expression into a function,
+so that you can call it elsewhere. 
+
+
+<ul class="menu">
+<li><a accesskey="1" href="Convert-to-variable.html#Convert-to-variable">Convert to variable</a>:          Convert selection to variable
+                                Given a selection containing an
+                                expression, this sets up a variable
+                                initialised to that expression, and
+                                replaces the original expression with
+                                that variable.
+<li><a accesskey="2" href="Convert-to-function.html#Convert-to-function">Convert to function</a>:          Convert selection to function
+                                This takes the selection,
+                                defines a new function just before the
+                                one containing the selection, and
+                                replaces the original selection with a
+                                call to the new function.
+<li><a accesskey="3" href="Surround-with-call.html#Surround-with-call">Surround with call</a>:           Surround selection with call
+                                This wraps the selection with a
+                                call to a function.
+<li><a accesskey="4" href="Remove-call.html#Remove-call">Remove call</a>:                  Remove surrounding call
+                                This removes the function call
+                                surrounding point.
+</ul>
+
+
+   </body></html>
+

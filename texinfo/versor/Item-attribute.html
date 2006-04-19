@@ -1,0 +1,53 @@
+<html lang="en">
+<head>
+<title>Item attribute - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Status.html#Status" title="Status">
+<link rel="prev" href="Change-cursor-color.html#Change-cursor-color" title="Change cursor color">
+<link rel="next" href="Try-to-display-whole-item.html#Try-to-display-whole-item" title="Try to display whole item">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Item-attribute"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Try-to-display-whole-item.html#Try-to-display-whole-item">Try to display whole item</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Change-cursor-color.html#Change-cursor-color">Change cursor color</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Status.html#Status">Status</a>
+<hr><br>
+</div>
+
+<h5 class="subsubsection">9.3.2.5 Item attribute</h5>
+
+<p>
+Type: (set (const :background (const :foreground) (const :underline))
+
+Default value: (:background)
+
+An attribute to use to indicate the current item.
+
+This is looked up in the current dimension, to get the value to set it to.
+For example, if versor-item-attribute is :background, :background is looked
+up in the current dimension, to find the colour to set the background to.
+
+You can only use this from Emacs 21 onwards.
+
+
+   </body></html>
+

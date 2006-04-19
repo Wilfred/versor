@@ -1,0 +1,88 @@
+<html lang="en">
+<head>
+<title>Refactoring - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="prev" href="Further-commands.html#Further-commands" title="Further commands">
+<link rel="next" href="Advanced-features.html#Advanced-features" title="Advanced features">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Refactoring"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Advanced-features.html#Advanced-features">Advanced features</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Further-commands.html#Further-commands">Further commands</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="index.html#Top">Top</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h2 class="chapter">5 Refactoring using Languide</h2>
+
+<p>
+Some more sophisticated commands, replacing long sequences of manual
+keyboard labour by the programmer, are provided by the companion
+package, Languide. As described here, they are accessed through some
+wrapper functions which apply them to the versor selection. You can
+also access these directly to act on GNUemacs region;
+See <a href="../languide/index.html#Top">Top (languide)</a>.
+
+A typical action (probably the one the author uses most often) is
+converting an expression to a local variable (so that the value can be
+re-used), involving the following steps:
+
+     <ol type=1 start=1>
+<li>examine the expression for the variables it needs
+<li>find the nearest scoping point, or (with a prefix arg) the widest
+scoping point at which all the variables needed are defined
+<li>deduce the type of the expression (in statically typed languages
+only)
+<li>insert a declaration for a variable (with the name supplied by the
+user) at the chosen scoping point, and initialize it using the
+original expression
+<li>replace the original expression with a use of the new variable
+<li>leave the new variable at the top of the kill ring, ready to be
+inserted somewhere else
+<li>
+        </ol>
+
+Likewise, there is a function to turn a block of code into a function
+(working out automatically what needs to be passed in as the argument
+list), and replace its original occurrence with a call to the new
+function.
+
+To draw attention to what they have done, these functions highlight,
+with a red background, any changes they make away from the cursor. The
+highlighting is not the Versor selection, and is removed on your next
+input to GNUemacs.
+
+These commands are divided into two groups, one of them acting on
+expressions (as used in both functional and imperative languages) and
+one acting on statements, as used in imperative languages. 
+
+
+<ul class="menu">
+<li><a accesskey="1" href="Expression-handling.html#Expression-handling">Expression handling</a>:          Commands working on expressions
+<li><a accesskey="2" href="Statement-handling.html#Statement-handling">Statement handling</a>:           Commands working on statements
+<li><a accesskey="3" href="Summary-of-refactoring.html#Summary-of-refactoring">Summary of refactoring</a>:       Key bindings for refactoring
+</ul>
+
+
+   </body></html>
+

@@ -1,0 +1,84 @@
+\chapentry{Introduction}{1}{2}
+\secentry{The aims of Versor}{1}{1}{2}
+\secentry{Concepts}{1}{2}{2}
+\subsecentry{Coordinate systems and dimensions}{1}{2}{1}{3}
+\subsecentry{The selection}{1}{2}{2}{3}
+\chapentry{Familiarization}{2}{4}
+\secentry{Zooming within a coordinate system}{2}{1}{4}
+\secentry{Switching between coordinate systems}{2}{2}{4}
+\secentry{Editing with the selection}{2}{3}{4}
+\subsecentry{Deleting the selection}{2}{3}{1}{4}
+\subsecentry{Inserting with the selection}{2}{3}{2}{5}
+\secentry{Extending the selection}{2}{4}{5}
+\chapentry{Available coordinate systems}{3}{6}
+\secentry{Cartesian coordinates}{3}{1}{6}
+\secentry{Structural coordinates}{3}{2}{6}
+\secentry{Text coordinates}{3}{3}{6}
+\secentry{Structured Text coordinates}{3}{4}{6}
+\secentry{Table coordinates}{3}{5}{7}
+\secentry{Program coordinates}{3}{6}{7}
+\chapentry{Further commands}{4}{9}
+\secentry{Deletion}{4}{1}{9}
+\secentry{Insertion}{4}{2}{9}
+\secentry{Alteration}{4}{3}{10}
+\secentry{Do What I Mean}{4}{4}{10}
+\chapentry{Refactoring using Languide}{5}{12}
+\secentry{Expression handling, expressions, and functions}{5}{1}{12}
+\subsecentry{Convert selection to variable}{5}{1}{1}{12}
+\subsecentry{Convert selection to function}{5}{1}{2}{12}
+\subsecentry{Surround selection with call}{5}{1}{3}{13}
+\subsecentry{Remove surrounding call}{5}{1}{4}{13}
+\secentry{Statement handling}{5}{2}{13}
+\subsecentry{Unify Statements}{5}{2}{1}{13}
+\subsecentry{Make conditional}{5}{2}{2}{13}
+\subsecentry{Make repeating}{5}{2}{3}{13}
+\subsecentry{Remove control construct}{5}{2}{4}{13}
+\subsecentry{Enclosing decision point}{5}{2}{5}{13}
+\secentry{Summary of refactoring commands}{5}{3}{14}
+\chapentry{Advanced features}{6}{15}
+\secentry{Detect text in code}{6}{1}{15}
+\secentry{Per-buffer dimensions}{6}{2}{15}
+\secentry{Per-mode dimensions}{6}{3}{15}
+\chapentry{Accessibility}{7}{16}
+\secentry{Using pedals}{7}{1}{16}
+\secentry{Reversing the cursor motions}{7}{2}{16}
+\secentry{Using voice input}{7}{3}{16}
+\secentry{The flexible chooser}{7}{4}{16}
+\secentry{Other input devices}{7}{5}{17}
+\chapentry{Versor and Languide}{8}{18}
+\chapentry{Setup}{9}{19}
+\secentry{General configuration}{9}{1}{19}
+\secentry{Dimensions available for each mode}{9}{2}{19}
+\secentry{Using Configure}{9}{3}{20}
+\subsecentry{Motion}{9}{3}{1}{20}
+\subsubsecentry{Allow move to end of last}{9}{3}{1}{1}{20}
+\subsubsecentry{Move out when at end}{9}{3}{1}{2}{20}
+\subsubsecentry{Statement up to next}{9}{3}{1}{3}{20}
+\subsubsecentry{Level wrap}{9}{3}{1}{4}{20}
+\subsubsecentry{Meta level wrap}{9}{3}{1}{5}{21}
+\subsubsecentry{Reversible}{9}{3}{1}{6}{21}
+\subsecentry{Status}{9}{3}{2}{21}
+\subsubsecentry{Multi line level display}{9}{3}{2}{1}{21}
+\subsubsecentry{Use face attributes}{9}{3}{2}{2}{21}
+\subsubsecentry{Highlight with brackets}{9}{3}{2}{3}{21}
+\subsubsecentry{Change cursor color}{9}{3}{2}{4}{21}
+\subsubsecentry{Item attribute}{9}{3}{2}{5}{22}
+\subsubsecentry{Try to display whole item}{9}{3}{2}{6}{22}
+\subsubsecentry{Mode line begin string}{9}{3}{2}{7}{22}
+\subsubsecentry{Mode line end string}{9}{3}{2}{8}{22}
+\subsubsecentry{Item face}{9}{3}{2}{9}{22}
+\subsecentry{Other control}{9}{3}{3}{22}
+\subsubsecentry{Statement insertion with dummy value}{9}{3}{3}{1}{22}
+\subsubsecentry{Per buffer}{9}{3}{3}{2}{23}
+\subsubsecentry{Auto change for modes}{9}{3}{3}{3}{23}
+\subsubsecentry{Text in code}{9}{3}{3}{4}{23}
+\subsubsecentry{Announce text in code}{9}{3}{3}{5}{23}
+\subsubsecentry{Text faces}{9}{3}{3}{6}{23}
+\subsubsecentry{Live commentary}{9}{3}{3}{7}{23}
+\subsubsecentry{Display full choices}{9}{3}{3}{8}{23}
+\subsubsecentry{Flexi choose upstring}{9}{3}{3}{9}{24}
+\subsubsecentry{Flexi choose topstring}{9}{3}{3}{10}{24}
+\chapentry{Versor use analysis}{10}{25}
+\chapentry{Versor and research}{11}{26}
+\unnumbchapentry{Command Index}{11}{27}
+\unnumbchapentry{Concept Index}{11}{28}
