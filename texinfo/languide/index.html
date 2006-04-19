@@ -1,0 +1,139 @@
+<html lang="en">
+<head>
+<title>Languide manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Languide manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="../index.html#dir" title="(dir)">
+<link rel="prev" href="../index.html#dir" title="(dir)">
+<link rel="next" href="Introduction.html#Introduction" title="Introduction">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<h1 class="settitle">Languide manual</h1>
+<div class="node">
+<p>
+<a name="Top"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Introduction.html#Introduction">Introduction</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="../index.html#dir">(dir)</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="../index.html#dir">(dir)</a>
+<hr><br>
+</div>
+
+   <p>
+<!-- store these by makeinfo, copying them into subdirs of htdocs, tarring them up and doing -->
+<!-- scp htdocs.tar.gz jcg_sturdy@emacs-versor.sourceforge.net:/home/groups/e/em/emacs-versor -->
+
+Languide provides high-level editing commands, such as turning an
+in-line block of code into a procedure, and substituting a call to the
+procedure for the original code.
+
+Languide is one of a pair of companion packages. The other one,
+Versor, provides flexible keybindings which can be used to navigate
+code in terms of its structure.  Part of Versor's functionality is
+provided by the lower-level parts of Languide. See <a href="../versor/Versor-and--Languide.html#Versor-and--Languide">Versor and Languide (Versor: versatile cursors for GNUemacs)</a>, for more
+information.
+
+Most of Languide's functionality can be, and normally would be,
+accessed through Versor, but it is possible to use Languide commands
+directly. This manual describes the direct use of them; for use
+through Versor, See <a href="../versor/index.html#Top">Top (versor)</a>.
+
+
+<ul class="menu">
+<li><a accesskey="1" href="Introduction.html#Introduction">Introduction</a>:                 What it's all about
+<li><a accesskey="2" href="Concepts.html#Concepts">Concepts</a>:                     Languide works at a more abstract level than
+                                most editor commands.
+                                Its commands will probably make more sense
+                                if you understand the abstractions it uses.
+<li><a accesskey="3" href="Commands.html#Commands">Commands</a>:                     Things Languide can do
+<li><a accesskey="4" href="Setup.html#Setup">Setup</a>:                        How to install and configure Languide
+<li><a accesskey="5" href="Extension.html#Extension">Extension</a>:                    How to define languages and statements
+<li><a accesskey="6" href="Languide-and-Versor.html#Languide-and-Versor">Languide and Versor</a>:          Interface to a companion package
+                                providing easy access to commands
+<li><a accesskey="7" href="Command-Index.html#Command-Index">Command Index</a>:                Command Index
+<li><a accesskey="8" href="Concept-Index.html#Concept-Index">Concept Index</a>:                Concept Index
+
+ --- The Detailed Node Listing ---
+
+Commands
+
+<li><a accesskey="9" href="Alterations.html#Alterations">Alterations</a>:                    Altering the selection
+<li><a href="Expression-handling.html#Expression-handling">Expression handling</a>:            Expression handling, expressions, and functions
+<li><a href="Statement-handling.html#Statement-handling">Statement handling</a>:             Statement handling
+
+Expression handling, expressions, and functions
+
+<li><a href="Employ-variable.html#Employ-variable">Employ variable</a>:              Employ variable
+                                Given an existing variable definition,
+                                this finds any existing use of that
+                                value, and substitutes the variable. 
+<li><a href="Convert-to-variable.html#Convert-to-variable">Convert to variable</a>:          Convert region to variable
+                                Given a region containing an
+                                expression, this sets up a variable
+                                initialised to that expression, and
+                                replaces the original expression with
+                                that variable.
+<li><a href="Convert-to-function.html#Convert-to-function">Convert to function</a>:          Convert region to function
+                                This takes the selected region,
+                                defines a new function just before the
+                                one containing the region, and
+                                replaces the original region with a
+                                call to the new function.
+<li><a href="Surround-with-call.html#Surround-with-call">Surround with call</a>:           Surround region with call
+                                This wraps the current region with a
+                                call to a function.
+<li><a href="Remove-call.html#Remove-call">Remove call</a>:                  Remove surrounding call
+                                This removes the function call
+                                surrounding point.
+
+Statement handling
+
+<li><a href="Unify-Statements.html#Unify-Statements">Unify Statements</a>:             Unify Statements
+                                This makes the selected region into a
+                                compound statement. 
+<li><a href="Make-conditional.html#Make-conditional">Make conditional</a>:             Make the selected code conditional
+<li><a href="Make-repeating.html#Make-repeating">Make repeating</a>:               Make the selected code iterative
+<li><a href="Scoping-point.html#Scoping-point">Scoping point</a>:                Move to enclosing scoping point
+                                This moves point to the most nearly
+                                enclosing scoping point, that is, a
+                                suitable place for putting new variables.
+<li><a href="Decision-point.html#Decision-point">Decision point</a>:               Move to enclosing decision point
+                                This moves point to the most nearly
+                                enclosing decision point, that is, a
+                                suitable place for putting a new condition.
+
+Setup
+
+<li><a href="Configuration.html#Configuration">Configuration</a>:                Configuring Languide
+
+Configuration
+
+<li><a href="Auto_002dedit-overlay-face.html#Auto_002dedit-overlay-face">Auto-edit overlay face</a>:         How to draw attention to changes away
+                                  from point
+<li><a href="Whole-statement-as-container.html#Whole-statement-as-container">Whole statement as container</a>:   On selecting a container, whether to
+                                  make that the whole statement
+<li><a href="Cyclic.html#Cyclic">Cyclic</a>:                         Whether statement part selection
+                                  should be cyclic
+<li><a href="IncludeContainer.html#IncludeContainer">IncludeContainer</a>:               Whether statement containers count
+                                  as selectable statement parts
+
+</ul>
+
+
+   </body></html>
+

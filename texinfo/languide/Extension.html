@@ -1,0 +1,108 @@
+<html lang="en">
+<head>
+<title>Extension - Languide manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Languide manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="prev" href="Setup.html#Setup" title="Setup">
+<link rel="next" href="Languide-and-Versor.html#Languide-and-Versor" title="Languide and Versor">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Extension"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Languide-and-Versor.html#Languide-and-Versor">Languide and Versor</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Setup.html#Setup">Setup</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="index.html#Top">Top</a>
+<hr><br>
+</div>
+
+<h2 class="chapter">5 Extending Languide: how to define languages and statements</h2>
+
+<p>
+Languide comes with definitions of common statement types for several
+programming languages. You can add more, and of course contribute them
+for public use should you so wish.
+
+The file statement-nav-directions.el implements the basic movements
+needed to navigate around statements. Directions for specific
+statement parts in various programming languages are defined in such
+files as languide-lisp-like.el, languide-c-like.el and so forth;
+languide-c-like is a fairly rich source of examples.
+
+Normally, a sequence of directions is followed, and the last one is
+taken as the result, that is, the thing to leave selected. To allow
+multipart selections, as versor does, you can indicate a step of
+the directions as selecting what it moves over, by wrapping it in a
+call to &ldquo;<code>remember</code>&rdquo;.
+
+Strings in the directions are searched for (as regexps) and moved
+over.
+
+Any elisp function calls may be used in the directions, and their
+effect on point will be, but those listed on
+<code>statement-navigate-list-selector-functions</code> are treated
+specially: they are expected to return a cons of the start and end
+positions of the piece of text they describe. Thus, only such
+functions should be used as the last step of a set of directions, and
+only these should be given as the argument to &ldquo;remember&rdquo;. You can
+write your own functions of this nature, but you must add them to
+<code>statement-navigate-list-selector-functions</code> for them to work
+properly.
+
+The selection functions are as follows:
+
+     <dl>
+<dt><code>expression</code><dd>
+Selects the following s-exp.
+
+<br><dt><code>expressions</code><dd>
+Selects as many following s-exps as possible at the current level of nesting.
+
+<br><dt><code>expression-contents</code><dd>
+Selects the contents of the following s-exp (but not its brackets).
+
+<br><dt><code>preceding-expression</code><dd>
+Selects the preceding s-exp.
+
+<br><dt><code>statement</code><dd>
+Selects the following statement. This is defined by
+&ldquo;<code>defmodal</code>&rdquo; definitions for the major mode concerned, for the
+functions <code>move-into-previous-statement</code>,
+<code>move-into-next-statement</code>,
+<code>beginning-of-statement-internal</code>, and
+<code>end-of-statement-internal</code>. (If you define these, you should
+also define <code>identify-statement</code>, <code>compound-statement-open</code>,
+<code>compound-statement-close</code>,
+<code>insert-compound-statement-open</code>, and
+<code>insert-compound-statement-close</code>.)
+
+<br><dt><code>statements</code><dd>
+Selects as many following statements as possible, at the current level
+of nesting.
+
+<br><dt><code>statement-contents</code><dd>
+If the following statement is a simple statement, select it. If it is
+a compound statement, select the statements that it is made of, but
+not the bracketing that groups them together.
+
+<br><dt><code>from-start-of-statement</code><br><dt><code>upto</code><br><dt><code>start-of-match</code><dd></dl>
+   
+
+   </body></html>
+

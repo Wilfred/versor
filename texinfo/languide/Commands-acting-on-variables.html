@@ -1,0 +1,74 @@
+<html lang="en">
+<head>
+<title>Commands acting on variables - Languide manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Languide manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Commands.html#Commands" title="Commands">
+<link rel="prev" href="Alterations.html#Alterations" title="Alterations">
+<link rel="next" href="Commands-acting-on-statements.html#Commands-acting-on-statements" title="Commands acting on statements">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Commands-acting-on-variables"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Commands-acting-on-statements.html#Commands-acting-on-statements">Commands acting on statements</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Alterations.html#Alterations">Alterations</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Commands.html#Commands">Commands</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h3 class="section">3.2 Commands acting on variables, expressions, and functions</h3>
+
+<p>
+This group of commands manipulates value handling constructs in source
+code.  For example, you can select an expression (using the Versor
+selection), and turn it into a variable, so that you can re-use the
+same value.  Likewise, you can convert an expression into a function,
+so that you can call it elsewhere. 
+
+
+<ul class="menu">
+<li><a accesskey="1" href="Employ-variable.html#Employ-variable">Employ variable</a>:              Employ variable
+                                Given an existing variable definition,
+                                this finds any existing use of that
+                                value, and substitutes the variable. 
+<li><a accesskey="2" href="Convert-to-variable.html#Convert-to-variable">Convert to variable</a>:          Convert region to variable
+                                Given a region containing an
+                                expression, this sets up a variable
+                                initialised to that expression, and
+                                replaces the original expression with
+                                that variable.
+<li><a accesskey="3" href="Convert-to-function.html#Convert-to-function">Convert to function</a>:          Convert region to function
+                                This takes the selected region,
+                                defines a new function just before the
+                                one containing the region, and
+                                replaces the original region with a
+                                call to the new function.
+<li><a accesskey="4" href="Surround-with-call.html#Surround-with-call">Surround with call</a>:           Surround region with call
+                                This wraps the current region with a
+                                call to a function.
+<li><a accesskey="5" href="Remove-call.html#Remove-call">Remove call</a>:                  Remove surrounding call
+                                This removes the function call
+                                surrounding point.
+</ul>
+
+
+   </body></html>
+

@@ -1,0 +1,74 @@
+<html lang="en">
+<head>
+<title>Structured Text - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Dimensions.html#Dimensions" title="Dimensions">
+<link rel="prev" href="Text.html#Text" title="Text">
+<link rel="next" href="Tables.html#Tables" title="Tables">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Structured-Text"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Tables.html#Tables">Tables</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Text.html#Text">Text</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Dimensions.html#Dimensions">Dimensions</a>
+<hr><br>
+</div>
+
+<h3 class="section">3.4 Structured Text coordinates</h3>
+
+<p>
+Structured text coordinates are similar to text coordinates
+(see <a href="Text.html#Text">Text</a>), with the addition of moving by nested blocks as used
+in many markup languages, in a manner similar to structural coordinates
+(see <a href="Structural.html#Structural">Structural</a>).
+
+The dimensions available in structured text coordinates are:
+
+     <ul>
+<li>chars
+<li>words
+<li>blocks
+<li>block-depth
+</ul>
+   
+The definition of block syntax is mode-specific. For example, in HTML,
+paired tags are defined to begin and end blocks. 
+
+An associated command is <span class="command">another-block</span> which analyzes the
+block before point (that is, from a closing-block construct back to
+the corresponding opening-block construct), collects up all the
+structuring constructs in it, and inserts a copy of those at point.
+For example, if point is just after an HTML table row (so that the tag
+most immediately before point is <code>&lt;/tr&gt;</code>, the HTML table row
+ender), <span class="command">another-block</span> will find all the HTML tags back to
+the corresponding <code>&lt;tr&gt;</code>, and insert them, but without the
+intervening non-tag text. (This specific example is probably the most
+useful use of this command, in the author's experience.)
+
+This part of Versor is very much a work in progress, and you are
+encouraged to add to the definition of block syntax for your favourite
+markup language, and send it to the author of Versor. The block syntax
+mechanism is defined in the file <span class="file">nested-blocks.el</span>.
+
+
+   </body></html>
+

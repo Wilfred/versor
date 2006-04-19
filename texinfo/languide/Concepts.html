@@ -1,0 +1,64 @@
+<html lang="en">
+<head>
+<title>Concepts - Languide manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Languide manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="prev" href="Introduction.html#Introduction" title="Introduction">
+<link rel="next" href="Commands.html#Commands" title="Commands">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Concepts"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Commands.html#Commands">Commands</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Introduction.html#Introduction">Introduction</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="index.html#Top">Top</a>
+<hr><br>
+</div>
+
+<h2 class="chapter">2 Concepts</h2>
+
+<p>
+<a name="index-Statements-1"></a><a name="index-Compound-statements-2"></a><a name="index-Expressions-3"></a>
+This package is built around the ideas of statements, compound
+statements, and expressions.
+
+We have a general model of statements, in which a statement can have
+head, body, and optionally tail parts &ndash; for example, the three parts
+of an if-then-else statement.
+
+We also use the idea that each statement (except for a top-level
+definition) is in a container, which is another statement.
+
+Languide provides language guided editing for a variety of languages.
+To provide equivalent functionality across the range of supported
+language modes, we use a modal functions package which lets us give a
+function separate definitions in each major mode.
+
+Languide has two groups of commands:
+     <ul>
+<li>high-level editing
+<li>movement by statements (which you can use directly, or through
+    Versor (see <a href="../versor/Versor-and-Languide.html#Versor-and-Languide">Versor and Languide (versor)</a>), and which are used by
+    the high-level editing commands)
+</ul>
+   
+
+   </body></html>
+

@@ -1,0 +1,182 @@
+This is TeX, Version 3.14159 (Web2C 7.4.5) (format=tex 2005.1.21)  12 APR 2006 17:06
+**languide.texinfo
+(./languide.texinfo (/usr/share/texmf/tex/texinfo/texinfo.tex
+Loading texinfo [version 2003-02-03.16]: Basics,
+\bindingoffset=\dimen16
+\normaloffset=\dimen17
+\pagewidth=\dimen18
+\pageheight=\dimen19
+\outerhsize=\dimen20
+\outervsize=\dimen21
+\cornerlong=\dimen22
+\cornerthick=\dimen23
+\topandbottommargin=\dimen24
+\headlinebox=\box16
+\footlinebox=\box17
+\margin=\insert252
+\EMsimple=\toks12
+\groupbox=\box18
+\groupinvalidhelp=\toks13
+\mil=\dimen25
+\exdentamount=\skip18
+\inmarginspacing=\skip19
+ pdf,
+\tempnum=\count26
+\lnkcount=\count27
+\filename=\toks14
+\filenamelength=\count28
+\pgn=\count29
+\toksA=\toks15
+\toksB=\toks16
+\toksC=\toks17
+\toksD=\toks18
+\boxA=\box19
+\countA=\count30
+ fonts,
+\sffam=\fam8
+\textleading=\dimen26
+\mainmagstep=\count31
+\fontdepth=\count32
+ page headings,
+\titlepagetopglue=\skip20
+\titlepagebottomglue=\skip21
+\evenheadline=\toks19
+\oddheadline=\toks20
+\evenfootline=\toks21
+\oddfootline=\toks22
+
+tables,
+\tableindent=\dimen27
+\itemindent=\dimen28
+\itemmargin=\dimen29
+\itemmax=\dimen30
+\itemno=\count33
+\multitableparskip=\skip22
+\multitableparindent=\skip23
+\multitablecolspace=\dimen31
+\multitablelinespace=\skip24
+\colcount=\count34
+\savedfootnotes=\box20
+ conditionals, indexing,
+\secondaryindent=\skip25
+\partialpage=\box21
+\doublecolumnhsize=\dimen32
+ sectioning,
+\chapno=\count35
+\secno=\count36
+\subsecno=\count37
+\subsubsecno=\count38
+\appendixno=\count39
+\absseclevel=\count40
+\secbase=\count41
+\chapheadingskip=\skip26
+\secheadingskip=\skip27
+\subsecheadingskip=\skip28
+ toc,
+\tocfile=\write0
+\contentsrightmargin=\skip29
+\savepageno=\count42
+\lastnegativepageno=\count43
+\shortappendixwidth=\dimen33
+\tocindent=\dimen34
+ environments,
+\errorbox=\box22
+\lispnarrowing=\skip30
+\envskipamount=\skip31
+\circthick=\dimen35
+\cartouter=\dimen36
+\cartinner=\dimen37
+\normbskip=\skip32
+\normpskip=\skip33
+\normlskip=\skip34
+\lskip=\skip35
+\rskip=\skip36
+\tabw=\dimen38
+ defuns,
+\defbodyindent=\skip37
+\defargsindent=\skip38
+\deflastargmargin=\skip39
+\parencount=\count44
+ macros,
+\macscribble=\write1
+\paramno=\count45
+\macname=\toks23
+
+cross references,
+\auxfile=\write2
+\savesfregister=\count46
+\footnoteno=\count47
+ (/usr/share/texmf/tex/generic/misc/epsf.tex
+\epsffilein=\read0
+\epsfframemargin=\dimen39
+\epsfframethickness=\dimen40
+\epsfrsize=\dimen41
+\epsftmp=\dimen42
+\epsftsize=\dimen43
+\epsfxsize=\dimen44
+\epsfysize=\dimen45
+\pspoints=\dimen46
+\epsfnoopenhelp=\toks24
+)
+\noepsfhelp=\toks25
+ localization,
+\nolanghelp=\toks26
+\defaultparindent=\dimen47
+
+and turning on texinfo input format.) (./languide.aux)
+@cpindfile=@write3
+@fnindfile=@write4
+@vrindfile=@write5
+@tpindfile=@write6
+@kyindfile=@write7
+@pgindfile=@write8
+ [1
+\openout2 = `languide.aux'.
+
+\openout3 = `languide.cp'.
+
+\openout4 = `languide.fn'.
+
+\openout5 = `languide.vr'.
+
+\openout6 = `languide.tp'.
+
+\openout7 = `languide.ky'.
+
+\openout8 = `languide.pg'.
+
+] [2]
+54: Undefined cross reference `Top-snt'.
+54: Undefined cross reference `Top-snt'.
+54: Undefined cross reference `Top-pg'. Chapter 1 [1]
+\openout0 = `languide.toc'.
+
+ Chapter 2 [2]
+196: Undefined cross reference `Versor and Languide-snt'.
+196: Undefined cross reference `Versor and Languide-snt'.
+196: Undefined cross reference `Versor and Languide-pg'. Chapter 3 [3] [4]
+Chapter 4 [5] Chapter 5 [6]
+Underfull \hbox (badness 10000) in paragraph at lines 497--507
+ @texttt move-into-next-statement[]@textrm , @texttt beginning-of-statement-int
+ernal[]@textrm , and
+
+@hbox(7.60416+2.43333)x455.24408, glue set 11.0083
+.@glue(@leftskip) 57.81621
+.@texttt m
+.@texttt o
+.@texttt v
+.@texttt e
+.etc.
+
+Chapter 6 [7] (Command Index) [8] (Concept Index) [9] [10] (./languide.toc)
+[-1] ) 
+Here is how much of TeX's memory you used:
+ 1399 strings out of 98002
+ 15903 string characters out of 1221978
+ 36681 words of memory out of 1000001
+ 2278 multiletter control sequences out of 10000+50000
+ 31953 words of font info for 111 fonts, out of 500000 for 1000
+ 19 hyphenation exceptions out of 1000
+ 12i,6n,11p,240b,315s stack positions out of 1500i,500n,5000p,200000b,5000s
+
+Output written on languide.dvi (13 pages, 26372 bytes).

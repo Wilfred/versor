@@ -1,0 +1,56 @@
+<html lang="en">
+<head>
+<title>Text in code - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Other-control.html#Other-control" title="Other control">
+<link rel="prev" href="Auto-change-for-modes.html#Auto-change-for-modes" title="Auto change for modes">
+<link rel="next" href="Announce-text-in-code.html#Announce-text-in-code" title="Announce text in code">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Text-in-code"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Announce-text-in-code.html#Announce-text-in-code">Announce text in code</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Auto-change-for-modes.html#Auto-change-for-modes">Auto change for modes</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Other-control.html#Other-control">Other control</a>
+<hr><br>
+</div>
+
+<h5 class="subsubsection">9.3.3.4 Text in code</h5>
+
+<p>
+Type: boolean
+
+Default value: t
+
+Whether versor should switch dimensions for string literals and comments.
+
+This requires font-lock-mode to be used.
+
+The current dimensions are then remembered separately, and switch to
+the last one used in that kind of place, as point moves between code, comments
+and strings.
+
+See versor-text-faces for the faces used to recognize this, building on
+font-lock-mode.
+
+
+   </body></html>
+

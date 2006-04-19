@@ -1,0 +1,230 @@
+<html lang="en">
+<head>
+<title>Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="../index.html#dir" title="(dir)">
+<link rel="prev" href="../index.html#dir" title="(dir)">
+<link rel="next" href="Introduction.html#Introduction" title="Introduction">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<h1 class="settitle">Versor manual</h1>
+<div class="node">
+<p>
+<a name="Top"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Introduction.html#Introduction">Introduction</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="../index.html#dir">(dir)</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="../index.html#dir">(dir)</a>
+<hr><br>
+</div>
+
+   <p>
+<!-- store these by makeinfo, copying them into subdirs of htdocs, tarring them up and doing -->
+<!-- scp htdocs.tar.gz jcg_sturdy@emacs-versor.sourceforge.net:/home/groups/e/em/emacs-versor -->
+
+Versor, the &ldquo;versatile cursor&rdquo; package, provides, and makes easily
+accessible, cursor movements in a variety of groups of &ldquo;dimensions&rdquo;,
+such as:
+
+   <p><table summary=""><tr align="left"><td valign="top"></td><td valign="top">
+</td><td valign="top">pages
+</td><td valign="top">lines
+</td><td valign="top">chars
+<br></td></tr><tr align="left"><td valign="top"></td><td valign="top">functions
+</td><td valign="top">depth of nesting
+</td><td valign="top">expressions
+</td><td valign="top">chars
+<br></td></tr><tr align="left"><td valign="top">paragraphs
+</td><td valign="top">sentences
+</td><td valign="top">phrases
+</td><td valign="top">words
+</td><td valign="top">chars
+<br></td></tr><tr align="left"><td valign="top">functions
+</td><td valign="top">statements
+</td><td valign="top">statement-parts
+</td><td valign="top">expressions
+</td><td valign="top">chars
+   <br></td></tr></table>
+
+Versor is one of a pair of companion packages. The other one,
+Languide, provides some high-level editing operations. Part of
+Versor's functionality is provided by the lower-level parts of
+Languide. See <a href="../languide/Languide-and-Versor.html#Languide-and-Versor">Languide and Versor (Languide: language guided editing)</a>, for more information.
+
+
+<ul class="menu">
+<li><a accesskey="1" href="Introduction.html#Introduction">Introduction</a>:                 The concepts behind Versor
+<li><a accesskey="2" href="Familiarization.html#Familiarization">Familiarization</a>:              Learning your way around Versor
+<li><a accesskey="3" href="Dimensions.html#Dimensions">Dimensions</a>:                   Available coordinate systems
+<li><a accesskey="4" href="Further-commands.html#Further-commands">Further commands</a>:             Commands other than movement
+<li><a accesskey="5" href="Refactoring.html#Refactoring">Refactoring</a>:                  Refactoring using Languide
+<li><a accesskey="6" href="Advanced-features.html#Advanced-features">Advanced features</a>:            More advanced features
+<li><a accesskey="7" href="Accessibility.html#Accessibility">Accessibility</a>:                Using Versor when avoiding keyboard use
+<li><a accesskey="8" href="Versor-and-Languide.html#Versor-and-Languide">Versor and Languide</a>:          Interfaces to a companion package
+<li><a accesskey="9" href="Setup.html#Setup">Setup</a>:                        How to install and configure Versor
+<li><a href="Analysis.html#Analysis">Analysis</a>:                     Versor use analysis
+<li><a href="Versor-and-research.html#Versor-and-research">Versor and research</a>:          Versor and research
+<li><a href="Command-Index.html#Command-Index">Command Index</a>:                Command Index
+<li><a href="Concept-Index.html#Concept-Index">Concept Index</a>:                Concept Index
+
+ --- The Detailed Node Listing ---
+
+Introduction
+
+<li><a href="Aims.html#Aims">Aims</a>:                         The aims of Versor
+<li><a href="Concepts.html#Concepts">Concepts</a>:                     The concepts behind Versor
+
+Concepts
+
+<li><a href="Coordinates-and-dimensions.html#Coordinates-and-dimensions">Coordinates and dimensions</a>:   Coordinate systems and dimensions
+<li><a href="The-selection.html#The-selection">The selection</a>:                The selection
+
+Familiarization
+
+<li><a href="Zooming.html#Zooming">Zooming</a>:                      Zooming within a coordinate system
+<li><a href="Switching-coordinate-systems.html#Switching-coordinate-systems">Switching coordinate systems</a>:   Switching between coordinate systems
+<li><a href="Editing-with-the-selection.html#Editing-with-the-selection">Editing with the selection</a>  
+<li><a href="Extending.html#Extending">Extending</a>:                    Extending the selection
+
+Editing with the selection
+
+<li><a href="Deleting-the-selection.html#Deleting-the-selection">Deleting the selection</a>      
+<li><a href="Inserting-using-the-selection.html#Inserting-using-the-selection">Inserting using the selection</a>  
+
+Available coordinate systems
+
+<li><a href="Cartesian.html#Cartesian">Cartesian</a>:                    Cartesian coordinates
+<li><a href="Structural.html#Structural">Structural</a>:                   Structural coordinates
+<li><a href="Text.html#Text">Text</a>:                         Text coordinates
+<li><a href="Structured-Text.html#Structured-Text">Structured Text</a>:              Structured Text coordinates
+<li><a href="Tables.html#Tables">Tables</a>:                       Table coordinates
+<li><a href="Program.html#Program">Program</a>:                      Program coordinates
+
+Further commands
+
+<li><a href="Deletion.html#Deletion">Deletion</a>:                     Deletion
+<li><a href="Insertion.html#Insertion">Insertion</a>:                    Insertion
+<li><a href="Alteration.html#Alteration">Alteration</a>:                   Alteration
+<li><a href="DWIM.html#DWIM">DWIM</a>:                         Do What I Mean
+
+Refactoring using Languide
+
+<li><a href="Expression-handling.html#Expression-handling">Expression handling</a>:          Commands working on expressions
+<li><a href="Statement-handling.html#Statement-handling">Statement handling</a>:           Commands working on statements
+<li><a href="Summary-of-refactoring.html#Summary-of-refactoring">Summary of refactoring</a>:       Key bindings for refactoring
+
+Expression handling, expressions, and functions
+
+<li><a href="Convert-to-variable.html#Convert-to-variable">Convert to variable</a>:          Convert selection to variable
+                                Given a selection containing an
+                                expression, this sets up a variable
+                                initialised to that expression, and
+                                replaces the original expression with
+                                that variable.
+<li><a href="Convert-to-function.html#Convert-to-function">Convert to function</a>:          Convert selection to function
+                                This takes the selection,
+                                defines a new function just before the
+                                one containing the selection, and
+                                replaces the original selection with a
+                                call to the new function.
+<li><a href="Surround-with-call.html#Surround-with-call">Surround with call</a>:           Surround selection with call
+                                This wraps the selection with a
+                                call to a function.
+<li><a href="Remove-call.html#Remove-call">Remove call</a>:                  Remove surrounding call
+                                This removes the function call
+                                surrounding point.
+
+Statement handling
+
+<li><a href="Unify-Statements.html#Unify-Statements">Unify Statements</a>:             Unify Statements
+                                This makes the selection into a
+                                compound statement. 
+<li><a href="Make-conditional.html#Make-conditional">Make conditional</a>:             Make the selected code conditional
+<li><a href="Make-repeating.html#Make-repeating">Make repeating</a>:               Make the selected code iterative
+<li><a href="Remove-control.html#Remove-control">Remove control</a>:               Remove a control construct
+<li><a href="Decision-point.html#Decision-point">Decision point</a>:               Move to enclosing decision point
+                                This moves point to the most nearly
+                                enclosing decision point, that is, a
+                                suitable place for putting a new condition.
+
+Advanced features
+
+<li><a href="Detect-text-in-code.html#Detect-text-in-code">Detect text in code</a>:          Text in code
+<li><a href="Per_002dbuffer-dimensions.html#Per_002dbuffer-dimensions">Per-buffer dimensions</a>:        Per-buffer dimensions
+<li><a href="Per_002dmode-dimensions.html#Per_002dmode-dimensions">Per-mode dimensions</a>:          Per-mode dimensions
+
+Accessibility
+
+<li><a href="Pedals.html#Pedals">Pedals</a>:                       Using pedals
+<li><a href="Reversing.html#Reversing">Reversing</a>:                    Reversing the cursor motions
+<li><a href="Voice-input.html#Voice-input">Voice input</a>:                  Using voice input
+<li><a href="Flexi_002dchoose.html#Flexi_002dchoose">Flexi-choose</a>:                 The flexible chooser
+<li><a href="Other-input-devices.html#Other-input-devices">Other input devices</a>:          Future interface possibilities
+
+Setup
+
+<li><a href="General-configuration.html#General-configuration">General configuration</a>:        Some options to set when loading
+<li><a href="Dimensions-available.html#Dimensions-available">Dimensions available</a>:         Dimensions you can choose from, for each mode
+<li><a href="Using-Configure.html#Using-Configure">Using Configure</a>:              Configuring versor using M-x configure
+
+Using Configure
+
+<li><a href="Motion.html#Motion">Motion</a>                      
+<li><a href="Status.html#Status">Status</a>                      
+<li><a href="Other-control.html#Other-control">Other control</a>               
+
+Motion
+
+<li><a href="Allow-move-to-end-of-last.html#Allow-move-to-end-of-last">Allow move to end of last</a>   
+<li><a href="Move-out-when-at-end.html#Move-out-when-at-end">Move out when at end</a>        
+<li><a href="Statement-up-to-next.html#Statement-up-to-next">Statement up to next</a>        
+<li><a href="Level-wrap.html#Level-wrap">Level wrap</a>                  
+<li><a href="Meta-level-wrap.html#Meta-level-wrap">Meta level wrap</a>             
+<li><a href="Reversible.html#Reversible">Reversible</a>                  
+
+Status
+
+<li><a href="Multi-line-level-display.html#Multi-line-level-display">Multi line level display</a>    
+<li><a href="Use-face-attributes.html#Use-face-attributes">Use face attributes</a>         
+<li><a href="Highlight-with-brackets.html#Highlight-with-brackets">Highlight with brackets</a>     
+<li><a href="Change-cursor-color.html#Change-cursor-color">Change cursor color</a>         
+<li><a href="Item-attribute.html#Item-attribute">Item attribute</a>              
+<li><a href="Try-to-display-whole-item.html#Try-to-display-whole-item">Try to display whole item</a>   
+<li><a href="Mode-line-begin-string.html#Mode-line-begin-string">Mode line begin string</a>      
+<li><a href="Mode-line-end-string.html#Mode-line-end-string">Mode line end string</a>        
+<li><a href="Item-face.html#Item-face">Item face</a>                   
+
+Other control
+
+<li><a href="Statement-insertion-with-dummy-value.html#Statement-insertion-with-dummy-value">Statement insertion with dummy value</a>  
+<li><a href="Per-buffer.html#Per-buffer">Per buffer</a>                  
+<li><a href="Auto-change-for-modes.html#Auto-change-for-modes">Auto change for modes</a>       
+<li><a href="Text-in-code.html#Text-in-code">Text in code</a>                
+<li><a href="Announce-text-in-code.html#Announce-text-in-code">Announce text in code</a>       
+<li><a href="Text-faces.html#Text-faces">Text faces</a>                  
+<li><a href="Live-commentary.html#Live-commentary">Live commentary</a>             
+<li><a href="Display-full-choices.html#Display-full-choices">Display full choices</a>        
+<li><a href="Flexi-choose-upstring.html#Flexi-choose-upstring">Flexi choose upstring</a>       
+<li><a href="Flexi-choose-topstring.html#Flexi-choose-topstring">Flexi choose topstring</a>      
+
+</ul>
+
+
+   </body></html>
+

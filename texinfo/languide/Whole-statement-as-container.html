@@ -1,0 +1,57 @@
+<html lang="en">
+<head>
+<title>Whole statement as container - Languide manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Languide manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Configuration.html#Configuration" title="Configuration">
+<link rel="prev" href="Auto_002dedit-overlay-face.html#Auto_002dedit-overlay-face" title="Auto-edit overlay face">
+<link rel="next" href="Cyclic.html#Cyclic" title="Cyclic">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Whole-statement-as-container"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Cyclic.html#Cyclic">Cyclic</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Auto_002dedit-overlay-face.html#Auto_002dedit-overlay-face">Auto-edit overlay face</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Configuration.html#Configuration">Configuration</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h4 class="subsection">4.1.2 Whole statement as container</h4>
+
+<p>
+Type: boolean
+
+Default value: <code>t</code>
+
+Whether to include the whole statement as the container.
+If this is non-nil, when you select the container of a statement,
+the whole containing statement is selected, rather than just the
+part of it containing the statement. For example, if you have
+  if (a) {
+    b;
+    c;
+  }
+and are on &ldquo;b&rdquo; and select the container of b, you will get the
+whole if statement, rather than just the block body.
+
+
+   </body></html>
+

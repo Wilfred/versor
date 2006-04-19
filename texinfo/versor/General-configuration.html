@@ -1,0 +1,95 @@
+<html lang="en">
+<head>
+<title>General configuration - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Setup.html#Setup" title="Setup">
+<link rel="prev" href="Setup.html#Setup" title="Setup">
+<link rel="next" href="Dimensions-available.html#Dimensions-available" title="Dimensions available">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="General-configuration"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Dimensions-available.html#Dimensions-available">Dimensions available</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Setup.html#Setup">Setup</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Setup.html#Setup">Setup</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h3 class="section">9.1 General configuration</h3>
+
+<p>
+You can control which keys are used, and which other facilities are
+turned on, by giving some symbols as arguments to <code>versor:setup</code>.
+
+The arguments can be any (combination) of
+
+     <dl>
+
+<dt><code>arrows</code><dd>for the main cursor keys
+
+<br><dt><code>arrows-misc</code><dd>for insert, delete etc
+
+<br><dt><code>keypad</code><dd>for the keypad cursor keys
+
+<br><dt><code>keypad-misc</code><dd>for keypad insert, delete etc
+</dl>
+   
+to select which keys are set up to do Versor commands.
+
+You can turn on further facilities by including the following symbols
+amongst the arguments:
+
+     <dl>
+
+<dt><code>modal</code><dd>remember a different dimension for each mode
+
+<br><dt><code>local</code><dd>remember a different dimension for each buffer
+
+<br><dt><code>text-in-code</code><dd>switch dimensions for string literals and comments,
+allowing code-oriented movement in actual code, and
+text-oriented movement in embedded natural language text
+
+<br><dt><code>menu</code><dd>define a menu of Versor commands
+</dl>
+   
+The recommended default setup is:
+
+<pre class="lisp">     (versor:setup 'arrows 'arrows-misc 'modal 'text-in-code 'menu)
+</pre>
+   <p>
+You may then want to customize it further, like this:
+
+<pre class="lisp">       ;; preset the dimensions for some modes
+       (setq versor:mode-current-levels 
+     	    (mapcar 'versor:mode-levels-triplet
+     		    '(
+     		      (emacs-lisp-mode "structural" "exprs")
+     		      (lisp-interaction-mode "structural" "exprs")
+     		      (c-mode "program" "statement-parts")
+     		      (text-mode "cartesian" "lines")
+     		      (html-helper-mode "text" "words")
+     		      )))
+</pre>
+   <p>
+
+   </body></html>
+

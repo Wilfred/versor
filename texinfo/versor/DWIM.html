@@ -1,0 +1,74 @@
+<html lang="en">
+<head>
+<title>DWIM - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Further-commands.html#Further-commands" title="Further commands">
+<link rel="prev" href="Alteration.html#Alteration" title="Alteration">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="DWIM"></a>Previous:&nbsp;<a rel="previous" accesskey="p" href="Alteration.html#Alteration">Alteration</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Further-commands.html#Further-commands">Further commands</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h3 class="section">4.4 Do What I Mean</h3>
+
+<p>
+Sometimes Versor deviates from its most logical design, to make sure
+that the cursor ends up where you are likeliest to want it. 
+
+An example of this is that if you are moving by s-expressions, and
+move forward from the last one in the enclosing expression, the cursor
+moves to the end of the last expression, and then on past any
+whitespace and comments, ending up where you are likely to want to
+type the next s-expression.
+
+However, it is still not always possible to get to exactly the right
+place without using character-level movements. For these
+circumstances, Versor provides a &ldquo;Do What I Mean&rdquo; (DWIM) command,
+which moves the cursor to a point likely to be of interest that is
+otherwise hard to get at using the current Versor dimension. This
+command is normally bound to the key <kbd>M-home</kbd>. Alternatively, it
+can be accessed with <kbd>M-x versor:dwim</kbd>.
+
+This function reads the user's mind, using the following algorithm:
+
+     <ol type=1 start=1>
+<li>  Tell the user what has been done each time;
+<li>  Eventually, the user will come to expect the behaviour of this
+  function;
+<li>  Reading what the user wants Versor to do should then usually be
+  trivial.
+        </ol>
+
+Aspects of mental state not necessary for figuring out where to leave point are
+factored out of the calculations.
+
+<span class="command">versor:dwim</span> is mode-specific in its behaviour. For example,
+in programming language modes, it can move point in and out of string
+constants and comments.
+
+
+   </body></html>
+

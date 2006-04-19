@@ -1,0 +1,77 @@
+<html lang="en">
+<head>
+<title>Alteration - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Further-commands.html#Further-commands" title="Further commands">
+<link rel="prev" href="Insertion.html#Insertion" title="Insertion">
+<link rel="next" href="DWIM.html#DWIM" title="DWIM">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Alteration"></a>Next:&nbsp;<a rel="next" accesskey="n" href="DWIM.html#DWIM">DWIM</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Insertion.html#Insertion">Insertion</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Further-commands.html#Further-commands">Further commands</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h3 class="section">4.3 Alteration</h3>
+
+<p>
+The &ldquo;alterations&rdquo; system provides a Versor style interface to
+changing the text of the current Versor selection. While you are doing
+alterations, the &lt;LEFT&gt; and &lt;RIGHT&gt; cursor keys change the text within the
+selection, between several possible values of the same kind.  The &lt;UP&gt;
+and &lt;DOWN&gt; cursor keys change which kind of thing you are choosing
+between. 
+
+The effect is similar to turning the selection into a little window
+behind which you are scrolling a two-dimensional grid of possible
+values. 
+
+For example, you could use the &lt;LEFT&gt; and &lt;RIGHT&gt; keys to put any local
+variable which is currently in scope into the selection, and &lt;UP&gt; and
+&lt;DOWN&gt; keys to switch between selecting local variables, global
+variables, and expressions wrapped around a variable. 
+
+When you have got the text you want into the selection, you can use a
+&ldquo;select&rdquo; key to accept that selection, or a &ldquo;reject&rdquo;  key to go
+back to the original value. 
+
+The selection of types of value depends on the context. Possible types
+include:
+
+     <ul>
+<li>local variables
+<li>global variables
+<li>tags in your tag table
+<li>functions defined in this file
+<li>reserved words in a programming language
+</ul>
+   
+The data used by Versor's &ldquo;alteration&rdquo; feature is provided by the
+companion package, Languide (Language Guided Editing).
+See <a href="../languide/Alterations.html#Alterations">Alterations (languide)</a>, for details.
+
+
+   </body></html>
+

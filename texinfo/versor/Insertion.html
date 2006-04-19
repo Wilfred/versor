@@ -1,0 +1,99 @@
+<html lang="en">
+<head>
+<title>Insertion - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Further-commands.html#Further-commands" title="Further commands">
+<link rel="prev" href="Deletion.html#Deletion" title="Deletion">
+<link rel="next" href="Alteration.html#Alteration" title="Alteration">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Insertion"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Alteration.html#Alteration">Alteration</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Deletion.html#Deletion">Deletion</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Further-commands.html#Further-commands">Further commands</a>
+<hr><br>
+</div>
+
+<!-- node-name,  next,  previous,  up -->
+<h3 class="section">4.2 Insertion</h3>
+
+<p>
+Pressing the <kbd>INS</kbd> key gives you a choice of several ways to
+insert, which you choose between by pressing one of the Versor arrow
+keys.
+
+The <kbd>LEFT</kbd> and <kbd>RIGHT</kbd> arrow keys let you insert before or after the
+selection.
+
+The <kbd>UP</kbd> arrow key inserts two entries from the kill ring,
+one before and one after the selection; that is to say, it inserts
+around the selection. This is compatible with
+Versor's way of deleting a multipart selection such as a pair of
+opening and closing brackets See <a href="Deletion.html#Deletion">Deletion</a>.
+
+<!-- The down arrow key inserts within a multipart selection. This is not -->
+<!-- yet implemented. -->
+These are defined in <code>versor:insertion-placement-keymap</code>.
+
+Having chosen where to make an insertion, you must choose which one of
+several kinds of things to insert.  The choices are as follows:
+
+     <dl>
+
+<dt><kbd>delete</kbd><br><dt><kbd>DEL</kbd><br><dt><kbd>C-y</kbd><dd>The top item(s) on the kill ring
+
+<br><dt><kbd>1..9</kbd><dd>The top N items on the kill ring
+
+<br><dt><kbd>C-s</kbd><dd>the most recent search string
+
+<br><dt><kbd>(</kbd><br><dt><kbd>[</kbd><br><dt><kbd>{</kbd><br><dt><kbd>&lt;</kbd><dd>
+A pair of brackets, the opening bracket being the character typed
+
+<br><dt><kbd>?</kbd><dd>An <code>if-then</code> statement in the programming language handled by the
+current major mode. This is meant for use when inserting around the
+selection; it wraps the selection in the conditional statement.
+Statement insertions such as this are very basic string insertions;
+Languide (see <a href="../languide/Alterations.html#Alterations">Alterations (languide)</a>) <!-- this reference is wrong, I think -->
+ has more sophisticated ones,
+which use the template and skeleton insertion systems, and can
+maintain indentation and spacing better.
+
+<br><dt><kbd>%</kbd><dd>An <code>if-then-else</code> statement in the programming language handled by the
+current major mode.
+
+<br><dt><kbd>@</kbd><dd>A <code>while</code> statement in the programming language handled by the
+current major mode.
+
+<br><dt><kbd>=</kbd><dd>A variable declaration in the programming language handled by the
+current major mode
+
+<br><dt><kbd>&amp;</kbd><br><dt><kbd>|</kbd><br><dt><kbd>!</kbd><dd>An &ldquo;and&rdquo;, &ldquo;or&rdquo; or &ldquo;not&rdquo; expression in the programming language handled by the
+current major mode
+
+<br><dt><kbd>f</kbd><dd>The name of the file in the next window. (if there is only one window,
+the name of the file in that window is inserted).
+
+</dl>
+   
+
+   </body></html>
+

@@ -1,0 +1,100 @@
+<html lang="en">
+<head>
+<title>Introduction - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="prev" href="index.html#Top" title="Top">
+<link rel="next" href="Familiarization.html#Familiarization" title="Familiarization">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Introduction"></a>Next:&nbsp;<a rel="next" accesskey="n" href="Familiarization.html#Familiarization">Familiarization</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="index.html#Top">Top</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="index.html#Top">Top</a>
+<hr><br>
+</div>
+
+<h2 class="chapter">1 Introduction</h2>
+
+<p>
+Versor provides, and makes easily accessible, cursor movements in a
+variety of groups of &ldquo;dimensions&rdquo;, such as:
+
+
+   <p><table summary=""><tr align="left"><td valign="top"></td><td valign="top">
+</td><td valign="top">pages
+</td><td valign="top">lines
+</td><td valign="top">chars
+<br></td></tr><tr align="left"><td valign="top"></td><td valign="top">functions
+</td><td valign="top">depth of brackets
+</td><td valign="top">expressions
+</td><td valign="top">chars
+<br></td></tr><tr align="left"><td valign="top">paragraphs
+</td><td valign="top">sentences
+</td><td valign="top">phrases
+</td><td valign="top">words
+</td><td valign="top">chars
+<br></td></tr><tr align="left"><td valign="top">functions
+</td><td valign="top">statements
+</td><td valign="top">statement-parts
+</td><td valign="top">expressions
+</td><td valign="top">chars
+   <br></td></tr></table>
+
+Some of these operations are already present in GNUemacs (but not all
+of them easily reachable; some require complex chording, and some may
+even need to be accessed through <kbd>M-x</kbd>), and some are added by
+Versor. Versor puts them all in easy reach on the arrow keys.
+
+Although GNUemacs uses its modes to put the most useful commands for
+each mode directly on single keys, there are more dimensions mentioned
+above than will fit at the same time on the few arrow keys available
+(just two dimensions). However, note that the available dimensions are
+conveniently listed in a two-dimensional table, as above.
+
+Conveniently, the arrow keys provide two dimensions, just like the two
+dimensions of the table above. Versor uses the arrow keys themselves,
+with a modifier key, to select a pair of adjacent dimensions from one
+of the rows above, and assign them to the arrow keys.
+
+You will notice (unless your display cannot render this) that a unit
+of text, of the same size as the dimension you are using, will be
+highlighted, after each Versor command. This is what Versor regards as
+the cursor. The normal GNUemacs cursor appears at the start of it (or
+occasionally at the end), and all normal GNUemacs operations are
+available and will use the normal cursor. In GNUemacs versions from 21
+onwards, the colour of highlighting changes to indicate the current
+dimension; there is also an indication in the mode line.
+
+The Versor highlight cursor disappears at the start of every command
+(and is restored at the end of each Versor command), so when you use
+GNUemacs commands other than Versor commands, Versor quietly becomes
+invisible, until you use one of its commands again.
+
+
+<ul class="menu">
+<li><a accesskey="1" href="Aims.html#Aims">Aims</a>:                         The aims of Versor
+<li><a accesskey="2" href="Concepts.html#Concepts">Concepts</a>:                     The concepts behind Versor
+</ul>
+
+
+   </body></html>
+

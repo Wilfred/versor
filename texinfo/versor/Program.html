@@ -1,0 +1,107 @@
+<html lang="en">
+<head>
+<title>Program - Versor manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Versor manual">
+<meta name="generator" content="makeinfo 4.7">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Dimensions.html#Dimensions" title="Dimensions">
+<link rel="prev" href="Tables.html#Tables" title="Tables">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc { font-variant:small-caps }
+  span.roman { font-family: serif; font-weight: normal; } 
+--></style>
+</head>
+<body><a href="http://sourceforge.net"><img
+  src="http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2"
+  align="right" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+
+<div class="node">
+<p>
+<a name="Program"></a>Previous:&nbsp;<a rel="previous" accesskey="p" href="Tables.html#Tables">Tables</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Dimensions.html#Dimensions">Dimensions</a>
+<hr><br>
+</div>
+
+<h3 class="section">3.6 Program coordinates</h3>
+
+<p>
+Program coordinates uses the syntax of programming languages to guide
+to the cursor movements. This uses the accompanying package, Languide
+(see <a href="../languide/index.html#Top">Top (languide)</a>), to provide the primitives for moving around
+source code. It is, of course, mode-specific.
+
+Languide definitions are already reasonably comprehensive for Lisp, C,
+Perl and Java, in progress for shell scripts, and planned for Haskell and
+Python. They would probably not be meaningful for PostScript. You are
+encouraged to contribute further or better definitions, both for the
+languages already covered and for others.
+
+The dimensions defined in program coordinates are as follows:
+
+     <ul>
+<li>chars
+<li>exprs
+<li>statement parts
+<li>statements
+<li>defuns
+</ul>
+   
+Apart from the statement-related dimensions, these are the same as
+those in structural coordinates See <a href="Structural.html#Structural">Structural</a>. 
+
+Movement by statement parts moves the selection between parts of the
+current statement.  Programming language statements can typically be
+divided into two or three parts, as follows:
+
+     <ol type=1 start=1>
+<li>The head of a statement is often a condition, such as in an
+<code>if</code> or a <code>while</code> statement.
+<li>The body of a statement is typically another statement, or a group of
+statements, such as the body of an <code>if</code> or a <code>while</code>
+statement.
+<li>The tail of a statement occurs in only a few statement types, such as
+<code>if-then-else</code> or <code>try-catch-finally</code>. 
+        </ol>
+
+The &ldquo;statement parts&rdquo; dimension will move between these in turn, and can
+also moved to the <dfn>container</dfn> of the current statement, that is, a
+grouping statement surrounding it. 
+
+when you select the body of a statement, and the body is a compound
+statement, you can then either:
+
+     <ul>
+<li>continue moving to other parts of the same statement
+<li>select statements within the body, by using the &ldquo;statements&rdquo;
+dimension movements
+</ul>
+   
+
+If using voice input (see <a href="Voice-input.html#Voice-input">Voice input</a>), it is convenient to define
+commands such as &ldquo;head&rdquo;, &ldquo;body&rdquo;,and &ldquo;container&rdquo;, so that you can
+jump directly to the one you want rather than treating it as part of a
+sequence. The commands <span class="command">navigate-this-head</span>,
+<span class="command">navigate-this-body</span>, <span class="command">navigate-this-tail</span>,
+<span class="command">navigate-this-whole</span>, and <span class="command">navigate-this-container</span>
+are available for binding directly to voice commands (or, for that
+matter, to keys of their own).
+
+The &ldquo;statement&rdquo; dimension moves between successive statements at the
+same structural level. This is different from the statement movements
+provided as part of the GNUemacs' C-mode, which moves in and out of
+compound statements.
+
+<!-- todo: link to refactoring, in Languide -->
+
+
+   </body></html>
+
