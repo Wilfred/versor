@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-04-18 12:20:19 john>
+;;; Time-stamp: <2006-04-19 13:58:19 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -276,7 +276,9 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
     (languide-insert "(" name " " initial-value ")"))
   (indent-sexp))
 
-(defmodal insert-global-variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
+(defmodal insert-global-variable-declaration
+  (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+  (name type initial-value)
   "Insert a definition for a global variable called NAME, of TYPE, with INITIAL-VALUE.
 TYPE and INITIAL-VALUE may be null, but the NAME is required.
 In fact, TYPE is not meaningful as this is the definition for Lisp."
@@ -382,7 +384,9 @@ as SYNTAX-BEFORE and SYNTAX-AFTER."
 ;;   "Return a cons of the start and end of the argument list surrounding WHERE,
 ;; or surrounding point if WHERE is not given.")
 
-(defmodal deduce-expression-type (lisp-mode emacs-lisp-mode lisp-interaction-mode) (value-text)
+(defmodal deduce-expression-type
+  (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+  (value-text where)
   "Given VALUE-TEXT, try to deduce the type of it."
   nil)					; nice and easy for dynamically typed languages!
 
@@ -528,18 +532,28 @@ Otherwise return nil."
      ((and (zerop (nth 0 pps))		; same level at both ends
 	   (>= (nth 6 pps) 0))		; no dip in level between ends
       (let* ((n-parts (count-sexps from to))
-	     (f-start (scan-lists from 1 -1))
-	     (f-end (scan-sexps f-start 1))
-	     (functor (intern
-		       (buffer-substring-no-properties f-start f-end)))
-	     (surrounding-start (scan-lists from -1 1))
-	     (surrounding-end (scan-sexps surrounding-start 1))
-	     (sf-start (scan-lists surrounding-start 1 -1))
-	     (sf-end (scan-sexps s-start 1))
-	     (surrounding-functor (intern (buffer-substring-no-properties sf-start sf-end)))
-	     (s-members (count-sexps sf-start (1- surrounding-end)))
-	     (which-s-member (count-sexps s-start from)))
-	(message "functor %S; surrounding-functor %S, of which we are %d of %d" functor surrounding-functor which-member s-members)
+	     (f-start (safe-scan-lists from 1 -1))
+	     (f-end (and f-start
+			 (safe-scan-sexps f-start 1)))
+	     (functor (and f-end
+			   (intern
+			    (buffer-substring-no-properties f-start f-end))))
+	     (surrounding-start (safe-scan-lists from -1 1))
+	     (surrounding-end (and surrounding-start
+				   (safe-scan-sexps surrounding-start 1)))
+	     (sf-start (and surrounding-start
+			    (safe-scan-lists surrounding-start 1 -1)))
+	     (sf-end (and sf-start
+			  (safe-scan-sexps sf-start 1)))
+	     (surrounding-functor (and sf-end
+				       (intern
+					(buffer-substring-no-properties sf-start sf-end))))
+	     (s-members (and sf-start
+			     surrounding-end
+			     (count-sexps sf-start (1- surrounding-end))))
+	     (which-s-member (and sf-start
+				  (count-sexps sf-start from))))
+	(message "functor %S; surrounding-functor %S, of which we are %d of %d" functor surrounding-functor which-s-member s-members)
 	(cond
 	 ((eq functor 'defun) defun-body)
 	 ;; todo: lots more to do here
