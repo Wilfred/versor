@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-04-10 13:56:59 john>
+;;; Time-stamp: <2006-04-19 14:12:01 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -181,12 +181,17 @@ otherwise return nil.")
 (defun show-region-type (start end)
   "for debugging languide-region-type"
   (interactive "r")
-  (message "region type %s"
+  (message "region type %S"
 	   (languide-region-type (or start (region-beginning))
 				 (or end (region-end)))))
 
+
+(defvar languide-supported-modes
+  '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode)
+  "Modes for which languide has support.")
+
 (defun versor-show-region-type-hook-function ()
-  (when (eq major-mode 'c-mode)
+  (when (memq major-mode languide-supported-modes)
     (let ((item (versor-get-current-item)))
       (show-region-type (car item) (cdr item)))))
 
