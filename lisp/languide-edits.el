@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-04-17 10:44:42 jcgs>
+;;; Time-stamp: <2006-04-19 13:48:48 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -189,7 +189,9 @@ sVariable name: ")
       (goto-char from)
       (insert name)
       (beginning-of-defun 1)
-      (insert-global-variable-declaration name (deduce-expression-type value-text) value-text)
+      (insert-global-variable-declaration name
+					  (deduce-expression-type value-text from)
+					  value-text)
       (kill-new name))))
 
 (defun languide-convert-region-to-function (begin end name &optional docstring)
