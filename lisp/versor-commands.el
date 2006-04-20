@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-04-10 10:14:25 john>
+;;; Time-stamp: <2006-04-19 13:08:40 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -162,9 +162,6 @@ Modal bindings are made by versor-bind-modal, which is in versor-modal.el"
     (if modal-binding
 	modal-binding
       (versor-action level-data action))))
-
-(defvar versor-display-underlying-commands t
-  "*Whether to display the underlying commands that versor executes.")
 
 (defvar versor-last-vicarious-command nil
   "The last interactive command that versor executed.")
