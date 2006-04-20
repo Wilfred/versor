@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-04-11 14:18:47 john>
+;;; Time-stamp: <2006-04-19 13:08:40 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -167,6 +167,11 @@ other platforms/terminals yet."
 
 (unless window-system
   (set-face-attribute 'versor-item-face nil :underline t))
+
+(defcustom versor-display-underlying-commands t
+  "*Whether to display the underlying commands that versor executes."
+  :group 'versor-status
+  :type 'boolean)
 
 ;;;;;;;;;;;;;;;;;
 ;;;; general ;;;;
