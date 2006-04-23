@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-04-19 13:48:48 john>
+;;; Time-stamp: <2006-04-21 15:47:53 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -197,11 +197,20 @@ sVariable name: ")
 (defun languide-convert-region-to-function (begin end name &optional docstring)
   "Take the code between BEGIN and END, and make it into a function called NAME.
 An optional DOCSTRING may also be given."
-  (interactive "r
-sFunction name: 
-sDocumentation: ")
+  (interactive
+   (let* ((name (read-from-minibuffer "Function name: "))
+	  (documentation (read-from-minibuffer
+			  "Documentation: "
+			  (format "Helper function for %s."
+				  (ambient-defun-name (region-beginning))))))
+     (list (region-beginning) (region-end) name documentation)))
   (let* ((body-text (buffer-substring-no-properties begin end))
-	 (arglist (free-variables-in-region begin end))
+	 (argnames (free-variables-in-region begin end))
+	 (arglist (mapcar (function
+			   (lambda (name)
+			     (cons name
+				   (deduce-expression-type name begin))))
+			  argnames))
 	 (result-type (deduce-expression-type body-text begin))
 	 (begin-marker (make-marker))
 	 )
@@ -295,6 +304,17 @@ them in descending order of character position.")
       (set-marker last-before-marker nil)
       (set-marker first-after-marker nil))))
 
+(defun languide-region-type-potential-code-block-p (type)
+  "Return whether a region of TYPE can be used as a code block.
+The function languide-region-block-type-needs-unification-p tells whether
+anything needs to be done to it first."
+  (memq type '(sequence t let-body progn-whole if-then-else-tail)))
+
+(defun languide-region-block-type-needs-unification-p (type)
+  "Return whether a region of TYPE needs anything doing to it to use it as a code block.
+This is only valid if languide-region-type-potential-code-block-p is true for it."
+  (memq type '(sequence t)))
+
 (defun languide-make-conditional (from to condition)
   "Make the region between FROM and TO conditional upon CONDITION."
   (interactive "r
@@ -303,12 +323,13 @@ sCondition: ")
     (message "Body type from %d to %d is %s" from to body-type)
     (cond
      ((memq body-type '(compound-if-then-body if-then-body))
+      ;; todo: handle lisp's cond clauses too?
       (let ((navigate-container-whole-statement t))
 	(navigate-this-container))
       (navigate-this-head)
       (let ((item (versor-get-current-item)))
 	(add-expression-term 'and condition (car item) (cdr item))))
-     ((memq body-type '(sequence t))
+     ((languide-region-type-potential-code-block-p body-type)
       (languide-unify-statements-region from to)
       (let ((inserter (cadar (get-statement-part 'if-then 'add-head)))
 	    (tempo-insert-region t)
