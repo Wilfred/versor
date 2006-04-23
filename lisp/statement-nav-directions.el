@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-04-10 15:58:05 john>
+;;; Time-stamp: <2006-04-21 12:39:27 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -45,8 +45,8 @@
 				(car latest-statement-known))
 			    (progn
 			      (beginning-of-statement-internal)
-			      (languide-debug-message 'navigate-to "navigate-to %S found statement begins \"%s\""
-						      part (buffer-substring (point) (+ 20 (point))))
+			      (languide-debug-message 'navigate-to "navigate-to %S found statement begins here"
+						      part)
 			      (point))))
 	 (remembered (statement-find-part statement-start part)))
     (if remembered
@@ -76,9 +76,10 @@
 		  (message "Selected-parts=%S" selected-parts)
 		  ;; (versor-set-current-item (point) mark-candidate)
 		  (versor-set-current-items selected-parts)
+		  (message "point now at %d" (point))
 		  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
 	      (goto-char old-position)
-	      (error "Don't know how to handle directions like \"%S\"" directions))
+	      (error "Don't know how to handle directions like \"%S\" (for %S of %S)" directions part type))
 	  (goto-char old-position)
 	  (error "No %S defined for \"%S\" for %S" part type major-mode))))))
 
@@ -188,7 +189,7 @@ For use in statement-navigate."
 Intended for use from statement-navigate."
   (interactive)
   (if (null n) (setq n 1))
-  (message "expression-contents starting from %d (\"%s\")" (point) (buffer-substring (point) (+ (point) 8)))
+  ;; (message "expression-contents starting from %d (\"%s...\")" (point) (buffer-substring (point) (min (point-max) (+ (point) 12))))
   (let ((start (point)))
     (forward-sexp n)
     (let ((after-end (point)))
@@ -252,14 +253,16 @@ Intended for use from statement-navigate."
 (defun statements ()
   "Select the statements up to the next closing bracket."
   (interactive)	; mostly for testing, but it might come in useful in its own right
-  (let* ((start (point))
+  (let* ((start nil)
 	 (selected (without-changing-current-statement
-		    (message "(statements) starting at %d" start)
 		    (skip-to-actual-code)
+		    (setq start (point))
+		    (message "(statements) starting at %d" start)
 		    (while (not (looking-at (compound-statement-close)))
 		      (message "forward one statement")
 		      (next-statement-internal 1)
 		      (skip-to-actual-code))
+		    (skip-to-actual-code-backwards)
 		    (set-mark-candidate start)
 		    (message "(statements) ending at %d" (point))
 		    (cons start (point)))))
@@ -279,9 +282,9 @@ but the compound statement delimiters are not."
      (skip-to-actual-code)
      (let ((start (point)))
        (statements)
-       (backward-char 1)
-       (beginning-of-statement-internal)
-       (end-of-statement-internal)
+       ;; (backward-char 1)
+       ;; (beginning-of-statement-internal)
+       ;; (end-of-statement-internal)
        (cons start (point))))))
 
 (defun upto (pattern)
