@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-04-10 13:55:51 john>
+;;; Time-stamp: <2006-04-21 18:41:57 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -83,8 +83,8 @@ is liable to return the wrong result."
     (= (- b a)
        (skip-chars-forward " \t\n\r" b))))
 
-(defmodal move-into-previous-statement (c-mode perl-mode) ()
-  "Move into the previous C or Perl statement.
+(defmodal move-into-previous-statement (c-mode perl-mode java-mode) ()
+  "Move into the previous C (etc) statement.
 Need only work if already at or just before the start of a statement."
   (interactive)
   (let ((done nil))
@@ -102,8 +102,8 @@ Need only work if already at or just before the start of a statement."
 	(backward-char 1)
 	(setq done t))))))
 
-(defmodal move-into-next-statement (c-mode perl-mode) ()
-  "Move into the next C or Perl statement.
+(defmodal move-into-next-statement (c-mode perl-mode java-mode) ()
+  "Move into the next C (etc) statement.
 Need only work if already at or just beyond the end of a statement."
   (interactive)
   (skip-to-actual-code)
@@ -129,7 +129,7 @@ Need only work if already at or just beyond the end of a statement."
   ;; taken out-of-line for readability of surrounding code
   (let* ((close (point))
 	 (following-code (skip-to-actual-code)))
-    (languide-debug-message 'continue-back-past-curly-ket "From starting-point at %d, found close at %d, following code at %d is \"%s\"" starting-point close following-code (buffer-substring following-code (+ following-code 20)))
+    (languide-debug-message 'continue-back-past-curly-ket "From starting-point at %d, found close at %d, following code at %d is \"%s\"" starting-point close following-code (buffer-substring following-code (min (point-max) (+ following-code 20))))
     (cond
      ;; first two cases are those where a keyword can follow a closing brace
      ;; and still be within a statement
@@ -354,9 +354,11 @@ Need only work if already at or just beyond the end of a statement."
 	(languide-debug-message 'beginning-of-statement-internal
 				"in blank area at %d..%d" (point) (1+ starting-point))
       (languide-debug-message 'beginning-of-statement-internal
-			      "final step of b-o-s-i: not in blank; at %d: \"%s\"" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+			      "final step of b-o-s-i: not in blank;")
       (skip-to-actual-code starting-point)
-      (languide-debug-message 'beginning-of-statement-internal "skip-to-actual-code with limit of %d got to %d: \"%s\"" starting-point (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+      (languide-debug-message 'beginning-of-statement-internal
+			      "skip-to-actual-code with limit of %d got to here"
+			      starting-point)
       )
       (debug-overlay (point) starting-point "Finished" "purple"))
   (languide-debug-message 'beginning-of-statement-internal
@@ -433,31 +435,63 @@ Need only work if already at or just beyond the end of a statement."
 			  "end-of-statement-internal finished at %d" (point)))
 
 (defvar c-binding-regexp-1
-  "\\([a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-+\\([a-z][a-z0-9_]*\\)\\s-*\\(=[^;]*\\)?;"
+  (concat  "\\([a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-*" ; the type
+	   "\\([a-z][a-z0-9_]*\\)\\s-*"	; the name
+	   "\\(=[^;]*\\)?;"		; the value, if present
+	   )
   "A regexp for a common kind of C binding.")
 
 (defvar c-binding-regexp-2
-  (concat "\\(\\(?:struct\\|unsigned\\|const\\|volatile\\)\\s-+[a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-*"
-	  "\\([a-z][a-z0-9_]*\\)\\s-*\\(=[^;]*\\)?;")
+  (concat "\\("
+	  "\\(?:struct\\|unsigned\\|const\\|volatile\\)\\s-+" ; qualifiers
+	  "[a-z][a-z0-9_]*\\s-*"	; the type
+	  "\\*?\\[?\\]?"		; the trimmings
+	  "\\)\\s-*"
+	  "\\([a-z][a-z0-9_]*\\)"	; the name
+	  "\\s-*\\(=[^;]*\\)?;"		; the value, if present
+	  )
   "A regexp for a common kind of C binding.")
 
 (defvar c-binding-regexp-3
-  (concat "\\(\\(?:const\\|volatile\\)\\s-+\\(?:struct\\|unsigned\\)\\s-+[a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-*"
-	  "\\([a-z][a-z0-9_]*\\)\\s-*\\(=[^;]*\\)?;")
+  (concat "\\("
+	  "\\(?:const\\|volatile\\)\\s-+" ; first qualifier
+	  "\\(?:struct\\|unsigned\\)\\s-+" ; second qualifier
+	  "[a-z][a-z0-9_]*\\s-*"	; the type
+	  "\\*?\\[?\\]?\\)\\s-*"	; the trimmings
+	  "\\([a-z][a-z0-9_]*\\)\\s-*"	; the value, if present
+	  "\\(=[^;]*\\)?;")
   "A regexp for a common kind of C binding.")
 
 (defvar c-arg-regexp-1
-  "\\([a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-+\\([a-z][a-z0-9_]*\\)\\s-*,?"
+  (concat "\\([a-z][a-z0-9_]*\\s-*"	; type
+	  "\\(?:const\\s-*\\)?"
+	  "\\*?\\[?\\]?\\)\\s-*"	; trimmings
+	  "\\([a-z][a-z0-9_]*\\)\\s-*,?" ; name
+	  )
   "A regexp for a common kind of C arg.")
 
 (defvar c-arg-regexp-2
-  (concat "\\(\\(?:struct\\|unsigned\\|const\\|volatile\\)\\s-+[a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-*"
-	  "\\([a-z][a-z0-9_]*\\)\\s-*,?")
+  (concat "\\("
+	  "\\(?:struct\\|unsigned\\|const\\|volatile\\)\\s-+" ; qualifier
+	  "[a-z][a-z0-9_]*\\s-*"	; type
+	  "\\(?:const\\s-*\\)?"
+	  "\\*?\\[?\\]?"		; trimmings
+	  "\\)"
+	  "\\s-*\\([a-z][a-z0-9_]*\\)\\s-*,?" ; name
+	  )
   "A regexp for a common kind of C arg.")
 
 (defvar c-arg-regexp-3
-  (concat "\\(\\(?:const\\|volatile\\)\\s-+\\(?:struct\\|unsigned\\)\\s-+[a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\) *"
-	  "\\([a-z][a-z0-9_]*\\)\\s-*,?")
+  (concat "\\("
+	  "\\(?:const\\|volatile\\)\\s-+" ; first qualifier
+	  "\\(?:struct\\|unsigned\\)\\s-+" ; second qualifier
+	  "[a-z][a-z0-9_]*\\s-*"	; type
+	  "\\(?:const\\s-*\\)?"
+	  "\\*?\\[?\\]?"		; trimmings
+	  "\\)"
+	  "\\s-*"
+	  "\\([a-z][a-z0-9_]*\\)\\s-*,?" ; name
+	  )
   "A regexp for a common kind of C arg.")
 
 (defmodal identify-statement (c-mode) (default)
@@ -584,6 +618,33 @@ this does not have to work."
     (and went
 	 (looking-at binding-pattern))))
 
+(defun move-over-initializer (decls start)
+  "Move over any initializer at the start of DECLS, looking at it from START.
+Return the position at the end of the initializer."
+  (if (string-match "^ *=" decls start)
+      (let* ((l (length decls))
+	     (next-comma (string-match "," decls start))
+	     (next-paren (string-match "(" decls start)))
+	(while (and (integerp next-comma)
+		    (integerp next-paren)
+		    (< next-paren next-comma))
+	  (let ((level 1))
+	    (setq start (1+ next-paren))
+	    (while (and (< start l)
+			(> 0 level))
+	      (let ((c (aref decls start)))
+		(if (= c open-bracket)
+		    (setq level (1+ level))
+		  (if (= c close-bracket)
+		      (setq level (1- level)))))
+	      (setq start (1+ start))))
+	  (setq next-comma (string-match "," decls start)
+		next-paren (string-match "(" decls start)))
+	(if (integerp next-comma)
+	    (1+ next-comma)
+	  start))
+    start))
+
 (defmodal variables-in-scope (c-mode) (whereat)
   "Return the list of variables in scope at WHEREAT."
   (save-excursion
@@ -598,21 +659,33 @@ this does not have to work."
 	(save-excursion
 	  (down-list)
 	  (skip-to-actual-code)
-	  (while (or (looking-at c-binding-regexp-1)
-		     (looking-at c-binding-regexp-2)
-		     (looking-at c-binding-regexp-3))
+	  (message "Looking at possible bindings at %d" (point))
+	  (setq b1 nil b2 nil b3 nil)
+	  (while (or (setq b1 (looking-at c-binding-regexp-1))
+		     (setq b2 (looking-at c-binding-regexp-2))
+		     (setq b3 (looking-at c-binding-regexp-3)))
+	    (message "matched %S as binding"
+		     (or (and b1 c-binding-regexp-1)
+			 (and b2 c-binding-regexp-2)
+			 (and b3 c-binding-regexp-3)))
 	    (let ((vartype (match-string-no-properties 1))
 		  (varname (match-string-no-properties 2))
 		  (extra (match-string-no-properties 3)))
+	      ;; (message "  At %d got %S of type %S" (point) varname vartype)
 	      (push (cons varname vartype) variables)
 	      (when (stringp extra)
-		(message "extra is %s" extra)
-		(let ((e 0))
-		  (while (string-match ", *\\([a-z][a-z0-9_]*\\)" extra e)
-		    (push (cons (match-string-no-properties 1 extra) vartype) variables)		  
-		    (setq e (match-end 1))))))
+		(save-match-data
+		  (message "  extras are %s" extra)
+		  (let ((e (move-over-initializer extra 0)))
+		    (while (string-match ", *\\([a-z][a-z0-9_]*\\)" extra e)
+		      (message "    Got extra var of same type: %s" (match-string-no-properties 1 extra))
+		      (push (cons (match-string-no-properties 1 extra) vartype) variables)		  
+		      (setq e (move-over-initializer extra (match-end 1))))))))
 	    (goto-char (match-end 0))
-	    (skip-to-actual-code)))
+	    (message "end of that binding was %d" (point))
+	    (skip-to-actual-code)
+	    (message "skipped to %d" (point))
+	    ))
 	(backward-char 1))
       ;; now include the funargs
       (goto-char bod)
@@ -621,12 +694,16 @@ this does not have to work."
 	(c-forward-syntactic-ws)
 	(message "bod at %d; trying to find args at %d" bod (point))
 	(setq a1 nil a2 nil a3 nil)
-	(while (or (setq a1 (looking-at c-arg-regexp-1))
+	(while (or (setq a3 (looking-at c-arg-regexp-3))
 		   (setq a2 (looking-at c-arg-regexp-2))
-		   (setq a3 (looking-at c-arg-regexp-3)))
-	  (message "%S %S %S" a1 a2 a3)
+		   (setq a1 (looking-at c-arg-regexp-1)))
+	  (message "matched %S as arg"
+		   (or (and a1 c-arg-regexp-1)
+		       (and a2 c-arg-regexp-2)
+		       (and a3 c-arg-regexp-3)))
 	  (let ((vartype (match-string-no-properties 1))
 		(varname (match-string-no-properties 2)))
+	    (message "Adding arg %s of type %s" varname vartype)
 	    (push (cons varname vartype) variables))
 	  (goto-char (match-end 0))
 	  (message "end of match was %d" (point))
@@ -709,6 +786,10 @@ Each element is a list of:
 		  (push (cons name (point)) results)))))))
     (nreverse results)))
 
+(defmodal static-variable-p (c-mode java-mode perl-mode) (name where)
+  "Return whether a static variable called NAME is visible at WHERE."
+  nil)
+
 (defmodal move-to-enclosing-scope-last-variable-definition (c-mode java-mode perl-mode)
   (&optional allow-conversions)
   "Move to the end of the nearest set of variable bindings.
@@ -781,17 +862,22 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 
 (defmodal insert-function-declaration (c-mode java-mode) (name result-type arglist body &optional docstring)
   "Insert a function definition for a function called NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY."
-  (languide-insert "\n" result-type " " name "(")
-  (languide-insert (mapconcat 'c-arg-string
-		     arglist
-		     ", "))
-  (languide-insert ")\n")
+  (languide-insert "\n" result-type " " name)
+  (let ((arglist-start (point)))
+    (languide-insert "(")
+    (languide-insert (mapconcat 'c-arg-string
+				arglist
+				", \n"))
+    (languide-insert ")\n")
+    (save-excursion
+      (goto-char arglist-start)
+      (c-indent-exp t)))
   (when docstring
     (languide-insert "  /* " docstring " */\n"))
   (let ((start (point)))
     (languide-insert "{\n")
     (languide-insert body)
-    (languide-insert "\n}\n")
+    (languide-insert "\n}\n\n")
     (goto-char start)
     (c-indent-exp t)))
 
@@ -815,6 +901,14 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (languide-insert ") = @_;\n"
 	  body
 	  "}\n"))
+
+(defmodal ambient-defun-name (c-mode) (where)
+  "Give the name of the function defined around WHERE."
+  (save-excursion
+    (goto-char where)
+    (beginning-of-defun)
+    (let ((end (scan-sexps (point) -1)))
+      (buffer-substring-no-properties (scan-sexps end -1) end))))
 
 (defconst semicolon (string-to-char ";")
   "Get this out-of-line to avoid confusing indenter when editing functions that use it.")
@@ -993,6 +1087,11 @@ Second arg WHERE gives the position, for context."
 		      member-op
 		      member-member))
       (modify-c-type base-variable-base-type member-op member-member)))
+   ((string-match "\\([a-z][a-z0-9_]*\\)" value-text)
+    (message "match-data %S" (match-data))
+    (let* ((base-variable (match-string-no-properties 1 value-text)))
+      (message "base-variable %S" base-variable)
+      (type-of-c-variable base-variable where)))
    (t "unknown")))
 
 (defun lisp-operator-to-c (lisp-operator)
@@ -1035,92 +1134,96 @@ If it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
 expression, return t. 
-Otherwise return nil."
-  (let* ((ppe (parse-partial-sexp from to))
-	 (depth (nth 0 ppe))
-	 (min-depth (nth 6 ppe))
-	 (in-string (nth 3 ppe))
-	 (in-comment (nth 4 ppe)))
-    ;; (message "depth=%d min-depth=%d" depth min-depth)
-    (if (or (/= depth 0)
-	    (< min-depth 0)
-	    in-string
-	    in-comment)
-	nil
-      (let* ((possible-open-position nil)
-	     (preceding-is-open (save-excursion
-				  (goto-char from)
-				  (skip-to-actual-code-backwards)
-				  (backward-char 1)
-				  (setq possible-open-position (point))
-				  (looking-at (compound-statement-open))))
-	     (following-is-close (save-excursion
-				   (goto-char to)
-				   (skip-to-actual-code)
-				   (looking-at (compound-statement-close)))))
-	(if (and preceding-is-open
-		 following-is-close)
-	    (let ((is-under-control
-		   (is-under-control-statement possible-open-position)))
-	      ;; we have got a whole compound statement
-	      (if is-under-control
-		  (intern (concat "compound-" (symbol-name is-under-control) "-body"))
-		'compound-statement))
-	  ;; not a whole compound statement, first see whether it is
-	  ;; one statement or several whole statements
-	  (let* ((real-start (save-excursion
-			       (goto-char from)
-			       (skip-to-actual-code)))
-		 (real-end (save-excursion
-			     (goto-char to)
-			     (skip-to-actual-code-backwards)))
-		 )
-	    (let ((is-single-statement (save-excursion
-					 (goto-char real-start)
-					 (next-statement-internal 1)
-					 (skip-to-actual-code-backwards)
-					 (= (point) real-end)))
-		  (is-under-bare-control (is-under-control-statement real-start)))
-	      (message "single=%S under-bare-control=%S" is-single-statement is-under-bare-control)
-	      (if is-single-statement
+Otherwise return nil.
+May set languide-region-detail-string to a string giving the user incidental
+information; otherwise should clear it to nil."
+  (setq languide-region-detail-string nil)
+  (save-excursion
+    (let* ((ppe (parse-partial-sexp from to))
+	   (depth (nth 0 ppe))
+	   (min-depth (nth 6 ppe))
+	   (in-string (nth 3 ppe))
+	   (in-comment (nth 4 ppe)))
+      ;; (message "depth=%d min-depth=%d" depth min-depth)
+      (if (or (/= depth 0)
+	      (< min-depth 0)
+	      in-string
+	      in-comment)
+	  nil
+	(let* ((possible-open-position nil)
+	       (preceding-is-open (save-excursion
+				    (goto-char from)
+				    (skip-to-actual-code-backwards)
+				    (backward-char 1)
+				    (setq possible-open-position (point))
+				    (looking-at (compound-statement-open))))
+	       (following-is-close (save-excursion
+				     (goto-char to)
+				     (skip-to-actual-code)
+				     (looking-at (compound-statement-close)))))
+	  (if (and preceding-is-open
+		   following-is-close)
+	      (let ((is-under-control
+		     (is-under-control-statement possible-open-position)))
+		;; we have got a whole compound statement
+		(if is-under-control
+		    (intern (concat "compound-" (symbol-name is-under-control) "-body"))
+		  'compound-statement))
+	    ;; not a whole compound statement, first see whether it is
+	    ;; one statement or several whole statements
+	    (let* ((real-start (save-excursion
+				 (goto-char from)
+				 (skip-to-actual-code)))
+		   (real-end (save-excursion
+			       (goto-char to)
+			       (skip-to-actual-code-backwards)))
+		   )
+	      (let ((is-single-statement (save-excursion
+					   (goto-char real-start)
+					   (next-statement-internal 1)
+					   (skip-to-actual-code-backwards)
+					   (= (point) real-end)))
+		    (is-under-bare-control (is-under-control-statement real-start)))
+		(message "single=%S under-bare-control=%S" is-single-statement is-under-bare-control)
+		(if is-single-statement
+		    (if is-under-bare-control
+			(intern (concat (symbol-name is-under-bare-control) "-body"))
+		      ;; now see whether this statement is the sole contents of a bracketed block
+		      (let ((surrounding-open nil))
+			(if (save-excursion
+			      (and (progn
+				     (goto-char real-start)
+				     (skip-to-actual-code-backwards)
+				     (backward-char 1)
+				     (setq surrounding-open (point))
+				     (looking-at (compound-statement-open)))
+				   (progn
+				     (goto-char real-end)
+				     (skip-to-actual-code)
+				     (looking-at (compound-statement-close)))))
+			    (let ((is-under-bracketed-control (is-under-control-statement surrounding-open)))
+			      (message "surrounding-open=%d" surrounding-open)
+			      (if is-under-bracketed-control
+				  (intern (concat (symbol-name is-under-bracketed-control) "-body"))
+				'sole-content-of-block))
+			  'whole-statement)))
+		  ;; not single statement
 		  (if is-under-bare-control
-		      (intern (concat (symbol-name is-under-bare-control) "-body"))
-		    ;; now see whether this statement is the sole contents of a bracketed block
-		    (let ((surrounding-open nil))
-		      (if (save-excursion
-			    (and (progn
-				   (goto-char real-start)
-				   (skip-to-actual-code-backwards)
-				   (backward-char 1)
-				   (setq surrounding-open (point))
-				   (looking-at (compound-statement-open)))
-				 (progn
-				   (goto-char real-end)
-				   (skip-to-actual-code)
-				   (looking-at (compound-statement-close)))))
-			  (let ((is-under-bracketed-control (is-under-control-statement surrounding-open)))
-			    (message "surrounding-open=%d" surrounding-open)
-			    (if is-under-bracketed-control
-				(intern (concat (symbol-name is-under-bracketed-control) "-body"))
-			      'sole-content-of-block))
-			'whole-statement)))
-		;; not single statement
-		(if is-under-bare-control
-		    ;; sequence of statements, but the first one is
-		    ;; only the body of a control statement
-		    nil
-		  ;; now see whether the start and end are whole statements
-		  (if (save-excursion
-			(and (progn
-			       (goto-char (1+ real-start))
-			       (beginning-of-statement-internal)
-			       (= (point) real-start))
-			     (progn
-			       (goto-char (1- real-end))
-			       (end-of-statement-internal)
-			       (= (point) real-end))))
-		      'sequence
-		    nil))))))))))
+		      ;; sequence of statements, but the first one is
+		      ;; only the body of a control statement
+		      nil
+		    ;; now see whether the start and end are whole statements
+		    (if (save-excursion
+			  (and (progn
+				 (goto-char (1+ real-start))
+				 (beginning-of-statement-internal)
+				 (= (point) real-start))
+			       (progn
+				 (goto-char (1- real-end))
+				 (end-of-statement-internal)
+				 (= (point) real-end))))
+			'sequence
+		      nil)))))))))))
 
 (defstatement comment (c-mode)
   "Comment"
