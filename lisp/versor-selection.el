@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-04-10 14:49:34 john>
+;;; Time-stamp: <2006-04-21 11:58:26 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -161,14 +161,23 @@ Meant for debugging versor itself."
 Meant to be used by things that require an item, when there is none.
 Leaves point in a position compatible with what has just been returned."
   ;; (message "Using %S in inventing item" (versor-current-level))
-  (let* ((end (progn (funcall (or (versor-get-action 'end-of-item)
+  (let* ((end (condition-case evar
+		  (progn (funcall (or (versor-get-action 'end-of-item)
 				  (versor-get-action 'next))
 			      1)
 		     ;; (message "invented end") (sit-for 2)
-		     (point)))
-	 (start (progn (funcall (versor-get-action 'previous) 1)
-		       ;; (message "invented start") (sit-for 2)
-		       (point))))
+		     (point))
+		(error
+		 ;; (message "Could not find end when inventing item")
+		 ;; todo: think of something tidier to do here; even better, reduce the occasions when it happens; the main one is "next sexp" when amongst a series of closing brackets
+		 (point))))
+	 (start (condition-case evar
+		    (progn (funcall (versor-get-action 'previous) 1)
+			   ;; (message "invented start") (sit-for 2)
+			   (point))
+		  (error
+		   ;; (message "Could not find start when inventing item")
+		   (point)))))
     ;; (message "Invented item %d..%d" start end)
     (cons start end)))
 
