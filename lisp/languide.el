@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-04-19 14:12:01 john>
+;;; Time-stamp: <2006-04-21 15:00:52 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -91,14 +91,20 @@
   (when (and languide-debug-messages
 	     (or (null languide-debug-functions)
 		 (memq function languide-debug-functions)))
-    (message "%s: %s (press key)" function (apply 'format format args))
+    (message "%s: %s (press key)" function
+	     (format "At %d: \"%s...\": %s"
+		     (apply 'format format args)
+		     (point)
+		      (buffer-substring-no-properties (point) (min (+ 24 (point))
+								   (point-max))))
+	     )
     (read-char))
   (when (numberp languide-debug-messages)
     (sit-for languide-debug-messages)))
 
 (defun outward-once ()
-  "move outward one level of brackets, going backward.
-returns point, if there was a bracket to go out of, else nil."
+  "Move outward one level of brackets, going backward.
+Returns point, if there was a bracket to go out of, else nil."
   (interactive)
   (let ((where (safe-scan-lists (point) -1 1)))
     (if where
@@ -111,7 +117,7 @@ returns point, if there was a bracket to go out of, else nil."
 	nil))))
 
 (defun all-variables-in-scope-p (where variables)
-  "return whether at where, all of variables are in scope."
+  "Return whether at WHERE, all of VARIABLES are in scope."
   (message "looking for whether %s are all in scope at %d;" variables where)
   (if variables
       (let ((variables-in-scope (variables-in-scope where)))
@@ -126,48 +132,55 @@ returns point, if there was a bracket to go out of, else nil."
     t))
 
 (defmodel insert-compound-statement-open ()
-  "insert the start of a compound statement")
+  "Insert the start of a compound statement")
 
 (defmodel compound-statement-open ()
-  "return a block start.")
+  "Return a block start.")
 
 (defmodel insert-compound-statement-close ()
-  "insert the end of a compound statement")
+  "Insert the end of a compound statement")
 
 (defmodel compound-statement-close ()
-  "return a block end.")
+  "Return a block end.")
 
 (defmodel statement-container ()
-  "select the container of the current statement.")
+  "Select the container of the current statement.")
 
 (defmodel insert-function-declaration (name result-type arglist body &optional docstring)
-  "insert a function definition for name, returning result-type, taking arglist, and implemented by body.
-a docstring may also be given.")
+  "Insert a function definition for NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY.
+A DOCSTRING may also be given.")
 
 (defmodel insert-function-call (name arglist)
-  "insert a function call for a function called name taking arglist.")
+  "Insert a function call for a function called NAME taking ARGLIST.")
 
 (defmodel function-arglist-boundaries (&optional where)
-  "return a cons of the start and end of the argument list surrounding where,
+  "Return a cons of the start and end of the argument list surrounding WHERE,
 or surrounding point if where is not given.")
 
+(defmodel ambient-defun-name (where)
+  "Give the name of the function defined around WHERE.")
+
 (defmodel deduce-expression-type (value-text where)
-  "given value-text, try to deduce the type of it.
-second arg where gives the position, for context.")
+  "Given VALUE-TEXT, try to deduce the type of it.
+Second arg where gives the position, for context.")
 
 (defmodel add-expression-term (operator argument from to)
-  "wrap an expression with operator and argument around the region between from and to.")
+  "Wrap an expression with OPERATOR and ARGUMENT around the region between FROM and TO.")
 
 (defmodel move-before-defun ()
-  "move to before the current function definition.")
+  "Move to before the current function definition.")
 
 (defmodel languide-trim-whitespace (syntax-before syntax-after)
-  "trim whitespace around point, in a language-dependent way.
+  "Trim whitespace around point, in a language-dependent way.
 the syntax classes of the non-space chars around point are passed in
-as syntax-before and syntax-after.")
+as SYNTAX-BEFORE and SYNTAX-AFTER.")
+
+(defvar languide-region-detail-string nil
+  "Any extra information that languide-region-type finds.
+Returned as a string that can be displayed to the user.")
 
 (defmodel languide-region-type (from to)
-  "try to work out what type of thing the code between from and to is.
+  "Try to work out what type of thing the code between from and to is.
 results can be things like if-then-body, if-then-else-tail, progn-whole,
 while-do-head, defun-body, and so on. if one of these is returned, the
 code must be exactly that (apart from leading and trailing
@@ -176,15 +189,22 @@ if it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
 expression, return t. 
-otherwise return nil.")
+otherwise return nil.
+May set languide-region-detail-string to a string giving the user incidental
+information; otherwise should clear it to nil.")
 
 (defun show-region-type (start end)
-  "for debugging languide-region-type"
+  "For debugging languide-region-type"
   (interactive "r")
-  (message "region type %S"
-	   (languide-region-type (or start (region-beginning))
-				 (or end (region-end)))))
-
+  (let ((type (languide-region-type (or start (region-beginning))
+				    (or end (region-end)))))
+    (cond
+     ((memq type '(sequence t))
+      (message "code block"))
+     (languide-region-detail-string
+      (message "region type %S; %s" type languide-region-detail-string))
+     (t
+      (message "region type %S" type)))))
 
 (defvar languide-supported-modes
   '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode)
