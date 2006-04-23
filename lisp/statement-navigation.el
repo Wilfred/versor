@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-04-10 13:56:13 john>
+;;; Time-stamp: <2006-04-21 10:47:06 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -110,7 +110,7 @@ Then, if N is greater than 1, move back N-1 more statements."
       (beginning-of-statement-internal)
       (languide-debug-message 'previous-statement "Now gone back another statement, to %d" (point))
       (decf n))
-    (languide-debug-message 'previous-statement "final move to %d \"%s\" to beginning of statement" (point) (buffer-substring-no-properties (point) (+ 24 (point))))
+    (languide-debug-message 'previous-statement "final move to beginning of statement")
     (let ((end (if (and versor-statement-up-to-next previous-end)
 		   previous-end
 		 (save-excursion
@@ -146,7 +146,7 @@ you should possibly use next-statement instead."
 	(starting (point)))
     (while (> n 0)
       ;; todo: this does the seemingly wrong thing if called before the start of the first statement -- it ends up taking us to the second statement
-      (languide-debug-message 'next-statement "at %d (\"%s\"); %d statements left; going to end of current statement" (point) (buffer-substring-no-properties (point) (+ 24 (point))) n)
+      (languide-debug-message 'next-statement "%d statements left; going to end of current statement" n)
       (end-of-statement-internal)
       (languide-debug-message 'next-statement "at end of current statement, %d" (point))
       ;; not sure what the point of this next bit was... seems to do better without it!
