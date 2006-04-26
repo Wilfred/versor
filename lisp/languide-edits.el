@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-04-21 15:47:53 jcgs>
+;;; Time-stamp: <2006-04-25 11:51:30 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -214,14 +214,21 @@ An optional DOCSTRING may also be given."
 	 (result-type (deduce-expression-type body-text begin))
 	 (begin-marker (make-marker))
 	 )
+    (message "%S --> %S" arglist result-type)
     (delete-region begin end)
     (goto-char begin)
     (set-marker begin-marker begin)
-    (insert-function-call name arglist)
+    (languide-insert (function-call-string name arglist begin))
+    (indent-for-tab-command)
     (move-before-defun)
     (insert-function-declaration name result-type arglist body-text docstring)
     (goto-char begin-marker)
-    (kill-new name)))
+    (let ((blank-call (function-call-string name
+					    (mapcar (lambda (arg) " ")
+						    arglist)
+					    (point))))
+      (message "Put %S on kill-ring" blank-call)
+      (kill-new blank-call))))
 
 (defun languide-surround-region-with-call (from to name)
   "Surround the region between FROM and TO with a call to NAME."
@@ -229,7 +236,7 @@ An optional DOCSTRING may also be given."
 sFunction name: ")
   (let ((arglist (list (buffer-substring-no-properties from to))))
     (delete-region from to)
-    (insert-function-call name arglist)))
+    (languide-insert (function-call-string name arglist from)))) 
 
 (defmodel languide-find-surrounding-call ()
   "Return a list of the function call syntax around point.
