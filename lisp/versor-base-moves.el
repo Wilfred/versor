@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-04-14 16:23:26 jcgs>
+;;; Time-stamp: <2006-04-24 10:30:29 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -86,6 +86,14 @@
   "Move to the next line, following margins if on one."
   (interactive "p")
   (versor-following-margins (next-line n)))
+
+(defun safe-up-list (&rest args)
+  "Like up-list, but returns nil on error."
+  (condition-case error-var
+      (progn
+	(apply 'up-list args)
+	t)
+    (error nil)))
 
 (defun safe-backward-up-list (&rest args)
   "Like backward-up-list, but returns nil on error."
@@ -339,7 +347,7 @@ Makes a two-part selection, of opening and closing brackets."
 			   )))
       (if versor-move-out-when-at-end
 	  (progn
-	    (up-list)
+	    (safe-up-list)
 	    (skip-to-actual-code))
 	(message "No more sexps")))))
 
