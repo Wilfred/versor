@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-04-10 10:18:14 john>
+;;; Time-stamp: <2006-04-26 10:09:37 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -175,6 +175,7 @@ amongst the arguments:
                     allowing code-oriented movement in actual code, and
                     text-oriented movement in embedded natural language text
   'menu          -- define a menu of versor commands
+  'verbose       -- blather about what it is doing
 "
   (interactive)
 
@@ -201,6 +202,9 @@ amongst the arguments:
   (when (memq 'research keysets)
     (require 'versor-research)
     (versor-research-start))
+
+  (when (memq 'verbose keysets)
+    (setq versor-verbose t))
 
   (when (memq 'arrows keysets)
     (global-set-key [ left ]    'versor-prev)
