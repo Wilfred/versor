@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-04-21 15:16:02 jcgs>
+;;; Time-stamp: <2006-04-25 18:55:48 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -18,7 +18,7 @@
 (provide 'versor-language-edits)
 (require 'languide-edits)
 
-(defun versor-convert-selection-to-variable (name)
+(defun versor-languide-convert-selection-to-variable (name)
   "Make a variable declaration holding the current selection, and substitute it.
 Useful when you realize you want to re-use a value you had calculated in-line.
 The variable name is left at the top of the kill ring."
@@ -29,7 +29,7 @@ The variable name is left at the top of the kill ring."
 					  (versor-overlay-end item)
 					  name))))
 
-(defun versor-convert-selection-to-global-variable (name)
+(defun versor-languide-convert-selection-to-global-variable (name)
   "Make a variable declaration holding the current selection, and substitute it.
 Useful when you realize you want to re-use a value you had calculated in-line.
 The variable name is left at the top of the kill ring."
@@ -40,7 +40,7 @@ The variable name is left at the top of the kill ring."
 					(versor-overlay-end item)
 					name))))
 
-(defun versor-convert-selection-to-function (name &optional docstring)
+(defun versor-languide-convert-selection-to-function (name &optional docstring)
   "Take the selected code, and make it into a function, substituting a call to it.
 The function name is left at the top of the kill ring."
   (interactive
@@ -59,7 +59,7 @@ The function name is left at the top of the kill ring."
 					  name
 					  docstring))))
 
-(defun versor-surround-selection-with-call (name)
+(defun versor-languide-surround-selection-with-call (name)
   "Surround the selection with a function call."
   (interactive "sFunction name: ")
   (versor-as-motion-command
@@ -68,14 +68,14 @@ The function name is left at the top of the kill ring."
 					 (versor-overlay-end item)
 					 name))))
 
-(defun versor-remove-function-call ()
+(defun versor-languide-remove-function-call ()
   "Remove the selected function call."
   (interactive)
   (versor-as-motion-command
    (let* ((item (versor-get-current-item)))
      (languide-remove-surrounding-call (versor-overlay-start item)))))
 
-(defun versor-unify-statements ()
+(defun versor-languide-unify-statements ()
   "Unify statements"
   (interactive)
   (versor-as-motion-command
@@ -83,7 +83,7 @@ The function name is left at the top of the kill ring."
      (languide-unify-statements-region (versor-overlay-start item)
 				       (versor-overlay-end item)))))
 
-(defun versor-comment-selection ()
+(defun versor-languide-comment-selection ()
   "Turn the selection into a comment."
   (interactive)
   (versor-as-motion-command
@@ -93,25 +93,25 @@ The function name is left at the top of the kill ring."
 		       (versor-overlay-end (car items)))
        (setq items (cdr items))))))
 
-(defun versor-enclosing-scoping-point ()
+(defun versor-languide-enclosing-scoping-point ()
   "Move to enclosing scoping point"
   (interactive)
   (versor-as-motion-command
    (languide-enclosing-scoping-point 1)))
 
-(defun versor-enclosing-decision-point ()
+(defun versor-languide-enclosing-decision-point ()
   "Move to enclosing decision point"
   (interactive)
   (versor-as-motion-command
    (languide-enclosing-decision-point 1)))
 
-(defun versor-employ-variable ()
+(defun versor-languide-employ-variable ()
   "Employ variable"
   (interactive)
   (versor-as-motion-command
    (languide-employ-variable (point))))
 
-(defun versor-make-conditional (condition)
+(defun versor-languide-make-conditional (condition)
   "Make the current selection conditional."
   (interactive "sCondition: ")
   (versor-as-motion-command
@@ -120,7 +120,7 @@ The function name is left at the top of the kill ring."
 				(versor-overlay-end item)
 				condition))))
 
-(defun versor-make-iterative (continue-condition)
+(defun versor-languide-make-iterative (continue-condition)
   "Make the current selection iterative."
   (interactive "sContinue condition: ")
   (versor-as-motion-command
@@ -129,7 +129,7 @@ The function name is left at the top of the kill ring."
 			      (versor-overlay-end item)
 			      continue-condition))))
 
-(defun versor-remove-control ()
+(defun versor-languide-remove-control ()
   "Remove the control around the current selection."
   (interactive)
   (languide-remove-control))

@@ -1,5 +1,5 @@
 ;;;; versor-keymap.el -- set up a keymap for versor
-;;; Time-stamp: <2006-03-27 18:04:16 jcgs>
+;;; Time-stamp: <2006-04-25 18:55:48 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -34,14 +34,14 @@
 
 (define-key versor-general-keymap "c" 'versor-begin-altering-item)
 
-(define-key versor-general-keymap "v" 'versor-convert-selection-to-variable)
-(define-key versor-general-keymap "g" 'versor-convert-selection-to-global-variable)
-(define-key versor-general-keymap "f" 'versor-convert-selection-to-function)
+(define-key versor-general-keymap "v" 'versor-languide-convert-selection-to-variable)
+(define-key versor-general-keymap "g" 'versor-languide-convert-selection-to-global-variable)
+(define-key versor-general-keymap "f" 'versor-languide-convert-selection-to-function)
 
-(define-key versor-general-keymap "(" 'versor-surround-selection-with-call)
-(define-key versor-general-keymap "{" 'versor-unify-statements)
-(define-key versor-general-keymap "?" 'versor-make-conditional)
-(define-key versor-general-keymap ";" 'versor-comment-selection)
+(define-key versor-general-keymap "(" 'versor-languide-surround-selection-with-call)
+(define-key versor-general-keymap "{" 'versor-languide-unify-statements)
+(define-key versor-general-keymap "?" 'versor-languide-make-conditional)
+(define-key versor-general-keymap ";" 'versor-languide-comment-selection)
 
 (define-key versor-general-keymap "q" 'versor-end-command-mode)
 
