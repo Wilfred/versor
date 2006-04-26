@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-04-19 13:08:40 john>
+;;; Time-stamp: <2006-04-25 17:40:43 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -79,6 +79,11 @@ and going forward from the last meta-level takes you to the first one."
   :group 'versor-motion
   :type 'boolean)
 
+(defcustom phrase-end "[,;:] *"
+  "*Regular expression to recognize the end of a phrase."
+  :group 'versor-motion
+  :type 'regexp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; versor status ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -129,6 +134,13 @@ For example, if versor-item-attribute is :background, :background is looked
 up in the current dimension, to find the colour to set the background to.
 You can only use this from Emacs 21 onwards."
   :type '(set (const :background) (const :foreground) (const :underline))
+  :group 'versor-status)
+
+(defcustom versor-verbose t
+  "Whether Versor should comment much on what it is doing.
+If non-nil, Versor will tell you when you have selected a piece of
+code that it may have a specific way of handling."
+  :type 'boolean
   :group 'versor-status)
 
 (defcustom versor-try-to-display-whole-item t
@@ -221,6 +233,11 @@ See versor-text-in-code-function for how this is used."
   "*Whether to make a live commentary on versor and other activities."
   :type 'boolean
   :group 'versor)
+
+(defcustom versor-research-log-file "~/.versor-log"
+  "*File to save Versor's self-recording in."
+  :group 'versor
+  :type 'file)
 
 (defcustom choices-display-full t
   "*Whether to display in full the range of choices at each level of a treewise chooser."
