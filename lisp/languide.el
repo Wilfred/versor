@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-04-21 15:00:52 jcgs>
+;;; Time-stamp: <2006-04-25 13:25:52 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -150,8 +150,8 @@ Returns point, if there was a bracket to go out of, else nil."
   "Insert a function definition for NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY.
 A DOCSTRING may also be given.")
 
-(defmodel insert-function-call (name arglist)
-  "Insert a function call for a function called NAME taking ARGLIST.")
+(defmodel function-call-string (name arglist where)
+  "Return a string for a function call to NAME with ARGLIST. WHERE gives context.")
 
 (defmodel function-arglist-boundaries (&optional where)
   "Return a cons of the start and end of the argument list surrounding WHERE,
@@ -194,7 +194,7 @@ May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil.")
 
 (defun show-region-type (start end)
-  "For debugging languide-region-type"
+  "Show the region type between START and END."
   (interactive "r")
   (let ((type (languide-region-type (or start (region-beginning))
 				    (or end (region-end)))))
@@ -210,13 +210,11 @@ information; otherwise should clear it to nil.")
   '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode)
   "Modes for which languide has support.")
 
-(defun versor-show-region-type-hook-function ()
+(defun versor-show-region-type ()
+  "Show the type of the selected region"
   (when (memq major-mode languide-supported-modes)
     (let ((item (versor-get-current-item)))
       (show-region-type (car item) (cdr item)))))
-
-;; (add-hook 'versor-post-command-hook 'versor-show-region-type-hook-function)
-;; (remove-hook 'versor-post-command-hook 'versor-show-region-type-hook-function)
 
 (defun backward-out-of-comment ()
   "if in a comment, move to just before it, else do nothing..
