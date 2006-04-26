@@ -1,5 +1,5 @@
 ;;;; languide-custom.el -- customization definitions for languide
-;;; Time-stamp: <2006-04-11 14:21:23 john>
+;;; Time-stamp: <2006-04-25 11:19:56 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,7 @@ detecting automatically what arguments need to be passed to them."
   :prefix "languide-")
 
 (defface languide-auto-edit-overlay-face
-  '((t (:background "red")))
+  '((t (:background "orange")))
   "How to draw attention to what languide has done.
 When languide does something that involves changes away from point,
 it shows the changed text in this face, until the next user input."
