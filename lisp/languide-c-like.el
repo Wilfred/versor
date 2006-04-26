@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-04-21 18:41:57 jcgs>
+;;; Time-stamp: <2006-04-26 11:52:47 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -113,9 +113,11 @@ Need only work if already at or just beyond the end of a statement."
 
 (defun languide-previous-substatement ()
   "Go back a block, if at a block end, otherwise go back a statement."
-;;;;;;;;;;;;;;;; check first what kind, do things conditionally!
-  (goto-char (safe-scan-sexps (point) -1))
-)
+  (skip-to-actual-code-backwards)
+  (if (eq (char-syntax (char-before (point)))
+	  open-bracket)
+      (goto-char (safe-scan-sexps (point) -1))
+    (previous-statement 1)))
 
 (defvar c-like-function-type-modifiers
   (concat "\\(" (mapconcat 'identity
@@ -140,7 +142,6 @@ Need only work if already at or just beyond the end of a statement."
       ;; or
       ;;   { ... } * while ( ... ) { ... } // with the first { ... } being a free-standing compound statement
       ;; and so must go back to check for the "do"
-      ;; (languide-previous-substatement) ; we know it's a compound statement, or we wouldn't be in this function
       (goto-char (safe-scan-sexps (point) -2))
       (languide-debug-message 'continue-back-past-curly-ket "Going back to check for \"do\"  gets us to %d:\"%s\"" (point) (buffer-substring (point) (+ (point) 20)))
       (if (looking-at "\\<do\\>")
@@ -153,7 +154,6 @@ Need only work if already at or just beyond the end of a statement."
       ;;   if ( ... ) { ... } * else { ... }
       ;; and so we must go back over the "then", the condition, and the keyword
       (languide-debug-message 'continue-back-past-curly-ket "Got \"else\" following closing brace, so going back")
-      ;; (languide-previous-substatement) ; we know it's a compound statement, or we wouldn't be in this function
       (goto-char (safe-scan-sexps (point) -3))
       (languide-debug-message 'continue-back-past-curly-ket "That got us to \"%s\" which I hope is an \"if\"" (buffer-substring (point) (+ (point) 20))))
 
@@ -437,9 +437,10 @@ Need only work if already at or just beyond the end of a statement."
 (defvar c-binding-regexp-1
   (concat  "\\([a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-*" ; the type
 	   "\\([a-z][a-z0-9_]*\\)\\s-*"	; the name
+	   "\\(\\[[0-9]*\\]\\)?\\s-*"	; array qualifier, if present
 	   "\\(=[^;]*\\)?;"		; the value, if present
 	   )
-  "A regexp for a common kind of C binding.")
+  "A regexp for a common kind of C binding, covering plain types.")
 
 (defvar c-binding-regexp-2
   (concat "\\("
@@ -448,9 +449,10 @@ Need only work if already at or just beyond the end of a statement."
 	  "\\*?\\[?\\]?"		; the trimmings
 	  "\\)\\s-*"
 	  "\\([a-z][a-z0-9_]*\\)"	; the name
+	   "\\(\\[[0-9]*\\]\\)?\\s-*"	; array qualifier, if present
 	  "\\s-*\\(=[^;]*\\)?;"		; the value, if present
 	  )
-  "A regexp for a common kind of C binding.")
+  "A regexp for a common kind of C binding, covering ones with a qualifier before them.")
 
 (defvar c-binding-regexp-3
   (concat "\\("
@@ -459,14 +461,16 @@ Need only work if already at or just beyond the end of a statement."
 	  "[a-z][a-z0-9_]*\\s-*"	; the type
 	  "\\*?\\[?\\]?\\)\\s-*"	; the trimmings
 	  "\\([a-z][a-z0-9_]*\\)\\s-*"	; the value, if present
+	  "\\(\\[[0-9]*\\]\\)?\\s-*"	; array qualifier, if present
 	  "\\(=[^;]*\\)?;")
-  "A regexp for a common kind of C binding.")
+  "A regexp for a common kind of C binding, covering ones with two qualifiers before them.")
 
 (defvar c-arg-regexp-1
   (concat "\\([a-z][a-z0-9_]*\\s-*"	; type
 	  "\\(?:const\\s-*\\)?"
 	  "\\*?\\[?\\]?\\)\\s-*"	; trimmings
 	  "\\([a-z][a-z0-9_]*\\)\\s-*,?" ; name
+	  "\\(\\[[0-9]*\\]\\)?\\s-*"	; array qualifier, if present
 	  )
   "A regexp for a common kind of C arg.")
 
@@ -478,6 +482,7 @@ Need only work if already at or just beyond the end of a statement."
 	  "\\*?\\[?\\]?"		; trimmings
 	  "\\)"
 	  "\\s-*\\([a-z][a-z0-9_]*\\)\\s-*,?" ; name
+	  "\\(\\[[0-9]*\\]\\)?\\s-*"	; array qualifier, if present
 	  )
   "A regexp for a common kind of C arg.")
 
@@ -491,6 +496,7 @@ Need only work if already at or just beyond the end of a statement."
 	  "\\)"
 	  "\\s-*"
 	  "\\([a-z][a-z0-9_]*\\)\\s-*,?" ; name
+	  "\\(\\[[0-9]*\\]\\)?\\s-*"	; array qualifier, if present
 	  )
   "A regexp for a common kind of C arg.")
 
@@ -659,32 +665,29 @@ Return the position at the end of the initializer."
 	(save-excursion
 	  (down-list)
 	  (skip-to-actual-code)
-	  (message "Looking at possible bindings at %d" (point))
+	  ;; (message "Looking at possible bindings at %d" (point))
 	  (setq b1 nil b2 nil b3 nil)
 	  (while (or (setq b1 (looking-at c-binding-regexp-1))
 		     (setq b2 (looking-at c-binding-regexp-2))
 		     (setq b3 (looking-at c-binding-regexp-3)))
-	    (message "matched %S as binding"
-		     (or (and b1 c-binding-regexp-1)
-			 (and b2 c-binding-regexp-2)
-			 (and b3 c-binding-regexp-3)))
+	    ;; (message "matched %S as binding" (or (and b1 c-binding-regexp-1) (and b2 c-binding-regexp-2) (and b3 c-binding-regexp-3)))
 	    (let ((vartype (match-string-no-properties 1))
 		  (varname (match-string-no-properties 2))
-		  (extra (match-string-no-properties 3)))
+		  (extra (match-string-no-properties 4)))
 	      ;; (message "  At %d got %S of type %S" (point) varname vartype)
 	      (push (cons varname vartype) variables)
 	      (when (stringp extra)
 		(save-match-data
-		  (message "  extras are %s" extra)
+		  ;; (message "  extras are %s" extra)
 		  (let ((e (move-over-initializer extra 0)))
 		    (while (string-match ", *\\([a-z][a-z0-9_]*\\)" extra e)
-		      (message "    Got extra var of same type: %s" (match-string-no-properties 1 extra))
+		      ;; (message "    Got extra var of same type: %s" (match-string-no-properties 1 extra))
 		      (push (cons (match-string-no-properties 1 extra) vartype) variables)		  
 		      (setq e (move-over-initializer extra (match-end 1))))))))
 	    (goto-char (match-end 0))
-	    (message "end of that binding was %d" (point))
+	    ;; (message "end of that binding was %d" (point))
 	    (skip-to-actual-code)
-	    (message "skipped to %d" (point))
+	    ;; (message "skipped to %d" (point))
 	    ))
 	(backward-char 1))
       ;; now include the funargs
@@ -692,23 +695,20 @@ Return the position at the end of the initializer."
       (when (and (safe-backward-sexp 1)
 		 (safe-down-list 1))
 	(c-forward-syntactic-ws)
-	(message "bod at %d; trying to find args at %d" bod (point))
+	;; (message "bod at %d; trying to find args at %d" bod (point))
 	(setq a1 nil a2 nil a3 nil)
 	(while (or (setq a3 (looking-at c-arg-regexp-3))
 		   (setq a2 (looking-at c-arg-regexp-2))
 		   (setq a1 (looking-at c-arg-regexp-1)))
-	  (message "matched %S as arg"
-		   (or (and a1 c-arg-regexp-1)
-		       (and a2 c-arg-regexp-2)
-		       (and a3 c-arg-regexp-3)))
+	  (message "matched %S as arg" (or (and a1 c-arg-regexp-1) (and a2 c-arg-regexp-2) (and a3 c-arg-regexp-3)))
 	  (let ((vartype (match-string-no-properties 1))
 		(varname (match-string-no-properties 2)))
-	    (message "Adding arg %s of type %s" varname vartype)
+	    ;; (message "Adding arg %s of type %s" varname vartype)
 	    (push (cons varname vartype) variables))
 	  (goto-char (match-end 0))
-	  (message "end of match was %d" (point))
+	  ;; (message "end of match was %d" (point))
 	  (c-forward-syntactic-ws)
-	  (message "possible start for next match is %d" (point))
+	  ;; (message "possible start for next match is %d" (point))
 	  ))
       variables)))
 
@@ -774,10 +774,17 @@ Each element is a list of:
 	(let ((start (match-beginning 0))
 	      (name (match-string-no-properties 0))
 	      (pps (save-excursion (parse-partial-sexp bod (point)))))
-	  (unless (or (fourth pps) (fifth pps))
+	  (unless (or
+		   (string-match (cond
+				  ((eq major-mode 'java-mode) c-Java-keywords)
+				  (t c-C-keywords))
+				 name)
+		   ;; in comment or quoted:
+		   (fourth pps) (fifth pps))
 	    (skip-to-actual-code)
 	    (unless (= (char-after) open-bracket)
 	      (unless (save-excursion
+			;; is it a structure member name?
 			(goto-char start)
 			(skip-to-actual-code-backwards)
 			(or (= (char-before) ?.)
@@ -913,24 +920,29 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 (defconst semicolon (string-to-char ";")
   "Get this out-of-line to avoid confusing indenter when editing functions that use it.")
 
-(defmodal insert-function-call (c-mode java-mode perl-mode) (name arglist)
-  "Insert a function call for a function called NAME taking ARGLIST"
+(defmodal function-call-string (c-mode java-mode perl-mode) (name arglist where)
+  "Return a function call for a function called NAME taking ARGLIST. WHERE gives context."
   (let ((at-statement-start (save-excursion
+			      ;; This is to see whether this is a procedure call statement,
+			      ;; or a function call expression.
+			      (goto-char where)
 			      (skip-to-actual-code-backwards)
-			      (memq (char-before) '(?{ semicolon ?})))))
-    (languide-insert name "(")
-    (languide-insert (mapconcat (function
+			      (message "char before %d (non-space before %d) is %c" (point) where (char-before (point)))
+			      (memq (char-before) (list ?{ semicolon ?})))))
+    (message "This appears to be a %s call at %d"
+	     (if at-statement-start "procedure" "function")
+	     (point))
+    (concat name "("
+	    (mapconcat (function
 			(lambda (arg)
 			  (if (consp arg)
 			      (car arg)
 			    arg)))
-		       arglist ", "))
-    (languide-insert ")")
-    (when at-statement-start
-      (languide-insert ";\n")
-      (save-excursion
-	;; (forward-line 1)
-	(c-indent-command)))))
+		       arglist ", ")
+	    ")"
+	    (if at-statement-start
+		";\n"
+	      ""))))
 
 (defmodal languide-find-surrounding-call (c-mode java-mode perl-mode) ()
   "Return a list of the function call syntax around point.
