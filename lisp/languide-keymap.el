@@ -1,5 +1,5 @@
 ;;;; languide-keymap.el -- keymap and menu setup for languide
-;;; Time-stamp: <2006-04-06 16:05:40 john>
+;;; Time-stamp: <2006-04-25 18:55:48 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -19,19 +19,19 @@
 (require 'versor-language-edits)
 
 (defvar versor-languide-menu-items
-  '(["Use local variable for selection" versor-convert-selection-to-variable t]
-    ["Use global variable for selection" versor-convert-selection-to-global-variable t]
-    ["Convert selection to function" versor-convert-selection-to-function t]
-    ["Surround selection with function call" versor-surround-selection-with-call t]
-    ["Remove function call" versor-remove-function-call t]
-    ["Remove control" versor-remove-control]
-    ["Unify statements" versor-unify-statements t]
-    ["Comment selection" versor-comment-selection t]
-    ["Make selection conditional" versor-make-conditional t]
-    ["Make selection iterative" versor-make-conditional t]
-    ["Move to enclosing scoping point" versor-enclosing-scoping-point t]
-    ["Move to enclosing decision point" versor-enclosing-decision-point t]
-    ["Employ variable" versor-employ-variable t]
+  '(["Use local variable for selection" versor-languide-convert-selection-to-variable t]
+    ["Use global variable for selection" versor-languide-convert-selection-to-global-variable t]
+    ["Convert selection to function" versor-languide-convert-selection-to-function t]
+    ["Surround selection with function call" versor-languide-surround-selection-with-call t]
+    ["Remove function call" versor-languide-remove-function-call t]
+    ["Remove control" versor-languide-remove-control]
+    ["Unify statements" versor-languide-unify-statements t]
+    ["Comment selection" versor-languide-comment-selection t]
+    ["Make selection conditional" versor-languide-make-conditional t]
+    ["Make selection iterative" versor-languide-make-conditional t]
+    ["Move to enclosing scoping point" versor-languide-enclosing-scoping-point t]
+    ["Move to enclosing decision point" versor-languide-enclosing-decision-point t]
+    ["Employ variable" versor-languide-employ-variable t]
     ))
 
 (easy-menu-define versor-languide-menu nil
@@ -49,17 +49,17 @@
 
 (fset 'languide-map languide-map)
 
-(define-key languide-map "=" 'versor-convert-selection-to-variable)
-(define-key languide-map "f" 'versor-convert-selection-to-function)
-(define-key languide-map "g" 'versor-convert-selection-to-global-variable)
-(define-key languide-map "(" 'versor-surround-selection-with-call)
-(define-key languide-map ")" 'versor-remove-function-call)
-(define-key languide-map "{" 'versor-unify-statements)
-; (define-key languide-map "=" 'versor-enclosing-scoping-point)
-(define-key languide-map "?" 'versor-make-conditional)
-(define-key languide-map "@" 'versor-make-iterative)
-(define-key languide-map "^" 'versor-remove-control)
-(define-key languide-map ";" 'versor-comment-selection)
+(define-key languide-map "=" 'versor-languide-convert-selection-to-variable)
+(define-key languide-map "f" 'versor-languide-convert-selection-to-function)
+(define-key languide-map "g" 'versor-languide-convert-selection-to-global-variable)
+(define-key languide-map "(" 'versor-languide-surround-selection-with-call)
+(define-key languide-map ")" 'versor-languide-remove-function-call)
+(define-key languide-map "{" 'versor-languide-unify-statements)
+; (define-key languide-map "=" 'versor-languide-enclosing-scoping-point)
+(define-key languide-map "?" 'versor-languide-make-conditional)
+(define-key languide-map "@" 'versor-languide-make-iterative)
+(define-key languide-map "^" 'versor-languide-remove-control)
+(define-key languide-map ";" 'versor-languide-comment-selection)
 
 (define-key global-map "\M-#" 'languide-map)
 
