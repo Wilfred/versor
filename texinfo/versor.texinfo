@@ -28,6 +28,7 @@ this manual provided the copyright notice and this permission notice
 are preserved on all copies.
 @end titlepage
 @node Top, Introduction, (dir), (dir)
+@top Versor -- versatile cursors
 
 @c store these by makeinfo, copying them into subdirs of htdocs, tarring them up and doing 
 @c scp htdocs.tar.gz jcg_sturdy@emacs-versor.sourceforge.net:/home/groups/e/em/emacs-versor 
@@ -68,8 +69,10 @@ such as:
 Versor is one of a pair of companion packages. The other one,
 Languide, provides some high-level editing operations. Part of
 Versor's functionality is provided by the lower-level parts of
-Languide. @xref{Languide and Versor, , , languide, Languide: language
-guided editing}, for more information.
+Languide.
+@xref{Languide and Versor, , Languide and Versor, languide, Languide: language guided
+editing},
+for more information.
 
 @menu
 * Introduction::                The concepts behind Versor
@@ -81,8 +84,10 @@ guided editing}, for more information.
 * Accessibility::               Using Versor when avoiding keyboard use
 * Versor and Languide::         Interfaces to a companion package
 * Setup::                       How to install and configure Versor
+* Extending versor::            
 * Analysis::                    Versor use analysis
 * Versor and research::         Versor and research
+* Known problems::              Known problems
 * Command Index::               Command Index
 * Concept Index::               Concept Index
 
@@ -131,6 +136,7 @@ Refactoring using Languide
 
 * Expression handling::         Commands working on expressions
 * Statement handling::          Commands working on statements
+* Languide Feedback::           Feedback from Languide
 * Summary of refactoring::      Key bindings for refactoring
 
 Expression handling, expressions, and functions
@@ -200,6 +206,7 @@ Motion
 * Statement up to next::        
 * Level wrap::                  
 * Meta level wrap::             
+* Phrase end::                  
 * Reversible::                  
 
 Status
@@ -209,6 +216,7 @@ Status
 * Highlight with brackets::     
 * Change cursor color::         
 * Item attribute::              
+* Verbose::                     
 * Try to display whole item::   
 * Mode line begin string::      
 * Mode line end string::        
@@ -226,6 +234,11 @@ Other control
 * Display full choices::        
 * Flexi choose upstring::       
 * Flexi choose topstring::      
+
+Extending versor
+
+* Adding commands::             Adding new commands
+* Adding dimensions::           Adding new dimensions
 
 @end detailmenu
 @end menu
@@ -590,8 +603,8 @@ Navigating by phrases uses the variable @code{phrase-end} to define
 the end of a phrase. 
 
 The other dimensions in this group are based closely on the underlying
-Emacs facilities. See @xref{Sentences,,,emacs}, and
-@xref{Paragraphs,,,emacs}.
+Emacs facilities. @xref{Sentences,,Sentences,emacs,The GNUemacs manual}, and
+@xref{Paragraphs,,Paragraphs,emacs,The GNUemacs manual}.
 
 @node Structured Text, Tables, Text, Dimensions
 @section Structured Text coordinates
@@ -672,7 +685,7 @@ The dimensions defined in program coordinates are as follows:
 @end itemize
 
 Apart from the statement-related dimensions, these are the same as
-those in structural coordinates @xref{Structural}. 
+those in structural coordinates @ref{Structural}. 
 
 Movement by statement parts moves the selection between parts of the
 current statement.  Programming language statements can typically be
@@ -768,11 +781,11 @@ The @kbd{UP} arrow key inserts two entries from the kill ring,
 one before and one after the selection; that is to say, it inserts
 around the selection. This is compatible with
 Versor's way of deleting a multipart selection such as a pair of
-opening and closing brackets @xref{Deletion}.
+opening and closing brackets @ref{Deletion}.
 
 @c The down arrow key inserts within a multipart selection. This is not
 @c yet implemented. 
-These are defined in @code{versor:insertion-placement-keymap}.
+These are defined in @code{versor-insertion-placement-keymap}.
 
 Having chosen where to make an insertion, you must choose which one of
 several kinds of things to insert.  The choices are as follows:
@@ -868,7 +881,7 @@ include:
 
 The data used by Versor's ``alteration'' feature is provided by the
 companion package, Languide (Language Guided Editing).
-@xref{Alterations,,,languide}, for details.
+@xref{Alterations,,Alterations,languide,Languide: Language-guided editing}, for details.
 
 @node  DWIM,  , Alteration, Further commands
 @comment  node-name,  next,  previous,  up
@@ -889,7 +902,7 @@ circumstances, Versor provides a ``Do What I Mean'' (DWIM) command,
 which moves the cursor to a point likely to be of interest that is
 otherwise hard to get at using the current Versor dimension. This
 command is normally bound to the key @kbd{M-home}. Alternatively, it
-can be accessed with @kbd{M-x versor:dwim}.
+can be accessed with @kbd{M-x versor-dwim}.
 
 This function reads the user's mind, using the following algorithm:
 
@@ -907,7 +920,7 @@ This function reads the user's mind, using the following algorithm:
 Aspects of mental state not necessary for figuring out where to leave point are
 factored out of the calculations.
 
-@command{versor:dwim} is mode-specific in its behaviour. For example,
+@command{versor-dwim} is mode-specific in its behaviour. For example,
 in programming language modes, it can move point in and out of string
 constants and comments.
 
@@ -920,7 +933,7 @@ keyboard labour by the programmer, are provided by the companion
 package, Languide. As described here, they are accessed through some
 wrapper functions which apply them to the versor selection. You can
 also access these directly to act on GNUemacs region;
-@xref{Top,,,languide}.
+@xref{Top,Overview,Overview,languide, Languide: Language-guided editing}.
 
 A typical action (probably the one the author uses most often) is
 converting an expression to a local variable (so that the value can be
@@ -954,9 +967,9 @@ list), and replace its original occurrence with a call to the new
 function.
 
 To draw attention to what they have done, these functions highlight,
-with a red background, any changes they make away from the cursor. The
-highlighting is not the Versor selection, and is removed on your next
-input to GNUemacs.
+with an orange background, any changes they make away from the cursor.
+The highlighting is not the Versor selection, and is removed on your
+next input to GNUemacs.
 
 These commands are divided into two groups, one of them acting on
 expressions (as used in both functional and imperative languages) and
@@ -1007,10 +1020,14 @@ so that you can call it elsewhere.
 @subsection Convert selection to variable
 
 @findex Convert selection to variable
-The command @command{versor:convert-selection-to-variable} takes the
+The command @command{versor-languide-convert-selection-to-variable} takes the
 current selection as an expression, sets up a variable (at the nearest
 scoping point) initialised to that expression, and replaces the
 original expression with that variable.
+
+The variable name is left on the kill ring, ready for you to re-use,
+as the likely use of this command is that you want to use a value in
+two places, where it originally occurred once, in-line.
 
 In the normal Versor key bindings, this command is bound to
 @kbd{C-insert =}. 
@@ -1025,7 +1042,7 @@ software should handle this correctly.
 @node  Convert to function, Surround with call, Convert to variable, Expression handling
 @subsection Convert selection to function
 
-The command @command{versor:convert-selection-to-function} takes the
+The command @command{versor-languide-convert-selection-to-function} takes the
 selection, defines a new function just before the one
 containing the selection, and replaces the original selection with a
 call to the new function. It examines the selection and the
@@ -1033,25 +1050,29 @@ surrounding code, to find any variables referred to in the selection
 but defined outside it, and makes those into arguments to the new
 function.
 
+A call to this function, with the appropriate argument list syntax, is
+left on the kill-ring, ready for you to insert another call to the new
+function, as the likely use of this command is to re-use a code block
+(occurring in-line once) as a function to be called from more than one
+place.
+
 In the normal Versor key bindings, this command is bound to
 @kbd{C-insert f}. 
 
 @node  Surround with call, Remove call, Convert to function, Expression handling
 @subsection Surround selection with call
 
-The command @command{versor:surround-selection-with-call} wraps the
+The command @command{versor-languide-surround-selection-with-call} wraps the
 selection with a call to a specified function, such
 that the selection becomes the argument list of the function.
 
 In the normal Versor key bindings, this command is bound to
 @kbd{C-insert (}. 
 
-
-
 @node  Remove call,  , Surround with call, Expression handling
 @subsection Remove surrounding call
 
-The command @command{versor:remove-function-call} removes the function
+The command @command{versor-languide-remove-function-call} removes the function
 call surrounding the selection. This leaves the
 function arguments in place of the call.
 
@@ -1082,7 +1103,7 @@ This group of commands acts mostly on imperative statements.
 @node  Unify Statements, Make conditional, Statement handling, Statement handling
 @subsection Unify Statements
 
-The command @command{versor:unify-statements} turns the current Versor
+The command @command{versor-languide-unify-statements} turns the current Versor
 selection into a compound statement.  In the normal Versor key
 bindings, this command is bound to @kbd{C-insert @{}.
 
@@ -1090,7 +1111,7 @@ bindings, this command is bound to @kbd{C-insert @{}.
 @comment  node-name,  next,  previous,  up
 @subsection Make conditional
 
-The command @command{versor:make-conditional} makes the
+The command @command{versor-languide-make-conditional} makes the
 selection conditional, and positions point ready for filling in the
 condition. If the selection is already the body of a conditional
 construct, an @code{and} construct is wrapped around the existing
@@ -1104,7 +1125,7 @@ In the normal Versor key bindings, this command is bound to
 @comment  node-name,  next,  previous,  up
 @subsection Make repeating
 
-The command @command{versor-make-iterative} makes the selection be the
+The command @command{versor-languide-make-iterative} makes the selection be the
 body of a repeating construct, and positions point ready for filling
 in the repeat condition.
 
@@ -1114,7 +1135,7 @@ This command is not yet implemented.
 @comment  node-name,  next,  previous,  up
 @subsection Remove control construct
 
-The command @command{versor-remove-control} removes the control
+The command @command{versor-languide-remove-control} removes the control
 construct most closely surrounding the selection.
 
 This command is not yet implemented.
@@ -1132,8 +1153,7 @@ useful.
 @comment  node-name,  next,  previous,  up
 @section Feedback from Languide
 
-If you set the hook variable @code{versor-post-command-hook} to
-include the function @code{versor-show-region-type-hook-function},
+If you set the hook variable @code{versor-verbose} to non-nil,
 Languide will tell you when you have selected a piece of code that it
 may have a specific way of handling.
 
@@ -1181,9 +1201,9 @@ comment selection
 You can make Versor remember different current dimensions for actual
 code, and for the insides of comments and string literals. You can
 turn this on by requiring the feature @code{versor-text-in-code} and
-setting the variable @code{versor:text-in-code} to anything other than
+setting the variable @code{versor-text-in-code} to anything other than
 @code{nil}; or by including the symbol @code{text-in-code} in the
-arguments to @code{versor:setup}, which does both of the above.
+arguments to @code{versor-setup}, which does both of the above.
 
 @node  Per-buffer dimensions, Per-mode dimensions, Detect text in code, Advanced features
 @comment  node-name,  next,  previous,  up
@@ -1191,9 +1211,9 @@ arguments to @code{versor:setup}, which does both of the above.
 
 You can make Versor remember different current dimensions for each
 buffer. You can do this by requiring the feature @code{versor-local}
-and setting the variable @code{versor:per-buffer} to anything other
+and setting the variable @code{versor-per-buffer} to anything other
 than @code{nil}; or by including the symbol @code{local} in the
-arguments to @code{versor:setup}, which does both of the above.
+arguments to @code{versor-setup}, which does both of the above.
 
 @node  Per-mode dimensions,  , Per-buffer dimensions, Advanced features
 @comment  node-name,  next,  previous,  up
@@ -1204,9 +1224,9 @@ arguments to @code{versor:setup}, which does both of the above.
  
 You can make Versor remember different current dimensions for each
 mode. You can do this by requiring the feature @code{versor-modal} and
-setting the variable @code{versor:auto-change-for-modes} to non-nil;
+setting the variable @code{versor-auto-change-for-modes} to non-nil;
 or by including the symbol @code{modal} in the arguments to
-@code{versor:setup}, which does both of the above.
+@code{versor-setup}, which does both of the above.
 
 @node  Accessibility, Versor and Languide, Advanced features, Top
 @chapter Accessibility
@@ -1264,7 +1284,7 @@ To make Versor usable with a very small number of keys (for example, a
 mouthswitch), it is possible to reverse the motion of Versor's
 ``forward'' and ``back'' commands (of all kinds, both dimensions and
 both meta-dimensions (ways of choosing dimensions). This is available
-through the command @command{versor:reverse}. If reversing is used, it
+through the command @command{versor-reverse}. If reversing is used, it
 appears in the mode line as an arrow at the appropriate end of the
 dimension indication.
 
@@ -1309,7 +1329,7 @@ versor to use other input devices, such as joysticks and
 mouthswitches.
 
 For commands suitable for use with very ``narrow-channel'' input
-devices, @xref{Reversing}.
+devices, @ref{Reversing}.
 
 A complex joystick (at least with twist as well as X and Y movements)
 could prove to be an excellent way to use versor. The main stick
@@ -1334,10 +1354,9 @@ Languide, and the refactoring operations use the higher levels of it.
 Languide is a cross-language package, with definitions for several
 popular programming languages.
 
-@xref{Languide and Versor, , , languide, Languide: language
-guided editing}, for languide's end of the story..
+@xref{Languide and Versor, , Languide and Versor, languide, Languide: language-guided editing}, for languide's end of the story..
 
-@node Setup, Analysis, Versor and Languide, Top
+@node Setup, Extending versor, Versor and Languide, Top
 @chapter Setup
 
 To install Versor, unpack the tarball into a suitable directory, and
@@ -1347,7 +1366,7 @@ From your .emacs, for the default setup, call
 
 @lisp
   (require 'versor)
-  (versor:setup)
+  (versor-setup)
 @end lisp
 
 @menu
@@ -1361,7 +1380,7 @@ From your .emacs, for the default setup, call
 @section General configuration
 
 You can control which keys are used, and which other facilities are
-turned on, by giving some symbols as arguments to @code{versor:setup}.
+turned on, by giving some symbols as arguments to @code{versor-setup}.
 
 The arguments can be any (combination) of
 
@@ -1400,20 +1419,24 @@ text-oriented movement in embedded natural language text
 
 @item menu
 define a menu of Versor commands
+
+@item verbose
+rabbit on endlessly about what it is doing
+
 @end table
 
 The recommended default setup is:
 
 @lisp
-(versor:setup 'arrows 'arrows-misc 'modal 'text-in-code 'menu)
+(versor-setup 'arrows 'arrows-misc 'modal 'text-in-code 'menu)
 @end lisp
 
 You may then want to customize it further, like this:
 
 @lisp
   ;; preset the dimensions for some modes
-  (setq versor:mode-current-levels 
-	    (mapcar 'versor:mode-levels-triplet
+  (setq versor-mode-current-levels 
+	    (mapcar 'versor-mode-levels-triplet
 		    '(
 		      (emacs-lisp-mode "structural" "exprs")
 		      (lisp-interaction-mode "structural" "exprs")
@@ -1427,7 +1450,7 @@ You may then want to customize it further, like this:
 @comment  node-name,  next,  previous,  up
 @section Dimensions available for each mode
 
-The variable @code{versor:meta-dimensions-valid-for-modes} controls
+The variable @code{versor-meta-dimensions-valid-for-modes} controls
 which meta-dimensions are valid for which major modes.
 
 If t, all meta-dimensions are allowed in all major modes.
@@ -1470,6 +1493,7 @@ Control details for versor movements.
 * Statement up to next::        
 * Level wrap::                  
 * Meta level wrap::             
+* Phrase end::                  
 * Reversible::                  
 @end menu
 
@@ -1526,7 +1550,7 @@ Whether to wrap the level changes.
 If this is non-nil, going back from the first level takes you to the last one,
 and going forward from the last level takes you to the first one.
 
-@node Meta level wrap, Reversible, Level wrap, Motion
+@node Meta level wrap, Phrase end, Level wrap, Motion
 @subsubsection Meta level wrap
 
 Type: boolean
@@ -1538,7 +1562,17 @@ Whether to wrap the meta-level changes.
 If this is non-nil, going back from the first meta-level takes you to the last one,
 and going forward from the last meta-level takes you to the first one.
 
-@node Reversible,  , Meta level wrap, Motion
+@node  Phrase end, Reversible, Meta level wrap, Motion
+@comment  node-name,  next,  previous,  up
+@subsubsection Phrase end
+
+Type: regexp
+
+Default value:  "[,;:] *"
+
+Pattern to match the end of a phrase, for moving by phrases.
+
+@node Reversible,  , Phrase end, Motion
 @subsubsection Reversible
 
 Type: boolean
@@ -1562,6 +1596,7 @@ How versor displays its status information.
 * Highlight with brackets::     
 * Change cursor color::         
 * Item attribute::              
+* Verbose::                     
 * Try to display whole item::   
 * Mode line begin string::      
 * Mode line end string::        
@@ -1614,7 +1649,7 @@ selection (highlight) cursor.
 See versor-item-attribute for the attribute used to change the colour (or other
 aspect) of the block cursor.
 
-@node Item attribute, Try to display whole item, Change cursor color, Status
+@node Item attribute, Verbose, Change cursor color, Status
 @subsubsection Item attribute
 
 Type: (set (const :background (const :foreground) (const :underline))
@@ -1629,7 +1664,19 @@ up in the current dimension, to find the colour to set the background to.
 
 You can only use this from Emacs 21 onwards.
 
-@node Try to display whole item, Mode line begin string, Item attribute, Status
+@node  Verbose, Try to display whole item, Item attribute, Status
+@comment  node-name,  next,  previous,  up
+@subsubsection Verbose
+
+Type: boolean
+
+Default value: t
+
+If you set the hook variable @code{versor-verbose} to non-nil,
+Languide will tell you when you have selected a piece of code that it
+may have a specific way of handling.
+
+@node Try to display whole item, Mode line begin string, Verbose, Status
 @subsubsection Try to display whole item
 
 Type: boolean
@@ -1783,22 +1830,100 @@ Default value: [Top]
 
 The label to indicate going straight back up to the top of the tree.
 
+@node  Extending versor, Analysis, Setup, Top
+@comment  node-name,  next,  previous,  up
+@chapter Extending versor
 
-@node  Analysis, Versor and research, Setup, Top
+You can extend versor to handle more types of movement, more
+commands... whatever you like. Here is a brief guide to programming
+Versor, to help you make your code work well with the existing
+facilities.
+
+Some facilities of Versor are provided by its companion package,
+Languide.  To make Versor work with more programming languages, you
+need to add navigation definitions to Languide, and Versor will they
+use them automatically. 
+
+@menu
+* Adding commands::             Adding new commands
+* Adding dimensions::           Adding new dimensions
+@end menu
+
+@node  Adding commands, Adding dimensions, Extending versor, Extending versor
+@comment  node-name,  next,  previous,  up
+@section Adding new commands
+
+Most interactive Versor commands should have, as the outermost level
+of their body, the macro @code{versor-as-motion-command}, which
+handles the block cursor (selection highlighting). in the code within
+@code{versor-as-motion-command}, you can call
+@code{versor-set-current-item}, passing in the beginning and end of
+the new selection, and the new selection will be displayed
+automatically at the end of @code{versor-as-motion-command}. If you do
+not call @code{versor-set-current-item},
+@code{versor-as-motion-command} will try to work out an appropriate
+selection for the current dimension.
+
+If you want a multipart selection, you can call
+@code{versor-set-current-items}, passing in a list of conses of start
+and end positions, or a list of overlays. 
+
+@node  Adding dimensions,  , Adding commands, Extending versor
+@comment  node-name,  next,  previous,  up
+@section Adding new dimensions
+
+To add new navigation dimensions, you use @code{versor-define-moves},
+giving it the name of your dimension, and a list of lists, each of
+which begins with a key symbol and then has a value. the currently
+recognised keywords are as follows:
+@table @code
+@item first
+The command that will get you to the first item in a series. 
+@item previous
+The command that will get you to the previous item in a series. 
+@item next
+The command that will get you to the next item in a series. 
+@item end-of-item
+A command to move to the end of the current item. 
+@item last
+The command that will get you to the last item in a series. 
+@item transpose
+A command to transpose two of these items. 
+@item dwim
+A function to do some kind of movement based on this kind of item,
+that is often useful and not easy to achieve by sequences of the other
+movements.  For example, in a dimensional for use in a programming
+language mode, this might take you into a string literal. 
+@item :background
+Can be used as the way to highlight the selection, by setting
+@code{versor-item-attribute} to @code{:background}. Value should then
+be the colour to use.
+@item :foreground
+Can be used as the way to highlight the selection, by setting
+@code{versor-item-attribute} to @code{:foreground}. Value should then
+be the colour to use.
+@end table
+
+Any attribute named by the variable @code{versor-item-attribute} will
+be used for highlighting. @code{:background} is probably the most
+useful of these, but you could use @code{:foreground} or anything else
+that GNUemacs can display. 
+
+@node  Analysis, Versor and research, Extending versor, Top
 @comment  node-name,  next,  previous,  up
 @chapter Versor use analysis
 
 Versor provides some facilities for measuring how much you are using
 it, and how much you are using non-Versor commands, and how the two
 are mixed. This is partly because Versor was developed as part of some
-research on the psychology of programming @xref{Versor and research},
+research on the psychology of programming @ref{Versor and research},
 and partly so that you can tune your own computer use, and partly to
 get feedback on what needs to be added to Versor to make it a complete
 way to edit programs.
 
 @c todo: design and write the commands for this!  
 
-@node  Versor and research, Command Index, Analysis, Top
+@node  Versor and research, Known problems, Analysis, Top
 @comment  node-name,  next,  previous,  up
 @chapter Versor and research
 
@@ -1814,7 +1939,22 @@ but to gather wider information, the author encourages you to use
 Versor's use analysis features (@pxref{Analysis}) and send in the
 results, once you have been using Versor for a while.
 
-@node Command Index, Concept Index, Versor and research, Top
+@node  Known problems, Command Index, Versor and research, Top
+@comment  node-name,  next,  previous,  up
+@chapter Known problems
+
+Versor is still in its early days as a released package, and there are
+sure to be some bugs that the author has not yet hit in his own use of
+it.
+
+Problems known to the author include:
+
+@enumerate
+@item
+The ``previous statement'' movement in C is a bit erratic.
+@end enumerate
+
+@node Command Index, Concept Index, Known problems, Top
 @unnumbered Command Index
 @printindex fn
 
