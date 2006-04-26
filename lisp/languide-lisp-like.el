@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-04-21 15:05:31 jcgs>
+;;; Time-stamp: <2006-04-25 17:38:54 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -290,16 +290,16 @@ In fact, TYPE is not meaningful as this is the definition for Lisp."
    ((stringp arg) arg)
    ((symbolp arg) (symbol-name arg))
    ((and (consp arg)
-	 (stringp (cdr arg)))
-    (cdr arg))
+	 (stringp (car arg)))
+    (car arg))
    ((and (consp arg)
-	 (symbolp (cdr arg)))
-    (symbol-name (cdr arg)))))
+	 (symbolp (car arg)))
+    (symbol-name (car arg)))))
 
-(defun insert-lisp-arglist-elements (arglist)
+(defun lisp-arglist-elements (arglist)
   "Insert the elements of ARGLIST.
 They are in languide's format, which may be just the name, or (name . type)."
-  (languide-insert (mapconcat 'arg-name arglist " ")))
+  (mapconcat 'arg-name arglist " "))
 
 (defmodal insert-function-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   (name result-type arglist
@@ -307,7 +307,7 @@ They are in languide's format, which may be just the name, or (name . type)."
   "Insert a function definition for NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY.
 A DOCSTRING may also be given."
   (languide-insert "(defun " name " (")
-  (insert-lisp-arglist-elements arglist)
+  (languide-insert (lisp-arglist-elements arglist))
   (languide-insert ")")
   (newline-and-indent)
   (when (and (stringp docstring)
@@ -318,11 +318,9 @@ A DOCSTRING may also be given."
   (beginning-of-defun)
   (indent-sexp))
 
-(defmodal insert-function-call (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name arglist)
-  "Insert a function call for a function called NAME taking ARGLIST"
-  (languide-insert "(" name " ")
-  (insert-lisp-arglist-elements arglist)
-  (languide-insert ")"))
+(defmodal function-call-string (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name arglist where)
+  "Return a string for a function call to NAME with ARGLIST. WHERE gives context."
+  (concat "(" (lisp-arglist-elements (cons name arglist)) ")"))
 
 (defmodal ambient-defun-name (lisp-mode emacs-lisp-mode lisp-interaction-mode) (where)
   "Give the name of the function defined around WHERE."
@@ -538,114 +536,141 @@ Otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil."
   (setq languide-region-detail-string nil)
-  (let* ((pps (save-excursion (parse-partial-sexp from to))))
-    (cond
-     ((and (zerop (nth 0 pps))		; same level at both ends
-	   (>= (nth 6 pps) 0))		; no dip in level between ends
-      (let* ((n-parts (count-sexps from to))
-	     (f-start (safe-scan-lists from 1 -1))
-	     (f-end (and f-start
-			 (safe-scan-sexps f-start 1)))
-	     (functor (and f-end
-			   (intern
-			    (buffer-substring-no-properties f-start f-end))))
-	     (surrounding-start (safe-scan-lists from -1 1))
-	     (surrounding-end (and surrounding-start
-				   (safe-scan-sexps surrounding-start 1)))
-	     (sf-start (and surrounding-start
-			    (safe-scan-lists surrounding-start 1 -1)))
-	     (sf-end (and sf-start
-			  (safe-scan-sexps sf-start 1)))
-	     (surrounding-functor (and sf-end
-				       (not (= (char-after sf-start) open-bracket))
-				       (intern
-					(buffer-substring-no-properties sf-start sf-end))))
-	     (s-members (and sf-start
-			     surrounding-end
-			     (count-sexps sf-start (1- surrounding-end))))
-	     (which-s-member (and sf-start
-				  (count-sexps sf-start from))))
-	;; (message "functor %S; surrounding-functor %S, of which we are %S of %S" functor surrounding-functor which-s-member s-members)
+  (cond
+   ((save-excursion (goto-char from)
+		    (skip-to-actual-code to)
+		    (and (not (looking-at "("))
+			 (save-excursion
+			   (backward-char)
+			   (skip-to-actual-code-backwards)
+			   (backward-char)
+			   (not (looking-at "(")))
+			 (progn
+			   (forward-sexp)
+			   (let ((expr-1-end (point)))
+			     (goto-char to)
+			     (skip-to-actual-code-backwards from)
+			     (eq (point) expr-1-end)))))
+    (let* ((start-char (char-after from))
+	   (start-syntax (char-syntax start-char)))
+      (cond
+       ((eq start-char 34)
+	'string-literal)
+       ((eq start-char ??)
+	'character-literal)
+       ((and (>= start-char ?0) (<= start-char ?9))
+	'numeric-constant)
+       ((or (eq start-syntax ?w)
+	    (eq start-syntax ?_))
+	'symbol))))
+   (t (let* ((pps (save-excursion (parse-partial-sexp from to))))
 	(cond
-	 ((eq surrounding-functor nil)
-	  ;; could be an individual let binding, or something like
-	  ;; that, but is likely not to be a common or garden code sexp
-	  (let* ((sursurrounding-start (safe-scan-lists surrounding-start -1 1))
-		 (ssf-start (and sursurrounding-start
-				 (safe-scan-lists sursurrounding-start 1 -1)))
-		 (ssf-end (and sf-start
-			       (safe-scan-sexps ssf-start 1)))
-		 (sursurrounding-functor (and ssf-end
-					      (not (= (char-after ssf-start) open-bracket))
-					      (intern
-					       (buffer-substring-no-properties ssf-start ssf-end)))))
+	 ((and (zerop (nth 0 pps))	; same level at both ends
+	       (>= (nth 6 pps) 0))	; no dip in level between ends
+	  (let* ((n-parts (count-sexps from to))
+		 (f-start (safe-scan-lists from 1 -1))
+		 (f-end (and f-start
+			     (safe-scan-sexps f-start 1)))
+		 (functor (and f-end
+			       (intern
+				(buffer-substring-no-properties f-start f-end))))
+		 (surrounding-start (safe-scan-lists from -1 1))
+		 (surrounding-end (and surrounding-start
+				       (safe-scan-sexps surrounding-start 1)))
+		 (sf-start (and surrounding-start
+				(safe-scan-lists surrounding-start 1 -1)))
+		 (sf-end (and sf-start
+			      (safe-scan-sexps sf-start 1)))
+		 (surrounding-functor (and sf-end
+					   (not (= (char-after sf-start) open-bracket))
+					   (intern
+					    (buffer-substring-no-properties sf-start sf-end))))
+		 (s-members (and sf-start
+				 surrounding-end
+				 (count-sexps sf-start (1- surrounding-end))))
+		 (which-s-member (and sf-start
+				      (count-sexps sf-start from))))
+	    ;; (message "functor %S; surrounding-functor %S, of which we are %S of %S" functor surrounding-functor which-s-member s-members)
 	    (cond
-	     ((eq sursurrounding-functor 'cond)
-	      (if (eq which-s-member 0)
-		  'cond-condition
-		;; (message "cond body which=%S n=%S members=%S" which-s-member n-parts s-members)
-		(if (and (numberp which-s-member)
-			 (= which-s-member 2)
-			 (= n-parts (- s-members 1)))
-		    (progn
-		      (setq languide-region-detail-string (format "%d parts" n-parts))
-		      'cond-body)
-		  t)))
-	     ((memq sursurrounding-functor '(let let*))
-	      'variable-binding)
-	     (t nil))))
-	 ((eq which-s-member 0)
-	  'functor)
-	 ((eq surrounding-functor 'cond)
-	  'cond-clause)
-	 ((eq functor 'defun) defun-body)
-	 ((memq surrounding-functor '(let let*))
-	  (cond
-	   ((eq which-s-member 2)
-	    (if (eq n-parts 1)
-		(let ((this-binding f-start)
-		      (n-bindings 0))
-		  (while (setq this-binding (safe-scan-sexps this-binding 1))
-		    (setq n-bindings (1+ n-bindings)))
-		  (setq languide-region-detail-string (format "%d bindings" n-bindings))
-		  'let-bindings)
-	      nil))
-	   ((and (= which-s-member 3)
-		 (= n-parts (- s-members 2)))
-	    (progn
-	      (setq languide-region-detail-string (format "%d parts" n-parts))
-	      'let-body))
-	   (t t)))
-	 ;; todo: lots more to do here
-	 ((memq functor '(progn save-excursion save-window-excursion)) 'progn-whole)
-	 ((memq surrounding-functor '(when unless))
-	  (if (eq which-s-member 2)
-	      'if-condition
-	    (if (and (= which-s-member 3)
+	     ((eq surrounding-functor nil)
+	      ;; could be an individual let binding, or something like
+	      ;; that, but is likely not to be a common or garden code sexp
+	      (let* ((sursurrounding-start (safe-scan-lists surrounding-start -1 1))
+		     (ssf-start (and sursurrounding-start
+				     (safe-scan-lists sursurrounding-start 1 -1)))
+		     (ssf-end (and sf-start
+				   (safe-scan-sexps ssf-start 1)))
+		     (sursurrounding-functor (and ssf-end
+						  (not (= (char-after ssf-start) open-bracket))
+						  (intern
+						   (buffer-substring-no-properties ssf-start ssf-end)))))
+		(cond
+		 ((eq sursurrounding-functor 'cond)
+		  (if (eq which-s-member 0)
+		      'cond-condition
+		    ;; (message "cond body which=%S n=%S members=%S" which-s-member n-parts s-members)
+		    (if (and (numberp which-s-member)
+			     (= which-s-member 2)
+			     (= n-parts (- s-members 1)))
+			(progn
+			  (setq languide-region-detail-string (format "%d parts" n-parts))
+			  'cond-body)
+		      t)))
+		 ((memq sursurrounding-functor '(let let*))
+		  'variable-binding)
+		 (t nil))))
+	     ((eq which-s-member 0)
+	      'functor)
+	     ((eq surrounding-functor 'cond)
+	      'cond-clause)
+	     ((eq functor 'defun) defun-body)
+	     ((memq surrounding-functor '(let let*))
+	      (cond
+	       ((eq which-s-member 2)
+		(if (eq n-parts 1)
+		    (let ((this-binding f-start)
+			  (n-bindings 0))
+		      (while (setq this-binding (safe-scan-sexps this-binding 1))
+			(setq n-bindings (1+ n-bindings)))
+		      (setq languide-region-detail-string (format "%d bindings" n-bindings))
+		      'let-bindings)
+		  nil))
+	       ((and (= which-s-member 3)
 		     (= n-parts (- s-members 2)))
 		(progn
 		  (setq languide-region-detail-string (format "%d parts" n-parts))
-		  'if-body)
-	      t)))
-	 ((and (eq surrounding-functor 'if)
-	       (numberp which-s-member))
-	  (cond 
-	   ((= which-s-member 2)
-	    (if (= n-parts 1)
-		'if-condition
-	      nil))
-	   ((= which-s-member 3)
-	    (if (= n-parts 1)
-		'if-body
-	      nil))
-	   ((and (= which-s-member 4)
-		 (= n-parts (- s-members 3)))
-	    (progn
-	      (setq languide-region-detail-string (format "%d parts" n-parts))
-	      'if-then-else-tail))
-	   (t t)))
-	 (t t))))
-     (t nil))))
+		  'let-body))
+	       (t t)))
+	     ;; todo: lots more to do here
+	     ((memq functor '(progn save-excursion save-window-excursion)) 'progn-whole)
+	     ((memq surrounding-functor '(when unless))
+	      (if (eq which-s-member 2)
+		  'if-condition
+		(if (and (= which-s-member 3)
+			 (= n-parts (- s-members 2)))
+		    (progn
+		      (setq languide-region-detail-string (format "%d parts" n-parts))
+		      'if-body)
+		  t)))
+	     ((and (eq surrounding-functor 'if)
+		   (numberp which-s-member))
+	      (cond 
+	       ((= which-s-member 2)
+		(if (= n-parts 1)
+		    'if-condition
+		  nil))
+	       ((= which-s-member 3)
+		(if (= n-parts 1)
+		    'if-body
+		  nil))
+	       ((and (= which-s-member 4)
+		     (= n-parts (- s-members 3)))
+		(progn
+		  (setq languide-region-detail-string (format "%d parts" n-parts))
+		  'if-then-else-tail))
+	       (t t)))
+	     (t t))))
+	 (t nil))))))
 
 (defmodal adjust-binding-point (lisp-mode emacs-lisp-mode lisp-interaction-mode) (variables-needed)
   "If appropriate, move to the first point at which all of VARIABLES-NEEDED are defined.
