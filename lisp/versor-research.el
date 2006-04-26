@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-04-10 10:16:36 john>
+;;; Time-stamp: <2006-04-25 19:08:40 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -17,32 +17,26 @@
 
 (provide 'versor-research)
 
-(defvar versor-commands-obarray (make-vector 1511 nil)
-  "Obarray naming all the commands in versor.")
-
-(mapc (function (lambda (symbol) (intern (symbol-name symbol) versor-commands-obarray)))
-      '(versor-out versor-in versor-next-meta-level
-		   versor-prev-meta-level versor-reverse versor-start versor-prev
-		   versor-next versor-end versor-over-start versor-over-prev
-		   versor-over-next versor-over-end versor-over-over-start
-		   versor-over-over-prev versor-over-over-next versor-over-over-end
-		   versor-end-of-item versor-start-of-item versor-other-end-of-item
-		   versor-extend-item-forwards versor-extend-item-backwards
-		   versor-extend-over-item-forwards versor-extend-over-item-backwards
-		   versor-copy versor-mark versor-kill versor-transpose versor-search
-		   versor-insert-before versor-insert-after versor-insert-around
-		   versor-insert-within
-		   versor-dwim))
-
 (defun versor-command-p (command)
   "Return whether COMMAND is part of versor."
-  (intern-soft (symbol-name command) versor-commands-obarray))
+  (string-match "^versor-" (symbol-name command)))
+
+(defun languide-command-p (command)
+  "Return whether COMMAND is part of languide."
+  (string-match "^languide-" (symbol-name command)))
+
+(defun versor-languide-command-p (command)
+  "Return whether COMMAND is part of the versor wrapper for languide."
+  (string-match "^versor-languide-" (symbol-name command)))
 
 (defvar versor-research-buffer-before-command nil
   "The buffer we were in before the current command.")
 
 (defvar versor-research-change-happened nil
   "Whether anything changed during this command.")
+
+(defvar versor-research-starting-position nil
+  "Where point was when this command started.")
 
 (defvar versor-research-previous-command-type nil
   "The type of command before the current one.")
@@ -60,7 +54,8 @@
   "Set things up to see what happens during the coming command."
   ;; (message "Resetting research vars")
   (setq versor-research-buffer-before-command (current-buffer)
-	versor-research-change-happened nil))
+	versor-research-change-happened nil
+	versor-research-starting-position (point)))
 
 (defvar versor-research-versor-edit-after-versor-moves nil
   "Each entry is the list of versor movement commands leading directly
@@ -101,19 +96,43 @@ directly to a non-versor edit.")
 	(let* ((commentary (and versor-research-live-commentary
 				(not (string-match "inibu" (buffer-name)))))
 	       (command-was-versor (versor-command-p this-command))
+	       (command-was-languide (languide-command-p this-command))
+	       (command-was-versor-languide (versor-languide-command-p this-command))
+	       (command-type-string (concat "versor-research-"
+					    (cond
+					     (command-was-versor-languide "versor-languide")
+					     (command-was-languide "languide")
+					     (command-was-versor "versor")
+					     (t "non-versor"))
+					    "-"
+					    (cond
+					     (versor-research-change-happened
+					      (if (zerop (third versor-research-change-happened))
+						  "insertion"
+						"deletion"))
+					     ((not (eq (point) versor-research-starting-position)) "move")
+					     (t "other"))))
+	       ;; todo: try to get it all done in the "symbol-building" style above
 	       (command-type (if command-was-versor
 				 (if versor-research-change-happened
 				     (if (zerop (third versor-research-change-happened))
 					 'versor-insertion
 				       'versor-deletion)
-				   'versor-move)
+				   (if (eq (point) versor-research-starting-position)
+				       'versor-non-edit-non-move
+				     'versor-move))
 			       (if versor-research-change-happened
 				   (if (zerop (third versor-research-change-happened))
 				       'non-versor-insertion
 				     'non-versor-deletion)
-				 'non-versor-move))))
+				 (if (eq (point) versor-research-starting-position)
+				       'non-versor-non-edit-non-move
+				     'non-versor-move)))))
 	  (when commentary
-	    (message "Command was %S (previous was %S)" command-type versor-research-previous-command-type))
+	    (message "Command was %S(%S) (previous was %S)"
+		     command-type
+		     command-type-string
+		     versor-research-previous-command-type))
 	  (if (eq command-type versor-research-previous-command-type)
 	      (push (cons this-command versor-research-change-happened)
 		    versor-research-same-type-command-chain)
@@ -193,15 +212,16 @@ directly to a non-versor edit.")
   ;; (remove-hook 'before-change-functions 'versor-research-before-change-function)
   (remove-hook 'after-change-functions 'versor-research-after-change-function))
 
-(defun versor-research-reset ()
+(defun versor-research-reset (&optional force)
   "Reset the versor research data. You probably don't want to do this."
-  (interactive)				; do I really want this?
-  (setq versor-research-versor-edit-after-versor-moves nil
-	versor-research-versor-edit-after-versor-moves-with-manual-adjustment nil
-	versor-research-versor-edit-after-non-versor-moves nil
-	versor-research-non-versor-edit-after-versor-moves nil
-	versor-research-non-versor-edit-after-non-versor-moves nil
-	versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment nil))
+  (interactive nil)
+  (when (or force (yes-or-no-p "Reset research data? "))
+    (setq versor-research-versor-edit-after-versor-moves nil
+	  versor-research-versor-edit-after-versor-moves-with-manual-adjustment nil
+	  versor-research-versor-edit-after-non-versor-moves nil
+	  versor-research-non-versor-edit-after-versor-moves nil
+	  versor-research-non-versor-edit-after-non-versor-moves nil
+	  versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment nil)))
 
 (defun hook-memq (fn var)
   "Check whether FN is part of VAR, allowing for the global hook mechanism."
@@ -209,28 +229,49 @@ directly to a non-versor edit.")
       (and (memq t (symbol-value var))
 	   (memq fn (default-value var)))))
 
+(defun versor-generate-report-text ()
+  "Helper function for versor-research-report."
+  (princ (format "  Versor edits after versor moves: %d\n"
+		 (length versor-research-versor-edit-after-versor-moves)))
+  (princ (format "  Versor edits after versor moves with adjustments: %d\n"
+		 (length versor-research-versor-edit-after-versor-moves-with-manual-adjustment)))
+  (princ (format "  Versor edits after non-versor moves: %d\n"
+		 (length versor-research-versor-edit-after-non-versor-moves)))
+  (princ (format "  Non-versor edits after versor moves: %d\n"
+		 (length versor-research-non-versor-edit-after-versor-moves)))
+  (princ (format "  Non-versor edits after non-versor moves: %d\n"
+		 (length versor-research-non-versor-edit-after-non-versor-moves)))
+  (princ (format "  Non-versor edits after versor moves with adjustments: %d\n"
+		 (length versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment)))
+  (let ((pre-command-ok (hook-memq 'versor-research-pre-command-function 'pre-command-hook))
+	(post-command-ok (hook-memq 'versor-research-post-command-function 'post-command-hook))
+	(after-change-ok (hook-memq 'versor-research-after-change-function 'after-change-functions)))
+    (if (and pre-command-ok post-command-ok after-change-ok)
+	(princ "  All hooks still in place\n")
+      (unless pre-command-ok (princ "  Pre-command hook missing\n"))
+      (unless post-command-ok (princ "  Post-command hook missing\n"))
+      (unless after-change-ok (princ "  After-change function missing\n")))))
+
 (defun versor-research-report ()
   (interactive)
   (with-output-to-temp-buffer "*Versor research report*"
-    (princ (format "Versor edits after versor moves: %d\n"
-		   (length versor-research-versor-edit-after-versor-moves)))
-    (princ (format "Versor edits after versor moves with adjustments: %d\n"
-		   (length versor-research-versor-edit-after-versor-moves-with-manual-adjustment)))
-    (princ (format "Versor edits after non-versor moves: %d\n"
-		   (length versor-research-versor-edit-after-non-versor-moves)))
-    (princ (format "Non-versor edits after versor moves: %d\n"
-		   (length versor-research-non-versor-edit-after-versor-moves)))
-    (princ (format "Non-versor edits after non-versor moves: %d\n"
-		   (length versor-research-non-versor-edit-after-non-versor-moves)))
-    (princ (format "Non-versor edits after versor moves with adjustments: %d\n"
-		   (length versor-research-non-versor-edit-after-versor-moves-with-manual-adjustment)))
-    (let ((pre-command-ok (hook-memq 'versor-research-pre-command-function 'pre-command-hook))
-	  (post-command-ok (hook-memq 'versor-research-post-command-function 'post-command-hook))
-	  (after-change-ok (hook-memq 'versor-research-after-change-function 'after-change-functions)))
-      (if (and pre-command-ok post-command-ok after-change-ok)
-	  (princ "All hooks still in place\n")
-	(unless pre-command-ok (princ "Pre-command hook missing\n"))
-	(unless post-command-ok (princ "Post-command hook missing\n"))
-	(unless after-change-ok (princ "After-change function missing\n"))))))
+    (versor-generate-report-text)))
+
+(defun versor-save-research-data ()
+  "Save the versor research data to file."
+  (interactive)
+  (save-window-excursion
+  (find-file versor-research-log-file)
+  (goto-char (point-max))
+  (insert "Log for "
+	  user-mail-address
+	  " at "
+	  (current-time-string)
+	  "\n")
+  (let ((standard-output (current-buffer)))
+    (versor-generate-report-text)
+    (princ "\n"))
+  (basic-save-buffer)
+  (versor-research-reset t)))
 
 ;;; end of versor-research.el
