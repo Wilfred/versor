@@ -1,5 +1,5 @@
 ;;;; statement-cache.el -- cache statement data for statement-navigation.el
-;;; Time-stamp: <2006-03-28 18:42:18 jcgs>
+;;; Time-stamp: <2006-04-27 11:07:41 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -97,12 +97,18 @@ See the variable statements-known."
 	   (setq latest-statement-known (list start end type)))))
   latest-statement-known)
 
+(defvar statement-cache-enabled t
+  "*Whether to use the statement cache.
+Turn this off for debugging statement navigation.")
+
 (defun statement-find (start)
   "Find the statement starting at START."
-  (if (and (consp latest-statement-known)
-	   (= start (car latest-statement-known)))
-      latest-statement-known
-    (assoc start statements-known)))
+  (if statement-cache-enabled
+      (if (and (consp latest-statement-known)
+	       (= start (car latest-statement-known)))
+	  latest-statement-known
+	(assoc start statements-known))
+    nil))
 
 (defun statement-remember-part (statement-start type part selections)
   "Remember that for the statement starting at STATEMENT-START and of TYPE, the PART runs from the car to the cdr of each of SELECTIONS."
@@ -127,9 +133,9 @@ See the variable statements-known."
 
 (defun statement-find-part (start part)
   "For the statement at START, find cached PART as a list of conses of (start . end)."
-  (message "statement-find-part %S %S" start part)
+  ;; (message "statement-find-part %S %S" start part)
   (let ((statement (statement-find start)))
-    (message "statement-find-part got statement %S" statement)
+    ;; (message "statement-find-part got statement %S" statement)
     (if statement
 	(if (eq part 'whole)
 	    (list (cons (car statement) (cadr statement)))
