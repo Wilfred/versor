@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-04-21 12:39:27 jcgs>
+;;; Time-stamp: <2006-04-28 15:03:00 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -60,7 +60,7 @@
 	     (directions (get-statement-part type part)))
 	;; no cached data, really do the navigation
 ;;;;;;;;;;;;;;;; type is coming through as nil if we are prelocated but had not cached this part
-	(message "not cached; navigate-to %S %S got %S" type part directions)
+	;; (message "not cached; navigate-to %S %S got %S" type part directions)
 	(if directions
 	    (if (eq (car directions) 'statement-navigate)
 		(let ((selected-parts (progn
@@ -120,40 +120,44 @@ positions of what they select.")
   "Internal for statement-navigate.
 Uses the dynamic variables of statement-navigate, so probably not suitable
 for use elsewhere."
-  (dolist (direction directions)
+  (let ((last-part nil))
+    (catch 'done
+      (dolist (direction directions)
     
-    (message "Navigating %S" direction)
-    (setq last-part
-	  (cond
-	   ((stringp direction)
-	    (re-search-forward direction (point-max) t)
-	    (cons (match-beginning 0) (match-end 0)))
-	   ((consp direction)
-	    (let ((functor (car direction)))
+	;; (message "Navigating %S" direction)
+	(setq last-part
 	      (cond
-	       ((eq functor 'remember)
-		(message "(remember %S)" (cdr direction))
-		(setq so-far (statement-navigate-list (cdr direction) so-far))
-		;; return nil to last-part to avoid remembering it twice
-		nil)
-	       ((eq functor 'if)
-		(setq so-far
-		      (if (let ((condition (cadr direction)))
-			    (cond
-			     ((stringp condition) (looking-at condition))
-			     ((consp condition) (eval condition))))
-			  (statement-navigate-list (caddr direction) so-far)
-			(statement-navigate-list (cdddr direction) so-far))))
-	       ((memq functor statement-navigate-list-selector-functions)
-		(eval direction))
-	       (t (eval direction)
-		  nil))))
-	   (t (error "unknown navigation element %S" direction))))
-    (message "end of statement-navigate-list loop, so-far=%S" so-far)
+	       ((stringp direction)
+		(re-search-forward direction (point-max) t)
+		(cons (match-beginning 0) (match-end 0)))
+	       ((consp direction)
+		(let ((functor (car direction)))
+		  (cond
+		   ((eq functor 'remember)
+		    (message "(remember %S)" (cdr direction))
+		    (setq so-far (statement-navigate-list (cdr direction) so-far))
+		    ;; return nil to last-part to avoid remembering it twice
+		    nil)
+		   ((eq functor 'if)
+		    (setq so-far
+			  (if (let ((condition (cadr direction)))
+				(cond
+				 ((stringp condition) (looking-at condition))
+				 ((consp condition) (eval condition))))
+			      (statement-navigate-list (caddr direction) so-far)
+			    (statement-navigate-list (cdddr direction) so-far))))
+		   ((memq functor statement-navigate-list-selector-functions)
+		    (eval direction))
+		   (t (eval direction)
+		      nil))))
+	       ((eq direction 'fail)
+		(throw 'done nil))
+	       (t (error "unknown navigation element %S" direction))))
+	;; (message "end of statement-navigate-list loop, so-far=%S" so-far)
     
-    )
-  (when last-part
-    (setq so-far (cons last-part so-far)))
+	))
+    (when last-part
+      (setq so-far (cons last-part so-far))))
   so-far)
 
 (defun statement-navigate (directions)
