@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-04-26 15:40:08 john>
+;;; Time-stamp: <2006-04-28 15:57:10 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -91,16 +91,17 @@
   (when (and languide-debug-messages
 	     (or (null languide-debug-functions)
 		 (memq function languide-debug-functions)))
-    (message "%s: %s (press key)" function
-	     (format "At %d: \"%s...\": %s"
-		     (apply 'format format args)
-		     (point)
-		      (buffer-substring-no-properties (point) (min (+ 24 (point))
-								   (point-max))))
-	     )
-    (read-char))
-  (when (numberp languide-debug-messages)
-    (sit-for languide-debug-messages)))
+    (let ((message-text (format "At %d: \"%s...\": %s"
+				(point)
+				(buffer-substring-no-properties (point) (min (+ 24 (point))
+									     (point-max)))
+				(apply 'format format args))))
+      (if (numberp languide-debug-messages)
+	  (progn
+	    (message "%s" message-text)
+	    (sit-for languide-debug-messages))
+	(message "%s: %s (press key)" function message-text)
+	(read-char)))))
 
 (defun outward-once ()
   "Move outward one level of brackets, going backward.
@@ -145,6 +146,9 @@ Returns point, if there was a bracket to go out of, else nil."
 
 (defmodel statement-container ()
   "Select the container of the current statement.")
+
+(defmodel language-conditional-needs-unifying ()
+  "Whether the conditional statement needs its dependent statements unified for it.")
 
 (defmodel insert-function-declaration (name result-type arglist body &optional docstring)
   "Insert a function definition for NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY.
