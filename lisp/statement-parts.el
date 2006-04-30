@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2006-04-10 10:12:13 john>
+;;; Time-stamp: <2006-04-26 11:15:35 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -115,7 +115,6 @@
 
 (defun languide-parts ()
   "The parts we can navigate to."
-  ;; todo: can we ever get "whole"?
   (if (get-statement-part statement-navigation-type 'tail)
       (if statement-navigate-parts-include-container
 	  '("container" "framework" "whole" "head" "body" "tail")
