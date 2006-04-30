@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-04-25 11:51:30 jcgs>
+;;; Time-stamp: <2006-04-28 16:05:28 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -155,7 +155,7 @@ P")
 		   (or (null nearest)
 		       (integerp nearest)))
 	  (let ((best-so-far (point)))
-	    (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
+	    ;; (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
 	    (while (and (progn
 			  (goto-char binding-point)
 			  (setq binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions)))
@@ -163,7 +163,7 @@ P")
 			(or (not (integerp nearest))
 			    (not (zerop (setq nearest (1- nearest))))))
 	      (setq best-so-far (point))
-	      (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
+	      ;; (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
 	      )
 	    (when (null binding-point)
 	      ;; if there's no binding point,
@@ -326,34 +326,47 @@ This is only valid if languide-region-type-potential-code-block-p is true for it
   "Make the region between FROM and TO conditional upon CONDITION."
   (interactive "r
 sCondition: ")
-  (let ((body-type (languide-region-type from to)))
-    (message "Body type from %d to %d is %s" from to body-type)
-    (cond
-     ((memq body-type '(compound-if-then-body if-then-body))
-      ;; todo: handle lisp's cond clauses too?
-      (let ((navigate-container-whole-statement t))
-	(navigate-this-container))
-      (navigate-this-head)
-      (let ((item (versor-get-current-item)))
-	(add-expression-term 'and condition (car item) (cdr item))))
-     ((languide-region-type-potential-code-block-p body-type)
-      (languide-unify-statements-region from to)
-      (let ((inserter (cadar (get-statement-part 'if-then 'add-head)))
-	    (tempo-insert-region t)
-	    (old-marker (make-marker)))
-	(message "inserter is %S" inserter)
-	(goto-char from)
-	(insert condition)
-	;; we have to establish a region, for the template system to use,
-	;; but we don't want the user to be able to see this, so do it in
-	;; an underhand way
-	(set-marker old-marker (marker-position (mark-marker)))
-	(set-marker (mark-marker) from)
-	(funcall inserter)
-	(set-marker (mark-marker) old-marker)
-	))
-     (t (error "Not suitable for making conditional: %S" body-type))
-     )))
+  (save-excursion
+    (let ((body-type (languide-region-type from to))
+	  (fm (make-marker))
+	  (tm (make-marker)))
+      ;; (message "Body type from %d to %d is %s" from to body-type)
+      (set-marker fm from (current-buffer))
+      (set-marker tm to (current-buffer))
+      (setq from fm
+	    to tm)
+      (cond
+       ((memq body-type '(compound-if-then-body if-then-body compound-if-body))
+	;; todo: handle lisp's cond clauses too?
+	(let ((navigate-container-whole-statement t))
+	  (navigate-this-container))
+	(navigate-this-head)
+	(let ((item (versor-get-current-item)))
+	  (add-expression-term 'and condition (car item) (cdr item))))
+       ((languide-region-type-potential-code-block-p body-type)
+	(when (language-conditional-needs-unifying)
+	  (languide-unify-statements-region from to))
+	;; (message "after unification, %d..%d" (marker-position from) (marker-position to))
+	(let ((head-inserter (cadar (get-statement-part 'if-then 'add-head)))
+	      (trailer-inserter (cadar (get-statement-part 'if-then 'add-trailer)))
+	      (tempo-insert-region t)
+	      (old-marker (make-marker)))
+	  ;; (message "head-inserter is %S; trailer-inserter is %S" head-inserter trailer-inserter)
+	  (goto-char from)
+	  (insert condition)
+	  ;; we have to establish a region, for the template system to use,
+	  ;; but we don't want the user to be able to see this, so do it in
+	  ;; an underhand way
+	  (set-marker old-marker (marker-position (mark-marker)))
+	  (set-marker (mark-marker) from)
+	  (funcall head-inserter)
+	  (set-marker (mark-marker) to)
+	  (goto-char to)
+	  ;; (message "inserting trailer at %S" to)
+	  (funcall trailer-inserter)
+	  (set-marker (mark-marker) old-marker)
+	  (indent-region from to nil)))
+       (t (error "Not suitable for making conditional: %S" body-type))))))
 
 (defun languide-make-iterative ()
   ;; todo: write languide-make-iterative -- try to use the existing skeleton or template
