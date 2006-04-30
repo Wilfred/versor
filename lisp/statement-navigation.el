@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-04-21 10:47:06 jcgs>
+;;; Time-stamp: <2006-04-28 11:00:19 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -94,33 +94,29 @@ There an element of DWIM to this:
 Then, if N is greater than 1, move back N-1 more statements."
   (let ((starting-point (point))
 	(previous-end nil))
-    (languide-debug-message 'previous-statement "Going back %d statements" n)
     ;; first, try going back to the start of a statement, to see
     ;; whether we end up where we started:
     (beginning-of-statement-internal)
     (when (= (point) starting-point) ; this means we were already at the start, so go back another
-      (languide-debug-message 'previous-statement "Was already at start, going back an extra one")
+      ;; (languide-debug-message 'previous-statement "Was already at start, going back an extra one")
       (incf n))
     (while (> n 1)
-      (languide-debug-message 'previous-statement "  %d statements left to go back over" n)
       (setq previous-end (point))
-      (languide-debug-message 'previous-statement "  moving into previous statement")
       (move-into-previous-statement)
-      (languide-debug-message 'previous-statement "  that gets us to %d" (point))
       (beginning-of-statement-internal)
-      (languide-debug-message 'previous-statement "Now gone back another statement, to %d" (point))
       (decf n))
-    (languide-debug-message 'previous-statement "final move to beginning of statement")
+    ;; now adjust our idea of the "end of the statement"; either we
+    ;; can go all the way up to the next statement (set
+    ;; versor-statement-up-to-next to get this behaviour, but I think
+    ;; it's ugly), or find the real end of the statement of which we
+    ;; have just found the beginning
     (let ((end (if (and versor-statement-up-to-next previous-end)
 		   previous-end
 		 (save-excursion
 		   (let ((start (point)))
-		     (languide-debug-message 'previous-statement "Looking for end of statement, from %d" start)
 		     (condition-case nil
 			 (progn
-			   (end-of-statement-internal)
-			   (languide-debug-message 'previous-statement "That got us to %d for end of statement" (point))
-		       )
+			   (end-of-statement-internal))
 		       (error (message "Could not find end of statement")))
 		     (point))))))
       end)))
