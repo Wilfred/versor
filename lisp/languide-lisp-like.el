@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-04-25 17:38:54 jcgs>
+;;; Time-stamp: <2006-04-28 16:14:57 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -69,7 +69,7 @@ Maps strings to symbols.")
 					  lisp-interaction-mode)
   ()
   "Insert a progn."
-  (languide-insert "(progn "))
+  (languide-insert "(progn\n "))
 
 (defmodal insert-compound-statement-close (lisp-mode
 					   emacs-lisp-mode
@@ -77,6 +77,10 @@ Maps strings to symbols.")
   ()
   "Insert a progn's closing bracket."
   (languide-insert ")"))
+
+(defmodal language-conditional-needs-unifying (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode) ()
+  "Whether the conditional statement needs its dependent statements unified for it."
+  nil)
 
 (defun find-next-lisp-binding-outwards (&optional allow-conversions)
   "Move to the next enclosing binding.
@@ -650,7 +654,7 @@ information; otherwise should clear it to nil."
 			 (= n-parts (- s-members 2)))
 		    (progn
 		      (setq languide-region-detail-string (format "%d parts" n-parts))
-		      'if-body)
+		      'if-then-body)
 		  t)))
 	     ((and (eq surrounding-functor 'if)
 		   (numberp which-s-member))
@@ -803,7 +807,8 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   ;; (keyword "when")
   (head "(when" (expression-contents))
   (body "(when" (expression) (skip-to-actual-code) (expressions))
-  (add-head (template & > "(if " r ")" n>))
+  (add-head (template & > "(when " r n>))
+  (add-trailer (template ")" >))
   (create (precondition (require 'cl))
 	  (template & > "(when " p n>
 		    r ")"))
