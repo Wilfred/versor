@@ -1,5 +1,5 @@
 ;;;; statement-definition.el -- description mechanism for statement syntax in various languages
-;;; Time-stamp: <2006-03-26 16:46:02 jcgs>
+;;; Time-stamp: <2006-04-28 15:42:13 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -43,7 +43,7 @@ an if-then-else statement in C, Java, or Perl, we write
 which will look for \"if\", skip two expressions, move over an \"else\",
 and return the contents of the next expression.
 You can also give 'create as a part name, and follow it with a tempo template
-or a skeleton; and likewise 'add-head, which wants a template/skeleton for
+or a skeleton; and likewise 'add-head and 'add-trailer, which want a template/skeleton for
 adding just a statement head."
   (defstatement0 statement modes parts))
 
@@ -70,7 +70,7 @@ adding just a statement head."
     (cond
      ((memq type '(head body tail framework))
       (cons type `(statement-navigate ,@(cdr part))))
-     ((memq type '(create add-head))
+     ((memq type '(create add-head add-trailer))
       (mapcar 'make-statement-create-part
 	      part))
      (t
