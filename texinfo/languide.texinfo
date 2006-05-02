@@ -231,7 +231,7 @@ Languide has two groups of commands:
     the high-level editing commands)
 @end itemize
 
-@node Commands, Setup, Concepts, Top
+@node Commands, Region types, Concepts, Top
 @chapter Commands
 
 You can access Languide's commands directly with M-x, or through a
@@ -489,7 +489,7 @@ the current statement, that is, the compound statement containing it,
 if any. 
 
 @node Next part of statement, Previous part of statement, Container of statement, Navigation
-@subsection  statement-navigate-parts-next
+@subsection statement-navigate-parts-next
 
 The command @code{statement-navigate-parts-next} selects the next part
 of the current statement. The list of parts is controlled by the
@@ -506,7 +506,18 @@ variable @code{statement-navigate-parts-include-container}; if this is
 non-nil, it includes the container of the statement; otherwise, it is:
 @code{("framework" "whole" "head" "body" "tail")}. 
 
-@node Setup, Extension, Commands, Top
+@node  Region types, Setup, Commands, Top
+@comment  node-name,  next,  previous,  up
+@chapter Region types
+
+Languide can spot some characteristics of a region, for example,
+whether it is suitable to have a conditional statement wrapped around
+it. This is normally displayed at the end of each versor command, if
+this is enabled; see @ref{Languide Feedback,Feedback from
+Languide,Feedback from Languide,versor,Versor: versatile cursors for
+GNUemacs}.
+
+@node Setup, Extension, Region types, Top
 @chapter Setup
 
 To install Languide, unpack the tarball into a suitable directory, and
