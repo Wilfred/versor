@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-04-28 11:00:19 jcgs>
+;;; Time-stamp: <2006-04-30 19:08:10 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -137,34 +137,25 @@ Then, if N is greater than 1, move back N-1 more statements."
   "Move to the NTH next statement.
 If calling this from a program, other than inside statement navigation,
 you should possibly use next-statement instead."
-  (languide-debug-message 'next-statement-internal "next-statement(%d) starting from %d" n (point))
   (let ((first t)
 	(starting (point)))
     (while (> n 0)
       ;; todo: this does the seemingly wrong thing if called before the start of the first statement -- it ends up taking us to the second statement
-      (languide-debug-message 'next-statement "%d statements left; going to end of current statement" n)
       (end-of-statement-internal)
-      (languide-debug-message 'next-statement "at end of current statement, %d" (point))
       ;; not sure what the point of this next bit was... seems to do better without it!
       (when nil first ; go back to see if we were before the statement
 	    (let ((first-end (point)))
-	      (languide-debug-message 'next-statement "Going back to find start of statement where next-statement was called")
 	      (beginning-of-statement-internal)
 	      (if (> (point) starting)
 		  ;; if the beginning of the first statement is past
 		  ;; where we started, i.e. we started before the
 		  ;; statement, then no more iterations
 		  (progn
-		    (languide-debug-message 'next-statement "we started before the statement")
 		    (setq n 0))
 		(goto-char first-end))))
-      (languide-debug-message 'next-statement "at %d; skipping to code at start of next statement" (point))
       (skip-to-actual-code)
-      (languide-debug-message 'next-statement "that gets us to %d" (point))
       (when (> n 1)
-	(languide-debug-message 'next-statement "moving into next statement")
-	(move-into-next-statement)
-	(languide-debug-message 'next-statement "that gets us to %d" (point)))
+	(move-into-next-statement))
       (decf n)
       (setq first nil)))
   ;; move over any comment
@@ -177,12 +168,8 @@ you should possibly use next-statement instead."
    (unless (eq navigated-latest-part 'body)
      (next-statement-internal n)
      (setq navigated-latest-part 'whole))
-   (languide-debug-message 'next-statement
-			   "Finding both ends of the new current statement, currently at start=%d"
-			   (point))
    (let* ((start (point))
 	  (end (save-excursion (end-of-statement-internal) (point))))
-     (languide-debug-message 'next-statement "Going to end gets us %d..%d" start end)
      (versor-set-current-item start end)
      (establish-current-statement 'next-statement end))))
 
