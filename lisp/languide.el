@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-04-28 15:57:10 jcgs>
+;;; Time-stamp: <2006-05-01 16:09:21 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -119,15 +119,15 @@ Returns point, if there was a bracket to go out of, else nil."
 
 (defun all-variables-in-scope-p (where variables)
   "Return whether at WHERE, all of VARIABLES are in scope."
-  (message "looking for whether %s are all in scope at %d;" variables where)
+  ;; (message "looking for whether %s are all in scope at %d;" variables where)
   (if variables
       (let ((variables-in-scope (variables-in-scope where)))
-	(message "variables in scope are %s" variables-in-scope)
+	;; (message "variables in scope are %s" variables-in-scope)
 	(catch 'done
 	  (while variables
 	    (if (assoc (car variables) variables-in-scope)
 		(setq variables (cdr variables))
-	      (message "%s was not in scope" (car variables))
+	      ;; (message "%s was not in scope" (car variables))
 	      (throw 'done nil)))
 	  t))
     t))
@@ -197,18 +197,18 @@ otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil.")
 
-(defun show-region-type (start end)
-  "Show the region type between START and END."
+(defun region-type-description (start end)
+  "Return a description of the region type between START and END."
   (interactive "r")
   (let ((type (languide-region-type (or start (region-beginning))
 				    (or end (region-end)))))
     (cond
      ((memq type '(sequence t))
-      (message "code block"))
+      "code block")
      (languide-region-detail-string
-      (message "region type %S; %s" type languide-region-detail-string))
+      (format "region type %S; %s" type languide-region-detail-string))
      (t
-      (message "region type %S" type)))))
+      (format "region type %S" type)))))
 
 (defvar languide-supported-modes
   '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode)
@@ -217,13 +217,16 @@ information; otherwise should clear it to nil.")
 (defun versor-show-region-type ()
   "Show the type of the selected region"
   (when (memq major-mode languide-supported-modes)
-    (let ((item (versor-get-current-item)))
-      (show-region-type (car item) (cdr item)))))
+    (let* ((item (versor-get-current-item))
+	   (description (region-type-description (car item) (cdr item))))
+      (message "%s" description)
+      (versor-speak "%s" description))))
 
 (defun backward-out-of-comment ()
-  "if in a comment, move to just before it, else do nothing..
-returns whether it did anything."
+  "If in a comment, move to just before it, else do nothing.
+Returns whether it did anything."
   (unless (memq major-mode '(texinfo-mode html-mode html-helper-mode))
+    (if (safe-scan-lists (point) -1 1)
     (let* ((bod (save-excursion (beginning-of-defun) (point)))
 	   (parse-results (parse-partial-sexp bod (point)
 					      0
@@ -233,29 +236,28 @@ returns whether it did anything."
 	   (in-comment-or-string (nth 8 parse-results)))
       (if in-comment-or-string
 	  (goto-char in-comment-or-string)
-	nil))))
+	nil))
+    (message "was not in function")
+    nil
+    )))
 
 (defun skip-to-actual-code (&optional limit)
-  "skip forward, over any whitespace or comments, to the next actual code.
-this assumes that we start in actual code too.
-limit, if given, limits the movement.
-returns the new point."
+  "Skip forward, over any whitespace or comments, to the next actual code.
+This assumes that we start in actual code too.
+LIMIT, if given, limits the movement.
+Returns the new point."
   (interactive)
   (backward-out-of-comment)
   (while (progn
 	   (skip-syntax-forward "->")
-	   (languide-debug-message 'skip-to-actual-code "now at %d" (point))
 	   (if (looking-at "\\s<")
-	       (progn
-		 (languide-debug-message 'skip-to-actual-code "at comment start at %d" (point))
-		 (re-search-forward "\\s>" limit t))
+	       (re-search-forward "\\s>" limit t)
 	     (if (and (stringp comment-start-skip)
 		      (stringp comment-end)
 		      (looking-at comment-start-skip))
 		 (progn
-		   (languide-debug-message 'skip-to-actual-code "at comment-start-skip at %d" (point))
 		   (goto-char (match-end 0))
-		   (search-forward comment-end limit t))
+		   (search-forward comment-end (and limit (max limit (point))) t))
 	       nil))))
   (point))
 
