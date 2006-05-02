@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-04-30 11:57:54 john>
+;;; Time-stamp: <2006-05-01 15:45:11 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -38,7 +38,6 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
 	(re-search-backward "[{;}]"
 			    bod		; (point-min)
 			    t)	      ; leaves point at start of match
-	(languide-debug-message 'languide-c-back-to-possible-ender "Found a \"%s\" at %d" (match-string 0) (point))
 	;; having found a character that can end a C statement,
 	;; we now parse from the start of the defun up to the
 	;; position of the character, to see whether the character
@@ -49,7 +48,6 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
 							  nil ; state
 							  nil ; stop-comment
 							  ))))
-	  (languide-debug-message 'languide-c-back-to-possible-ender "parse-partial-sexp returned %S" result)
 	  (setq in-comment-or-string (or
 				      ;; emacs19 doesn't give us that handy 8th element!
 				      (nth 8 result)
@@ -57,7 +55,6 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
 				      (nth 4 result)
 				      (languide-c-inside-for-control)
 				      ))
-	  (languide-debug-message 'languide-c-back-to-possible-ender "in-comment-or-string=%S" in-comment-or-string)
 	  (if in-comment-or-string
 	      (if (numberp in-comment-or-string)
 		  (goto-char in-comment-or-string)
@@ -191,16 +188,16 @@ Need only work if already at or just beyond the end of a statement."
       ;;   until ( ... ) { ... }
       ;;   for ( ... ) { ... }
       ;; or it could just be a free-standing code block
-      (languide-debug-message 'continue-back-past-curly-ket "Other case of closing brace, at \"%s\"" (buffer-substring (point) (+ (point) 20)))
+      ;; (languide-debug-message 'continue-back-past-curly-ket "Other case of closing brace, at \"%s\"" (buffer-substring (point) (+ (point) 20)))
 
       ;; todo: I think some code may be missing here..........
-      (languide-debug-message 'continue-back-past-curly-ket "Other case; going back to look before the brace... got \"%s\"" (buffer-substring (point) (+ (point) 20)))
-      (languide-debug-message 'continue-back-past-curly-ket "Remaining there contentedly")
+      ;; (languide-debug-message 'continue-back-past-curly-ket "Other case; going back to look before the brace... got \"%s\"" (buffer-substring (point) (+ (point) 20)))
+      ;; (languide-debug-message 'continue-back-past-curly-ket "Remaining there contentedly")
       (cond
 
 
        (t
-	(languide-debug-message 'continue-back-past-curly-ket "Before the brace was not if/while/for/until/else; assuming plain block")
+	 ;; Before the brace was not if/while/for/until/else; assuming plain block
 	(goto-char (safe-scan-sexps close -1))))))))
 
 (defvar debug-overlays nil)
@@ -252,7 +249,7 @@ Need only work if already at or just beyond the end of a statement."
 	(continue-back-past-curly-ket
 	 starting-point
 	 ;; (point)
-				      )
+	 )
 
 	;; (skip-to-actual-code)
 
@@ -293,15 +290,9 @@ Need only work if already at or just beyond the end of a statement."
 
     ;; now we're at a real statement delimiter
     ;;;;;;;;;;;;;;;; why this "unless"? find out, and comment it!
-    (if (blank-between (point) (1+ starting-point))
-	(languide-debug-message 'beginning-of-statement-internal
-				"in blank area at %d..%d" (point) (1+ starting-point))
-      (languide-debug-message 'beginning-of-statement-internal
-			      "final step of b-o-s-i: not in blank;")
-      (skip-to-actual-code starting-point)
-      (languide-debug-message 'beginning-of-statement-internal
-			      "skip-to-actual-code with limit of %d got to here"
-			      starting-point))))
+    ;; might mean to go to the start of a leading comment if there is one, otherwise to the code?
+    (unless (blank-between (point) (1+ starting-point))
+      (skip-to-actual-code starting-point))))
 
 (defmodal end-of-statement-internal (c-mode perl-mode java-mode) ()
   "Move to the end of a C, Perl or Java statement."
@@ -311,21 +302,18 @@ Need only work if already at or just beyond the end of a statement."
 	(bod (save-excursion
 	       (c-beginning-of-defun 1)
 	       (point))))
-    (languide-debug-message 'end-of-statement-internal "Starting end-of-statement-internal at %d, with beginning-of-defun at %d" old bod)
     ;; (if (looking-at "{") (backward-char 1))
     (let ((in-comment-or-string t))
       ;; keep looking for the possible start of a statement, and checking that
       ;; it is not part of a comment or string
       (while in-comment-or-string
 	(re-search-forward "[{;}]" (point-max) t) ; leaves point at end of match
-	(languide-debug-message 'end-of-statement-internal "Found a \"%s\" at %d" (match-string 0) (point))
 	(let ((result (save-excursion (parse-partial-sexp bod (point)
 							  0 ; target-depth
 							  nil ; stop-before
 							  nil ; state
 							  nil ; stop-comment
 							  ))))
-	  (languide-debug-message 'end-of-statement-internal "parse-partial-sexp returned %S" result)
 	  (setq in-comment-or-string (or
 				      ;; emacs19 doesn't give us that handy 8th element!
 				      (nth 8 result)
@@ -333,27 +321,19 @@ Need only work if already at or just beyond the end of a statement."
 				      (if (nth 3 result) t nil)
 				      (nth 4 result)
 				      ))
-	  (languide-debug-message 'end-of-statement-internal "in-comment-or-string=%S" in-comment-or-string)
 	  (if in-comment-or-string
 	      (forward-char 1)))))
 
-    (languide-debug-message 'end-of-statement-internal "Now at %d=%c, which is not in a comment or string; the latest match, which is \"%s\", starts at %d"
-			    (point) (char-after (point)) (match-string 0) (match-beginning 0))
     (cond
      ((= (char-after (1- (point))) ?{)
-      (languide-debug-message 'end-of-statement-internal "Found block start")
       (backward-char 1)
       (forward-sexp 1)))
     (cond
      ((save-excursion
-	(languide-debug-message 'end-of-statement-internal "skipping from %d to look for else" (point))
 	(skip-to-actual-code)
-	(languide-debug-message 'end-of-statement-internal "skipped to %d to look for else" (point))
 	(looking-at "else"))
-      (languide-debug-message 'end-of-statement-internal "Found ELSE")
       (forward-sexp 1)
-      (end-of-statement-internal)
-      )
+      (end-of-statement-internal))
      ((save-excursion
 	(skip-to-actual-code)
 	(looking-at "while"))
@@ -365,13 +345,10 @@ Need only work if already at or just beyond the end of a statement."
 	      (if (looking-at "[ \t\r\n]")
 		  (skip-to-actual-code))
 	      (looking-at "[;}]"))
-	(languide-debug-message 'end-of-statement-internal "That WHILE is part of a DO")
 	(skip-to-actual-code)
 	(forward-sexp 2)
 	(if (looking-at "[ \t\r\n]")
-	    (skip-to-actual-code))))))
-  (languide-debug-message 'end-of-statement-internal
-			  "end-of-statement-internal finished at %d" (point)))
+	    (skip-to-actual-code)))))))
 
 (defvar c-binding-regexp-1
   (concat  "\\([a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-*" ; the type
@@ -445,7 +422,6 @@ We must be at the start of the statement already, otherwise
 this does not have to work."
   (cond
    ((looking-at "\\(do\\)\\|\\(for\\)\\|\\(while\\)\\|\\(if\\)\\|\\(return\\)\\|\\(switch\\)\\|\\(continue\\)\\|\\(default\\)\\|\\(case\\)")
-    (languide-debug-message 'identify-statement "identify-statement-c-mode found %s" (match-string 0))
     (let ((keyword-string (buffer-substring-no-properties (match-beginning 0) (match-end 0))))
       (cond
        ((string= keyword-string "if")
@@ -537,7 +513,6 @@ this does not have to work."
 							    nil	; state
 							    nil	; stop-comment
 							    ))))
-	    (languide-debug-message 'statement-container "parse-partial-sexp returned %S" result)
 	    (setq in-comment-or-string (or
 					;; emacs19 doesn't give us that handy 8th element!
 					(nth 8 result)
@@ -548,7 +523,6 @@ this does not have to work."
 
 					))
 	    (when in-comment-or-string (goto-char in-comment-or-string))
-	    (languide-debug-message 'statement-container "in-comment-or-string=%S" in-comment-or-string)
 	    ;;	    (if in-comment-or-string
 	    ;;		(forward-char 1))
 
