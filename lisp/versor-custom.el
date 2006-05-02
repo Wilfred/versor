@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-04-25 17:40:43 jcgs>
+;;; Time-stamp: <2006-04-30 18:13:37 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -136,10 +136,16 @@ You can only use this from Emacs 21 onwards."
   :type '(set (const :background) (const :foreground) (const :underline))
   :group 'versor-status)
 
-(defcustom versor-verbose t
+(defcustom versor-show-region-type t
   "Whether Versor should comment much on what it is doing.
 If non-nil, Versor will tell you when you have selected a piece of
 code that it may have a specific way of handling."
+  :type 'boolean
+  :group 'versor-status)
+
+(defcustom versor-speaking (featurep 'emacspeak)
+  "*Whether versor should use speech output.
+This should be set when using it from within emacspeak."
   :type 'boolean
   :group 'versor-status)
 
