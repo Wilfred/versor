@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-04-25 17:13:38 jcgs>
+;;; Time-stamp: <2006-04-30 18:13:37 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -274,7 +274,7 @@ We assume point to be at the start of the item."
 
 	;; re-do this because it somehow gets taken off from time to time
 	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
-	(when versor-verbose
+	(when versor-show-region-type
 	      (versor-show-region-type)))
     (error
      (progn
