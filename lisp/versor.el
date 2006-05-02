@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-04-26 10:09:37 jcgs>
+;;; Time-stamp: <2006-04-30 17:57:37 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -316,5 +316,10 @@ amongst the arguments:
 		    versor-mode-line-end-string))))
   
   (versor-set-status-display))
+
+(defun versor-speak (format-string &rest args)
+  "If versor-speaking is non-nil, say FORMAT-STRING, using it to format ARGS."
+  (when versor-speaking
+    (dtk-speak (apply 'format format-string args))))
 
 ;;;; end of versor.el
