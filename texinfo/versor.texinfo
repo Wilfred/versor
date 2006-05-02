@@ -81,7 +81,8 @@ for more information.
 * Further commands::            Commands other than movement
 * Refactoring::                 Refactoring using Languide
 * Advanced features::           More advanced features
-* Accessibility::               Using Versor when avoiding keyboard use
+* Accessibility::               Using Versor when avoiding keyboard use,
+                                or with speech output
 * Versor and Languide::         Interfaces to a companion package
 * Setup::                       How to install and configure Versor
 * Extending versor::            
@@ -107,8 +108,8 @@ Concepts
 Familiarization
 
 * Zooming::                     Zooming within a coordinate system
-* Switching coordinate systems::  Switching between coordinate systems
-* Editing with the selection::  
+* Switching coordinates::       Switching between coordinate systems
+* Editing::                     Editing with the selection
 * Extending::                   Extending the selection
 
 Editing with the selection
@@ -184,6 +185,7 @@ Accessibility
 * Pedals::                      Using pedals
 * Reversing::                   Reversing the cursor motions
 * Voice input::                 Using voice input
+* Speech output::               Using speech output
 * Flexi-choose::                The flexible chooser
 * Other input devices::         Future interface possibilities
 
@@ -374,14 +376,22 @@ A ``coordinate system'' is a group of related dimensions.
 @comment  node-name,  next,  previous,  up
 @subsection The selection
 
-The selection is best thought of as a cursor, although it looks more
+The selection is best thought of as a cursor, although it looks rather
 like a GNUemacs transient region. It is normally displayed by setting
-the background colour of the text it contains.  Versor editing
-operations act on the selection; for example, the versor ``Delete''
-command deletes the current selection. 
+the background colour of the text it contains (you can change how it
+is displayed: @pxref{Item attribute}). Versor editing operations act
+on the selection; for example, the versor ``Delete'' command deletes
+the current selection.
 
 The selection covers one or more units of the current dimension
-(@pxref{Coordinates and dimensions}). 
+(@pxref{Coordinates and dimensions}). For how to make it cover more
+than one unit, see @ref{Extending}.
+
+The selection cursor is distinct from the GNUemacs region, to avoid
+putting lots of marks into the mark ring.
+
+The selection cursor disappears when you do a non-versor action, and
+reappears when you do a versor action.
 
 @node Familiarization, Dimensions, Introduction, Top
 @chapter Familiarization
@@ -414,12 +424,12 @@ on a mode by mode basis.)
 
 @menu
 * Zooming::                     Zooming within a coordinate system
-* Switching coordinate systems::  Switching between coordinate systems
-* Editing with the selection::  
+* Switching coordinates::       Switching between coordinate systems
+* Editing::                     Editing with the selection
 * Extending::                   Extending the selection
 @end menu
 
-@node  Zooming, Switching coordinate systems, Familiarization, Familiarization
+@node  Zooming, Switching coordinates, Familiarization, Familiarization
 @comment  node-name,  next,  previous,  up
 @section Zooming within a coordinate system
 
@@ -440,7 +450,7 @@ its colour provides feedback on the currently selected dimension.
 @kbd{M-RIGHT} zooms back in; the finest scale in most coordinate
 systems is the character.
 
-@node  Switching coordinate systems, Editing with the selection, Zooming, Familiarization
+@node  Switching coordinates, Editing, Zooming, Familiarization
 @comment  node-name,  next,  previous,  up
 @section Switching between coordinate systems
 
@@ -460,7 +470,7 @@ selections).
 You can control which dimensions are available in each mode
 (@pxref{Dimensions available}).
 
-@node  Editing with the selection, Extending, Switching coordinate systems, Familiarization
+@node  Editing, Extending, Switching coordinates, Familiarization
 @comment  node-name,  next,  previous,  up
 @section Editing with the selection
 
@@ -471,7 +481,7 @@ Versor provides some editing commands which act on the current selection.
 * Inserting using the selection::  
 @end menu
 
-@node  Deleting the selection, Inserting using the selection, Editing with the selection, Editing with the selection
+@node  Deleting the selection, Inserting using the selection, Editing, Editing
 @comment  node-name,  next,  previous,  up
 @subsection Deleting the selection
 
@@ -481,7 +491,7 @@ bracket and the corresponding closing bracket (as selected by the versor
 ``bracket nesting'' dimension), all parts of the selection will be
 deleted, and will become successive elements of the kill ring. 
 
-@node  Inserting using the selection,  , Deleting the selection, Editing with the selection
+@node  Inserting using the selection,  , Deleting the selection, Editing
 @comment  node-name,  next,  previous,  up
 @subsection Inserting with the selection
 
@@ -511,7 +521,7 @@ expression around it.
 @xref{Insertion}, for full details of the possible kinds of things to
 insert.
 
-@node  Extending,  , Editing with the selection, Familiarization
+@node  Extending,  , Editing, Familiarization
 @comment  node-name,  next,  previous,  up
 @section Extending the selection
 
@@ -939,7 +949,7 @@ A typical action (probably the one the author uses most often) is
 converting an expression to a local variable (so that the value can be
 re-used), involving the following steps:
 
-@enumerate
+@enumerate 1
 @item
 examine the expression for the variables it needs
 @item
@@ -1153,7 +1163,7 @@ useful.
 @comment  node-name,  next,  previous,  up
 @section Feedback from Languide
 
-If you set the hook variable @code{versor-verbose} to non-nil,
+If you set the variable @code{versor-show-region-type} to non-nil,
 Languide will tell you when you have selected a piece of code that it
 may have a specific way of handling.
 
@@ -1239,6 +1249,7 @@ through voice recognition.
 * Pedals::                      Using pedals
 * Reversing::                   Reversing the cursor motions
 * Voice input::                 Using voice input
+* Speech output::               Using speech output
 * Flexi-choose::                The flexible chooser
 * Other input devices::         Future interface possibilities
 @end menu
@@ -1291,7 +1302,7 @@ dimension indication.
 This is an extreme solution, for extreme problems. It's unlikely to be
 useful if you can use Versor in other ways.
 
-@node Voice input, Flexi-choose, Reversing, Accessibility
+@node Voice input, Speech output, Reversing, Accessibility
 @comment  node-name,  next,  previous,  up
 @section Using voice input
 
@@ -1303,7 +1314,15 @@ system built on top of completing-read, that is designed to allow fast
 selection of possibilities without needing typing. @xref{Flexi-choose},
 for details of this.
 
-@node  Flexi-choose, Other input devices, Voice input, Accessibility
+@node  Speech output, Flexi-choose, Voice input, Accessibility
+@comment  node-name,  next,  previous,  up
+@section Using speech output
+
+If the variables @code{versor-speaking} (@pxref{Speech output}) and
+@code{versor-show-region-type} (@pxref{Languide Feedback}) are
+non-nil, Versor produces spoken feedback on changes to its state.
+
+@node  Flexi-choose, Other input devices, Speech output, Accessibility
 @comment  node-name,  next,  previous,  up
 @section The flexible chooser
 
@@ -1666,13 +1685,13 @@ You can only use this from Emacs 21 onwards.
 
 @node  Verbose, Try to display whole item, Item attribute, Status
 @comment  node-name,  next,  previous,  up
-@subsubsection Verbose
+@subsubsection Show region type
 
 Type: boolean
 
 Default value: t
 
-If you set the hook variable @code{versor-verbose} to non-nil,
+If you set the variable @code{versor-show-region-type} to non-nil,
 Languide will tell you when you have selected a piece of code that it
 may have a specific way of handling.
 
