@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-04-24 10:30:29 john>
+;;; Time-stamp: <2006-05-03 15:05:38 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -327,7 +327,7 @@ Makes a two-part selection, of opening and closing brackets."
 				  t	; stopbefore
 				  )))
 	  (when (and (not one-more) versor-allow-move-to-end-of-last)
-	    (message "not one-more; where=%d, point=%d" where (point)) ;
+	    ;; (message "not one-more; where=%d, point=%d" where (point)) ;
 	    ;; This is the special case where we move to the end of
 	    ;; the last regexp in a list. (The normal case is that
 	    ;; we move to the start of a regexp, and let the surrounding
@@ -339,7 +339,7 @@ Makes a two-part selection, of opening and closing brackets."
 			       where
 			     (progn
 			       (goto-char where)
-			       (message "Looking forward from %d" where)
+			       ;; (message "Looking forward from %d" where)
 			       ;; (skip-to-actual-code)
 			       (skip-syntax-forward "^)")
 			       (point)

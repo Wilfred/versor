@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-04-30 18:13:37 jcgs>
+;;; Time-stamp: <2006-05-03 13:11:39 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -113,6 +113,11 @@ This is useful if you can't use face attributes (see versor-use-face-attributes)
   :type 'boolean
   :group 'versor-status)
 
+(defcustom versor-display-highlighted-choice-time 0
+  "*How long to show highlighted choices in the echo area."
+  :type 'integer
+  :group 'versor-status)
+
 (defcustom versor-change-cursor-color t
   "*Whether to use the cursor color to indicate the level.
 
@@ -140,6 +145,11 @@ You can only use this from Emacs 21 onwards."
   "Whether Versor should comment much on what it is doing.
 If non-nil, Versor will tell you when you have selected a piece of
 code that it may have a specific way of handling."
+  :type 'boolean
+  :group 'versor-status)
+
+(defcustom region-type-description-always nil
+  "Whether to show the region type even if it is banal."
   :type 'boolean
   :group 'versor-status)
 

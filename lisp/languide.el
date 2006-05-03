@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-05-01 16:09:21 jcgs>
+;;; Time-stamp: <2006-05-03 13:13:21 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -204,9 +204,15 @@ information; otherwise should clear it to nil.")
 				    (or end (region-end)))))
     (cond
      ((memq type '(sequence t))
-      "code block")
+      (if region-type-description-always
+      "code block"
+      nil))
      (languide-region-detail-string
       (format "region type %S; %s" type languide-region-detail-string))
+     (nil
+      (if region-type-description-always
+	  "unknown region type"
+	nil))
      (t
       (format "region type %S" type)))))
 
@@ -219,8 +225,9 @@ information; otherwise should clear it to nil.")
   (when (memq major-mode languide-supported-modes)
     (let* ((item (versor-get-current-item))
 	   (description (region-type-description (car item) (cdr item))))
-      (message "%s" description)
-      (versor-speak "%s" description))))
+      (when description
+	(message "%s" description)
+	(versor-speak "%s" description)))))
 
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing.
@@ -237,9 +244,7 @@ Returns whether it did anything."
       (if in-comment-or-string
 	  (goto-char in-comment-or-string)
 	nil))
-    (message "was not in function")
-    nil
-    )))
+    nil)))
 
 (defun skip-to-actual-code (&optional limit)
   "Skip forward, over any whitespace or comments, to the next actual code.

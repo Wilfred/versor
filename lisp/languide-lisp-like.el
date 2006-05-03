@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-04-28 16:14:57 jcgs>
+;;; Time-stamp: <2006-05-02 17:23:11 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -56,7 +56,7 @@ Maps strings to symbols.")
   "Identify a Lisp form or function."
   (if (looking-at "(\\([-:_a-z0-9]+\\)")
       (let ((string (match-string-no-properties 1)))
-	(message "Seems to be a %s" string)
+	;; (message "Seems to be a %s" string)
 	(or (cdr (assoc string lisp-mode-statement-identities))
 	    ;; (intern string)
 	    'function-call
@@ -120,7 +120,7 @@ Returns the position if it found one, or nil otherwise."
 					     (match-string-no-properties 0)))))
 	(cond
 	 ((string= "let*" possible-current-binding)
-	  (message "Got some of our own")
+	  ;; (message "Got some of our own")
 	  (while (setq next (safe-scan-sexps (point) -1))
 	    (goto-char next)
 	    (when (looking-at "(") (forward-char) (skip-to-actual-code))
@@ -133,7 +133,7 @@ Returns the position if it found one, or nil otherwise."
 	  (safe-backward-up-list 2)
 	  )
 	 ((string= "let" possible-current-binding)
-	  (message "Avoiding this bunch")
+	  ;; (message "Avoiding this bunch")
 	  ;; the bindings we are among are not in scope here, so get out from among them
 	  (safe-backward-up-list 2)))
 	)
@@ -161,7 +161,7 @@ Returns the position if it found one, or nil otherwise."
 	(let ((limit (safe-scan-sexps (point) 1)))
 	  (down-list)
 	  (skip-to-actual-code)
-	  (message "Arglist starts at %d" (point))
+	  ;; (message "Arglist starts at %d" (point))
 	  (let ((old (point))
 		new)
 	    (while (and (setq new (safe-scan-sexps old 1))
@@ -684,7 +684,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
 			    (down-list)
 			    (let ((start (point)))
 			      (forward-sexp)
-			      (message "considering %s" (buffer-substring-no-properties start (point)))
+			      ;; (message "considering %s" (buffer-substring-no-properties start (point)))
 			      (if (not (member (buffer-substring-no-properties start (point))
 					       variables-needed))
 				  nil

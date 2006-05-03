@@ -1,5 +1,5 @@
 ;;;; statement-cache.el -- cache statement data for statement-navigation.el
-;;; Time-stamp: <2006-04-27 11:07:41 john>
+;;; Time-stamp: <2006-05-03 15:02:55 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -119,7 +119,7 @@ Turn this off for debugging statement navigation.")
       (when (null statement)
 	(error "Null statement in statement-remember-part"))
       (let ((old-part (assoc part (cdddr statement))))
-	(message "statement-remember-part got statement=%S part=%S" statement old-part)
+	;; (message "statement-remember-part got statement=%S part=%S" statement old-part)
 	(if old-part
 	    (rplacd old-part (cons part selections))
 	  (rplacd (cddr statement)

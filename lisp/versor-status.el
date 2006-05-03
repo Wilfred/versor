@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-04-30 17:56:49 jcgs>
+;;; Time-stamp: <2006-05-03 13:06:04 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -121,7 +121,8 @@ The result is in the form of a property list."
 		   (versor-unhighlighted-string string)))
 	       of-these-choices
 	       ", ")))
-    (message msg)))
+    (message msg)
+    (sit-for versor-display-highlighted-choice-time)))
 
 (defvar versor-max-meta-name-length nil
   "The length of the longest meta-level name.

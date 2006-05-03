@@ -1,5 +1,5 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2006-03-14 12:23:48 jcgs>
+;;; Time-stamp: <2006-05-03 15:02:10 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@ These are the variables used in that region, but not defined it it."
   (let ((references (variable-references-in-region from to))
 	(bindings (variable-bindings-in-region from to))
 	(result nil))
-    (message "In %d..%d, references are %S; bindings are %S" from to references bindings)
+    ;; (message "In %d..%d, references are %S; bindings are %S" from to references bindings)
     (dolist (reference references)
       (let* ((name (car reference))
 	     (binding (assoc name bindings)))

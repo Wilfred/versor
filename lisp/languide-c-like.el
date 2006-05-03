@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-05-01 15:45:11 jcgs>
+;;; Time-stamp: <2006-05-02 17:20:40 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -617,7 +617,7 @@ Return the position at the end of the initializer."
 	(while (or (setq a3 (looking-at c-arg-regexp-3))
 		   (setq a2 (looking-at c-arg-regexp-2))
 		   (setq a1 (looking-at c-arg-regexp-1)))
-	  (message "matched %S as arg" (or (and a1 c-arg-regexp-1) (and a2 c-arg-regexp-2) (and a3 c-arg-regexp-3)))
+	  ;; (message "matched %S as arg" (or (and a1 c-arg-regexp-1) (and a2 c-arg-regexp-2) (and a3 c-arg-regexp-3)))
 	  (let ((vartype (match-string-no-properties 1))
 		(varname (match-string-no-properties 2)))
 	    ;; (message "Adding arg %s of type %s" varname vartype)
@@ -665,7 +665,7 @@ Each element is a list of:
 			    initial-value-as-string)
 		      variables)
 		(when (stringp extra)
-		  (message "extra is %s" extra)
+		  ;; (message "extra is %s" extra)
 		  (let ((e 0))
 		    (while (string-match ", *\\([a-z][a-z0-9_]*\\)" extra e)
 		      (push (list (match-string-no-properties 1 extra) vartype
@@ -844,11 +844,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 			      ;; or a function call expression.
 			      (goto-char where)
 			      (skip-to-actual-code-backwards)
-			      (message "char before %d (non-space before %d) is %c" (point) where (char-before (point)))
 			      (memq (char-before) (list ?{ semicolon ?})))))
-    (message "This appears to be a %s call at %d"
-	     (if at-statement-start "procedure" "function")
-	     (point))
     (concat name "("
 	    (mapconcat (function
 			(lambda (arg)
@@ -982,7 +978,7 @@ The modifier can be structure accessors, etc."
 Second arg WHERE gives the position, for context."
   (cond
    ((string-match "[{;}]" value-text)
-    (message "\"%s\" appears to be a block, looking for return value" value-text)
+    ;; (message "\"%s\" appears to be a block, looking for return value" value-text)
     (cond
      ((string-match "return\\s-*;" value-text) "void")
      ((string-match "return\\s-\\([^;]+\\);" value-text)
@@ -995,7 +991,7 @@ Second arg WHERE gives the position, for context."
      ((eq major-mode 'java-mode) "String")
      ((eq major-mode 'c-mode) "char *")))
    ((string-match "\\([a-z][a-z0-9_]*\\)(" value-text)
-    (message "\"%s\" appears to be a function call" value-text)
+    ;; (message "\"%s\" appears to be a function call" value-text)
     (let* ((function-type (type-of-c-function (match-string-no-properties 1 value-text)))
 	   (remainder (remove-leading-expression (substring value-text (match-end 1))))
 	   (is-struct-member (string-match "\\s-*\\([-.>&]+\\)\\s-*\\(.+\\)" remainder))
@@ -1004,22 +1000,22 @@ Second arg WHERE gives the position, for context."
       (and member-op member-member
 	   (modify-c-type function-type member-op member-member))))
    ((string-match "\\([a-z][a-z0-9_]*\\)\\s-*\\([-.>&]+\\)\\s-*\\(.+\\)" value-text)
-    (message "match-data %S" (match-data))
+    ;; (message "match-data %S" (match-data))
 
     (let* ((base-variable (match-string-no-properties 1 value-text))
 	   (member-op (match-string-no-properties 2 value-text))
 	   (member-member (match-string-no-properties 3 value-text))
 	   (base-variable-base-type (type-of-c-variable base-variable where)))
-      (and t (message "\"%s\" appears to be a variable \"%s\" of base type %s with modifier-op \"%s\" and modifier-arg \"%s\""
-		      value-text
-		      base-variable base-variable-base-type
-		      member-op
-		      member-member))
+      (and nil (message "\"%s\" appears to be a variable \"%s\" of base type %s with modifier-op \"%s\" and modifier-arg \"%s\""
+			value-text
+			base-variable base-variable-base-type
+			member-op
+			member-member))
       (modify-c-type base-variable-base-type member-op member-member)))
    ((string-match "\\([a-z][a-z0-9_]*\\)" value-text)
-    (message "match-data %S" (match-data))
+    ;; (message "match-data %S" (match-data))
     (let* ((base-variable (match-string-no-properties 1 value-text)))
-      (message "base-variable %S" base-variable)
+      ;; (message "base-variable %S" base-variable)
       (type-of-c-variable base-variable where)))
    (t "unknown")))
 
@@ -1136,7 +1132,7 @@ information; otherwise should clear it to nil."
 				     (skip-to-actual-code)
 				     (looking-at (compound-statement-close)))))
 			    (let ((is-under-bracketed-control (is-under-control-statement surrounding-open)))
-			      (message "surrounding-open=%d" surrounding-open)
+			      ;; (message "surrounding-open=%d" surrounding-open)
 			      (if is-under-bracketed-control
 				  (intern (concat (symbol-name is-under-bracketed-control) "-body"))
 				'sole-content-of-block))

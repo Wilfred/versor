@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-04-25 18:55:48 jcgs>
+;;; Time-stamp: <2006-05-03 14:42:48 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -23,8 +23,8 @@
 Useful when you realize you want to re-use a value you had calculated in-line.
 The variable name is left at the top of the kill ring."
   (interactive "sVariable name: ")
-  (versor-as-motion-command
-   (let* ((item (versor-get-current-item)))
+  (let* ((item (versor-get-current-item)))
+    (versor-as-motion-command
      (languide-convert-region-to-variable (versor-overlay-start item)
 					  (versor-overlay-end item)
 					  name))))
@@ -34,11 +34,11 @@ The variable name is left at the top of the kill ring."
 Useful when you realize you want to re-use a value you had calculated in-line.
 The variable name is left at the top of the kill ring."
   (interactive "sVariable name: ")
-  (versor-as-motion-command
    (let* ((item (versor-get-current-item)))
-     (languide-convert-region-to-global (versor-overlay-start item)
-					(versor-overlay-end item)
-					name))))
+     (versor-as-motion-command
+      (languide-convert-region-to-global (versor-overlay-start item)
+					 (versor-overlay-end item)
+					 name))))
 
 (defun versor-languide-convert-selection-to-function (name &optional docstring)
   "Take the selected code, and make it into a function, substituting a call to it.
@@ -52,8 +52,8 @@ The function name is left at the top of the kill ring."
 				   (versor-overlay-start
 				    (versor-get-current-item)))))))
      (list name documentation))) 
-  (versor-as-motion-command
-   (let* ((item (versor-get-current-item)))
+  (let* ((item (versor-get-current-item)))
+    (versor-as-motion-command
      (languide-convert-region-to-function (versor-overlay-start item)
 					  (versor-overlay-end item)
 					  name
@@ -62,8 +62,8 @@ The function name is left at the top of the kill ring."
 (defun versor-languide-surround-selection-with-call (name)
   "Surround the selection with a function call."
   (interactive "sFunction name: ")
-  (versor-as-motion-command
-   (let* ((item (versor-get-current-item)))
+  (let* ((item (versor-get-current-item)))
+    (versor-as-motion-command
      (languide-surround-region-with-call (versor-overlay-start item)
 					 (versor-overlay-end item)
 					 name))))

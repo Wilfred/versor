@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-04-25 19:08:40 jcgs>
+;;; Time-stamp: <2006-05-02 17:24:41 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -261,17 +261,17 @@ directly to a non-versor edit.")
   "Save the versor research data to file."
   (interactive)
   (save-window-excursion
-  (find-file versor-research-log-file)
-  (goto-char (point-max))
-  (insert "Log for "
-	  user-mail-address
-	  " at "
-	  (current-time-string)
-	  "\n")
-  (let ((standard-output (current-buffer)))
-    (versor-generate-report-text)
-    (princ "\n"))
-  (basic-save-buffer)
-  (versor-research-reset t)))
+    (find-file versor-research-log-file)
+    (goto-char (point-max))
+    (insert "Log for "
+	    user-mail-address
+	    " at "
+	    (current-time-string)
+	    "\n")
+    (let ((standard-output (current-buffer)))
+      (versor-generate-report-text)
+      (princ "\n"))
+    (basic-save-buffer)
+    (versor-research-reset t)))
 
 ;;; end of versor-research.el

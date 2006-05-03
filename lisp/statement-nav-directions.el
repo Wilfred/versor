@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-04-28 15:03:00 jcgs>
+;;; Time-stamp: <2006-05-03 14:57:25 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@
 	 (remembered (statement-find-part statement-start part)))
     (if remembered
 	(progn				; we have cached data for this
-	  (message "using cached statement position %S" remembered)
+	  ;; (message "using cached statement position %S" remembered)
 	  (versor-set-current-items remembered)
 	  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
       (let* ((type (if prelocated
@@ -67,16 +67,16 @@
 					(goto-char statement-start)
 					(statement-navigate (cdr directions)))))
 		  ;; cache the data in case we want it again;
-		  (message "caching statement position %S" selected-parts)
+		  ;; (message "caching statement position %S" selected-parts)
 		  (statement-remember-part statement-start type
 					   part
 					   ;;(list (point) mark-candidate)
 					   selected-parts
 					   )
-		  (message "Selected-parts=%S" selected-parts)
+		  ;; (message "Selected-parts=%S" selected-parts)
 		  ;; (versor-set-current-item (point) mark-candidate)
 		  (versor-set-current-items selected-parts)
-		  (message "point now at %d" (point))
+		  ;; (message "point now at %d" (point))
 		  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
 	      (goto-char old-position)
 	      (error "Don't know how to handle directions like \"%S\" (for %S of %S)" directions part type))
@@ -134,7 +134,7 @@ for use elsewhere."
 		(let ((functor (car direction)))
 		  (cond
 		   ((eq functor 'remember)
-		    (message "(remember %S)" (cdr direction))
+		    ;; (message "(remember %S)" (cdr direction))
 		    (setq so-far (statement-navigate-list (cdr direction) so-far))
 		    ;; return nil to last-part to avoid remembering it twice
 		    nil)
@@ -168,7 +168,7 @@ Leave point at the start of the selected section."
 			  (statement-navigate-list directions)))
 	)
     
-    (message "after statement-navigate-list(%S) selected-parts=%S" directions selected-parts)
+    ;; (message "after statement-navigate-list(%S) selected-parts=%S" directions selected-parts)
     (set-mark mark-candidate)
     (nreverse selected-parts)))
 
@@ -261,14 +261,14 @@ Intended for use from statement-navigate."
 	 (selected (without-changing-current-statement
 		    (skip-to-actual-code)
 		    (setq start (point))
-		    (message "(statements) starting at %d" start)
+		    ;; (message "(statements) starting at %d" start)
 		    (while (not (looking-at (compound-statement-close)))
 		      (message "forward one statement")
 		      (next-statement-internal 1)
 		      (skip-to-actual-code))
 		    (skip-to-actual-code-backwards)
 		    (set-mark-candidate start)
-		    (message "(statements) ending at %d" (point))
+		    ;; (message "(statements) ending at %d" (point))
 		    (cons start (point)))))
     (goto-char (cdr selected))
     selected))
