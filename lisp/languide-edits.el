@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-04-28 16:05:28 jcgs>
+;;; Time-stamp: <2006-05-03 16:55:49 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -315,7 +315,7 @@ them in descending order of character position.")
   "Return whether a region of TYPE can be used as a code block.
 The function languide-region-block-type-needs-unification-p tells whether
 anything needs to be done to it first."
-  (memq type '(sequence t let-body progn-whole if-then-else-tail)))
+  (memq type '(sequence t let-body progn-whole if-then-else-tail whole-statement)))
 
 (defun languide-region-block-type-needs-unification-p (type)
   "Return whether a region of TYPE needs anything doing to it to use it as a code block.
@@ -363,7 +363,8 @@ sCondition: ")
 	  (set-marker (mark-marker) to)
 	  (goto-char to)
 	  ;; (message "inserting trailer at %S" to)
-	  (funcall trailer-inserter)
+	  (when trailer-inserter
+	    (funcall trailer-inserter))
 	  (set-marker (mark-marker) old-marker)
 	  (indent-region from to nil)))
        (t (error "Not suitable for making conditional: %S" body-type))))))

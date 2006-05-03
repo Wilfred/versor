@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-05-03 13:13:21 john>
+;;; Time-stamp: <2006-05-03 16:38:32 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -209,7 +209,7 @@ information; otherwise should clear it to nil.")
       nil))
      (languide-region-detail-string
       (format "region type %S; %s" type languide-region-detail-string))
-     (nil
+     ((null type)
       (if region-type-description-always
 	  "unknown region type"
 	nil))

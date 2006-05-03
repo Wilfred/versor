@@ -67,6 +67,7 @@ through Versor,
                                 Its commands will probably make more sense
                                 if you understand the abstractions it uses.
 * Commands::                    Things Languide can do
+* Region types::                Region types
 * Setup::                       How to install and configure Languide
 * Extension::                   How to define languages and statements
 * Languide and Versor::         Interface to a companion package
@@ -159,7 +160,7 @@ Configuration
 Extending Languide
 
 * Defining languages and statements::  How to define languages and statements
-* Adding commands::                    Adding editing commands
+* Adding commands::             Adding editing commands
 
 How to define languages and statements
 
@@ -515,7 +516,7 @@ whether it is suitable to have a conditional statement wrapped around
 it. This is normally displayed at the end of each versor command, if
 this is enabled; see @ref{Languide Feedback,Feedback from
 Languide,Feedback from Languide,versor,Versor: versatile cursors for
-GNUemacs}.
+GNUemacs}. This may turn out to be useful for Emacspeak, too.
 
 @node Setup, Extension, Region types, Top
 @chapter Setup
@@ -605,7 +606,7 @@ through the keyboard or other forms of input.
 
 @menu
 * Defining languages and statements::  How to define languages and statements
-* Adding commands::                    Adding editing commands
+* Adding commands::             Adding editing commands
 @end menu
 
 @node  Defining languages and statements, Adding commands, Extension, Extension

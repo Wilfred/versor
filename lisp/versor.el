@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-04-30 17:57:37 jcgs>
+;;; Time-stamp: <2006-05-03 16:07:23 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -107,6 +107,13 @@ If one of these returns non-nil, it is taken as having done the action.")
 Optional argument for compatibility with other things that get the versor
 package to the end of an item."
   t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;; autoload for demo ;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(autoload 'versor-demo "versor-demo"
+  "Demonstrate versor." t)
 
 ;;;;;;;;;;;;;;;
 ;;;; Setup ;;;;

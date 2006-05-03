@@ -33,6 +33,9 @@ are preserved on all copies.
 @c store these by makeinfo, copying them into subdirs of htdocs, tarring them up and doing 
 @c scp htdocs.tar.gz jcg_sturdy@emacs-versor.sourceforge.net:/home/groups/e/em/emacs-versor 
 @c then log in to emacs-versor.sourceforge.net and unpack them
+@c ssh -l jcg_sturdy emacs-versor.sourceforge.net
+@c cd /home/groups/e/em/emacs-versor
+@c tar xvzf htdocs.tar.gz
 @ifinfo
 This file documents versor, the versatile cursor system.
 
@@ -396,10 +399,16 @@ reappears when you do a versor action.
 @node Familiarization, Dimensions, Introduction, Top
 @chapter Familiarization
 
-The easiest way to start finding your way around Versor is to start
-trying things. You will first need to install Versor (@pxref{Setup}), and
-call its initialisation function, indicating which set of arrow keys
-you wish it to use.
+The easiest way to start finding your way around Versor is to run the
+demo, and then start trying things. You will first need to install
+Versor (@pxref{Setup}), and call its initialisation function,
+indicating which set of arrow keys you wish it to use.
+
+To run the demo, you need to unpack the tarball, and put the versor
+code directory on your @code{load-path}, with the directory
+@file{demo} beside it, load the file @file{versor-demo.el}, and run
+the command @command{versor-demo}. This will do an animated,
+non-interactive, demo of the main features of versor.
 
 Versor can use either the keypad arrows, or the normal arrow keys.
 Because it is often useful to mix traditional movements with Versor
@@ -1940,6 +1949,16 @@ and partly so that you can tune your own computer use, and partly to
 get feedback on what needs to be added to Versor to make it a complete
 way to edit programs.
 
+To get a report on your Versor usage, use the command
+@command{versor-research-report}.
+
+To save a report each time you quit GNUemacs, arrange for
+@command{versor-save-research-data} to be called by your exit
+sequence. For example, you can put it onto @code{kill-emacs-hook}. The
+reports are saved in the file @file{~/.versor-log} (you can change
+this location by setting the variable
+@code{versor-research-log-file}).
+
 @c todo: design and write the commands for this!  
 
 @node  Versor and research, Known problems, Analysis, Top
@@ -1956,7 +1975,8 @@ powerful ones being available.
 Versor will be used in controlled experimental conditions for this,
 but to gather wider information, the author encourages you to use
 Versor's use analysis features (@pxref{Analysis}) and send in the
-results, once you have been using Versor for a while.
+results (in the form of the file @file{~/.versor-log}), once you have
+been using Versor for a while.
 
 @node  Known problems, Command Index, Versor and research, Top
 @comment  node-name,  next,  previous,  up

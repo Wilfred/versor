@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-05-03 14:42:48 john>
+;;; Time-stamp: <2006-05-03 16:47:11 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -114,8 +114,8 @@ The function name is left at the top of the kill ring."
 (defun versor-languide-make-conditional (condition)
   "Make the current selection conditional."
   (interactive "sCondition: ")
-  (versor-as-motion-command
-   (let ((item (versor-get-current-item)))
+  (let ((item (versor-get-current-item)))
+    (versor-as-motion-command
      (languide-make-conditional (versor-overlay-start item)
 				(versor-overlay-end item)
 				condition))))
@@ -123,8 +123,8 @@ The function name is left at the top of the kill ring."
 (defun versor-languide-make-iterative (continue-condition)
   "Make the current selection iterative."
   (interactive "sContinue condition: ")
-  (versor-as-motion-command
-   (let ((item (versor-get-current-item)))
+  (let ((item (versor-get-current-item)))
+    (versor-as-motion-command
      (languide-make-iterative (versor-overlay-start item)
 			      (versor-overlay-end item)
 			      continue-condition))))

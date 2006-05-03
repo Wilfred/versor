@@ -1,5 +1,5 @@
 ;;;; versor-demo.el -- demo for versor and languide
-;;; Time-stamp: <2006-05-03 15:02:10 john>
+;;; Time-stamp: <2006-05-03 17:02:10 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,6 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
+(require 'versor)
 (provide 'versor-demo)
 
 (defun versor-find-demo-files ()
@@ -72,8 +73,13 @@
 		    ;; (message "-- recursing to run %S" sub-script)
 		    (run-demo-script sub-script)
 		    (setq count (1- count))))
-	      (sit-for 0)		; updates the display, cursor, etc
-	      (eval step)))
+	      (when (commandp (car step))
+		(message (substitute-command-keys
+			  (format "Typing \\[%s]" (symbol-name (car step)))))
+		(sit-for demo-slowdown))
+	      (delete-other-windows)
+	      (eval step)
+	      (sit-for 0)))
 	   ((stringp step)
 	    (if (string-match "\n" step)
 		(with-output-to-temp-buffer "*Demo commentary*"
@@ -91,6 +97,8 @@
 (defun versor-demo ()
   "Demonstrate versor."
   (interactive)
+  (unless (memq 'versor-current-level-name global-mode-string)
+    (versor-setup 'arrows 'arrows-misc 'keypad 'keypad-misc 'text-in-code 'verbose))
   (save-window-excursion
     (let* ((demo-dir (versor-find-demo-files)))
       (unless (file-directory-p demo-dir)
@@ -126,7 +134,11 @@ as our pair of co-ordinates." 4
 	 (versor-demo-step-to-level "exprs")
 	 "We can move by s-expressions" 2
 	 (5 (versor-next) 1)
-	 "And can also move by depth" 2
+	 "And can also move by depth.
+
+Note that two highlights appear after each depth move.
+Doing DEL at such a point would put the two highlighted areas into adjacent
+items on the kill-ring." 2
 	 (4 (versor-over-next) 1)
 	 ;; "a" 1
 	 (2 (versor-over-prev) 1)
@@ -136,7 +148,8 @@ as our pair of co-ordinates." 4
 	 (3 (versor-over-next) 1)
 	 ;; "d" 1
 	 (versor-next)
-	 "Pressing DEL will delete the current selection, and tidy up whitespace around it." 1
+	 "Pressing DEL will delete the current selection, and tidy up whitespace around it."
+	 2
 	 (versor-kill) 2
 	 "Typing ordinary text, and non-versor commands, still works as usual:" 1
 	 (demo-insert " (concat \"^\" ")
@@ -170,9 +183,11 @@ these are functions."
 	 "When in the statement body, we can step among its constituent statements." 2
 	 (versor-over-next) 1
 	 (versor-over-next) 1
-	 "We can also select the skeleton of a statement..."
+	 "As well as selecting head, body (or tail), we can also select the skeleton of a statement.
+
+If we deleted that, it would put several strings onto the kill-ring." 2
 	 (versor-prev) 2
-	 "... or its container."
+	 "We can also select the statement containing the current selection." 2
 	 (versor-prev) 2
 	 ;; (message "selection is %S" (versor-get-current-item)) 2
 	 "Next, we see some high-level editing operations, starting with turning
@@ -183,6 +198,27 @@ a block of code into a separate function and substituting a call to it."
 	 (beginning-of-defun)
 	 (versor-over-prev)
 	 (versor-over-prev) 2
+	 "The orange highlighting draws attention to complex automatic changes." 2
+	 (languide-remove-auto-edit-overlays) 2
+	 "Now we make some code conditional..." 2
+	 (versor-next) 1
+	 (versor-next) 1
+	 (versor-over-next) 1		; step into the function body
+	 (versor-next) 1
+	 (versor-next) 1
+	 "We can extend the selection to include the next statement,
+but first we have to make \"statements\" be the current level."
+	 (versor-demo-step-to-level "statements") 1
+	 (versor-next) 1
+	 (versor-extend-item-forwards) (versor-extend-item-forwards) 1
+	 "Extended the selection" 2
+	 "Now we will make the selected code conditional.
+
+If the selection had been exactly the body of an existing if-then, the new
+condition would have been added as a further term to the condition of the
+existing if-then statement."
+	 (versor-languide-make-conditional "disallow_null") 4
+	 (languide-remove-auto-edit-overlays) 2
 	 "This is the end of the versor demo." 10))
       )))
 
