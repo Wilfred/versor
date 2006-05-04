@@ -1,5 +1,5 @@
 ;;;; versor-demo.el -- demo for versor and languide
-;;; Time-stamp: <2006-05-04 18:54:46 john>
+;;; Time-stamp: <2006-05-04 19:03:51 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -264,7 +264,7 @@ are in scope at that point." 10
   "Demonstrate versor."
   (interactive)
   (unless (memq 'versor-current-level-name global-mode-string)
-    (versor-setup 'arrows 'arrows-misc 'keypad 'keypad-misc 'text-in-code 'verbose))
+    (versor-setup 'arrows 'arrows-misc 'text-in-code 'verbose))
   (save-window-excursion
     (let* ((demo-dir (versor-find-demo-files))
 	   (lisp-buffer nil))

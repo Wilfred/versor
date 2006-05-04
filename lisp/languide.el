@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-05-03 16:38:32 john>
+;;; Time-stamp: <2006-05-04 19:01:52 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -84,6 +84,9 @@
 (require 'languide-bindings)
 
 ;; todo: use Info-file-list-for-emacs
+
+(defvar languide-version "1.0"
+  "The version number for this release of languide.")
 
 ;;;; debugging
 

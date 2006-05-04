@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-05-03 16:07:23 john>
+;;; Time-stamp: <2006-05-04 19:01:52 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -41,6 +41,9 @@
 ;; todo: make mouse clicks and drags select and extend using the current versor dimensions
 ;; todo: use custom
 ;; todo: use Info-file-list-for-emacs
+
+(defvar version-version "1.0"
+  "The version number for this release of versor.")
 
 ;;;;;;;;;;;;;;;
 ;;;; hooks ;;;;
