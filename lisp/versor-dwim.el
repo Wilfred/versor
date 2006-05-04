@@ -1,5 +1,5 @@
 ;;;; versor-dwim.el -- move between code, comments, and strings, etc
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-05-04 12:06:47 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -168,7 +168,7 @@ This function reads the user's mind, using the following algorithm:
 Aspects of mental state not necessary for figuring out where to leave point are
 factored out of the calculations."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (setq versor-dwim-successive-commands
 	 (if (eq last-command 'versor-dwim)
 	     (1+ versor-dwim-successive-commands)

@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2006-04-26 11:15:35 jcgs>
+;;; Time-stamp: <2006-05-04 12:03:35 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -46,7 +46,7 @@
 (defun navigate-this-container ()
   "Navigate to the container of the current statement."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (navigate-this-whole) ; in case of assumptions made when moving outwards
    (let ((end (statement-container)))
      (when navigate-container-whole-statement
@@ -71,7 +71,7 @@
 (defun statement-navigate-parts-next (&optional ignore)
   "Navigate to the next part of the statement."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (case navigated-latest-part
      ('container (navigate-this-framework))
      ('framework (navigate-this-whole))
@@ -89,7 +89,7 @@
 (defun statement-navigate-parts-previous (&optional ignore)
   "Navigate to the previous part of the statement."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (case navigated-latest-part
      ('container (navigate-this-head))
      ('framework (cond

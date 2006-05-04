@@ -386,7 +386,7 @@ With optional LEVEL-OFFSET, add that to the level first."
 (defvar versor-current-meta-level-name (aref (versor-current-meta-level) 0)
   "The name of the current versor meta-level, for display in the global-mode-string")
 
-(defun versor-:trim-level ()
+(defun versor-trim-level ()
   "Ensure that versor-level is in range."
   (let ((max (1- (length (versor-current-meta-level)))))
     (when (> versor-level max)
@@ -396,7 +396,7 @@ With optional LEVEL-OFFSET, add that to the level first."
       (setq versor-level
 	    (if versor-level-wrap max 1)))))
 
-(defun versor-:trim-meta-level ()
+(defun versor-trim-meta-level ()
   "Ensure that versor-meta-level is in range."
   (let ((max (1- (length moves-moves))))
     (when (> versor-meta-level max)

@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-05-03 15:05:38 john>
+;;; Time-stamp: <2006-05-04 12:12:42 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -443,9 +443,8 @@ and never on the space or punctuation before it."
 (defun versor-delete-word (n)
   "Delete N words."
   (interactive "p")
-  (versor-as-motion-command
-   (let* ((item (versor-get-current-item))
-	  (spaced (and (= (char-before (car item)) ? )
+  (versor-as-motion-command item
+   (let* ((spaced (and (= (char-before (car item)) ? )
 		       (= (char-after (cdr item)) ? ))))
      (delete-region (car item) (cdr item))
      (if spaced (just-one-space)))))

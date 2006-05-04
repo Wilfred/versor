@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-05-03 16:55:49 john>
+;;; Time-stamp: <2006-05-04 12:03:35 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -253,7 +253,7 @@ them in descending order of character position.")
   "Make the surrounding call into a versor selection."
   ;; mostly for debugging languide-find-surrounding-call
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (versor-set-current-items (languide-find-surrounding-call))))
 
 (defmacro those-rel-limit (those rel limit)

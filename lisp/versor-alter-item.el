@@ -1,5 +1,5 @@
 ;;;; versor-alter-item.el -- choose possible value for the current item
-;;; Time-stamp: <2006-03-27 17:52:30 jcgs>
+;;; Time-stamp: <2006-05-04 12:11:23 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -136,21 +136,21 @@ The optional last parts of the elements of versor-alterations-types are used as 
 (defun versor-alter-item-next ()
   "Replace the current item with the next possible value."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (incf versor-alterations-index)
    (versor-alterations:set-current)))
 
 (defun versor-alter-item-prev ()
   "Replace the current item with the previous possible value."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (decf versor-alterations-index)
    (versor-alterations:set-current)))
 
 (defun versor-alter-item-over-next ()
   "Replace the current item with the corresponding value from the next range."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (incf versor-alterations-type-index)
    (versor-alterations:set-current)
    (versor-display-highlighted-choice
@@ -160,7 +160,7 @@ The optional last parts of the elements of versor-alterations-types are used as 
 (defun versor-alter-item-over-prev ()
   "Replace the current item with the corresponding value from the previous range."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (decf versor-alterations-type-index)
    (versor-alterations:set-current)
    (versor-display-highlighted-choice
@@ -284,12 +284,11 @@ Sets up mapping for the arrow keys, such that they now change the
 value of the item, and the menu/select key to keep the value you
 have at the time."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command versor-alterations-old-item
    ;; todo: change this to use a special level in the versor dimensions, or perhaps substitute the whole array temporarily; then voice will go through to the right thing automatically; will also need to keep the "select/abandon" key functions, which are not part of the versor array
    (setq versor-alterations-old-keymap (if (eq (current-local-map) versor-altering-map)
 					   versor-alterations-old-keymap
 					 (current-local-map))
-	 versor-alterations-old-item (versor-get-current-item)
 	 versor-alterations-old-value (buffer-substring-no-properties
 				       (car versor-alterations-old-item)
 				       (cdr versor-alterations-old-item))
@@ -327,7 +326,7 @@ have at the time."
 (defun versor-end-altering-item ()
   "Take the currently selected value of the item, and quit alteration mode."
   (interactive)
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (setq versor-alterations-types nil)
    (versor-set-status-display)
    ;; fix up the undo list, to have just the removal of our last
@@ -338,14 +337,13 @@ have at the time."
 (defun versor-abandon-altering-item ()
   "Take the original value of the item, and quit alteration mode."
   (interactive)
-  (versor-as-motion-command
-   (let* ((old-item (versor-get-current-item)))
-     (delete-region (car old-item) (cdr old-item))
-     (goto-char (car old-item))
-     (insert versor-alterations-old-value)
-     (setq versor-alterations-types nil)
-     (versor-set-status-display)
-     (setq buffer-undo-list (cdr versor-alterations-old-undo))
-     (use-local-map versor-alterations-old-keymap))))
+  (versor-as-motion-command old-item
+   (delete-region (car old-item) (cdr old-item))
+   (goto-char (car old-item))
+   (insert versor-alterations-old-value)
+   (setq versor-alterations-types nil)
+   (versor-set-status-display)
+   (setq buffer-undo-list (cdr versor-alterations-old-undo))
+   (use-local-map versor-alterations-old-keymap)))
 
 ;;; end of versor-alter-item.el

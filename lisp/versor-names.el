@@ -127,8 +127,8 @@ in the current one."
      versor-current-meta-level-name
      (mapcar 'car (versor-meta-level-names)))))
   (setq versor-meta-level (versor-find-meta-level-by-name name))
-  (versor-:trim-meta-level)
-  (versor-:trim-level)
+  (versor-trim-meta-level)
+  (versor-trim-level)
   (versor-set-status-display))
 
 (defun versor-select-named-level (name)

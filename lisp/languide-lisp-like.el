@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-05-02 17:23:11 john>
+;;; Time-stamp: <2006-05-04 14:19:42 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -387,6 +387,10 @@ as SYNTAX-BEFORE and SYNTAX-AFTER."
 	(and (eq syntax-after close-bracket)
 	     (memq syntax-before
 		   '(close-bracket ?w ?_))))
+    (delete-horizontal-space))
+   ((and (eq syntax-before open-bracket)
+	 (eolp))
+    (delete-char 1)
     (delete-horizontal-space))))
 
 ;; (defmodal function-arglist-boundaries (lisp-mode emacs-lisp-mode lisp-interaction-mode)

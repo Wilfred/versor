@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-04-30 19:08:10 jcgs>
+;;; Time-stamp: <2006-05-04 12:03:35 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -128,7 +128,7 @@ There an element of DWIM to this:
   If already at the beginning, move to the beginning of the previous one.
 Then, if N is greater than 1, move back N-1 more statements."
   (interactive "p")
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (let ((end (previous-statement-internal n)))
      (versor-set-current-item (point) end)
      (establish-current-statement 'previous-statement end))))
@@ -164,7 +164,7 @@ you should possibly use next-statement instead."
 (defun next-statement (n)
   "Move to the NTH next statement, and set up the statement variables."
   (interactive "p")
-  (versor-as-motion-command
+  (versor-as-motion-command current-item
    (unless (eq navigated-latest-part 'body)
      (next-statement-internal n)
      (setq navigated-latest-part 'whole))
