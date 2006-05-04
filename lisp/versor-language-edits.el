@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-05-04 14:23:58 john>
+;;; Time-stamp: <2006-05-04 18:22:40 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -51,6 +51,7 @@ The function name is left at the top of the kill ring."
 				    (versor-get-current-item)))))))
      (list name documentation))) 
   (versor-as-motion-command item
+     (message "item is %S" item)
      (languide-convert-region-to-function (versor-overlay-start item)
 					  (versor-overlay-end item)
 					  name

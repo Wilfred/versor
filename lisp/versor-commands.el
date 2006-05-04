@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-05-04 15:03:25 john>
+;;; Time-stamp: <2006-05-04 18:26:58 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -49,7 +49,7 @@ It is enabled by the variable versor-reversible, which see.")
 Necessary pre- and post-processing get done."
   `(let ((,item-var (if (versor-current-item-valid)
 			(versor-get-current-item)
-		      nil)))
+		      (car versor-latest-items))))
      (run-hooks 'versor-pre-command-hook)
      (versor-clear-current-item-indication)
      (progn
@@ -373,14 +373,14 @@ With optional LEVEL-OFFSET, add that to the level first."
   ;; variable to protect it from versor-as-motion-command
   (unless versor-extension-direction
     (setq versor-extension-direction 'forwards))
-  (let* ((direction versor-extension-direction)
-	 (start (versor-overlay-start item))
-	 (end (versor-overlay-end item)))
+  (let ((direction versor-extension-direction))
     (versor-as-motion-command item
-     (versor-next level-offset)
-     (if (eq direction 'forwards)
-	 (versor-set-current-item start (versor-end-of-item-position))
-       (versor-set-current-item (point) end)))
+      (let* ((start (versor-overlay-start item))
+	     (end (versor-overlay-end item)))
+	(versor-next level-offset)
+	(if (eq direction 'forwards)
+	    (versor-set-current-item start (versor-end-of-item-position))
+	  (versor-set-current-item (point) end))))
     (setq versor-extension-direction direction)))
 
 (defun versor-extend-item-backwards (&optional level-offset)
@@ -392,14 +392,14 @@ With optional LEVEL-OFFSET, add that to the level first."
   ;; variable to protect it from versor-as-motion-command
   (unless versor-extension-direction
     (setq versor-extension-direction 'backwards))
-  (let* ((direction versor-extension-direction)
-	 (start (versor-overlay-start item))
-	 (end (versor-overlay-end item)))
+  (let ((direction versor-extension-direction))
     (versor-as-motion-command item
-     (versor-prev level-offset)
-     (if (eq direction 'backwards)
-	 (versor-set-current-item (point) end)
-       (versor-set-current-item start (versor-end-of-item-position))))
+      (let* ((start (versor-overlay-start item))
+	     (end (versor-overlay-end item)))
+	(versor-prev level-offset)
+	(if (eq direction 'backwards)
+	    (versor-set-current-item (point) end)
+	  (versor-set-current-item start (versor-end-of-item-position)))))
     (setq versor-extension-direction direction)))
 
 (defun versor-extend-over-item-forwards ()
