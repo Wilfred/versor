@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-05-04 12:03:35 john>
+;;; Time-stamp: <2006-05-14 14:10:18 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -256,6 +256,34 @@ them in descending order of character position.")
   (versor-as-motion-command current-item
    (versor-set-current-items (languide-find-surrounding-call))))
 
+(defun languide-create-function-for-call ()
+  "Create a new function definition, in the current buffer, for the function call around point.
+Return value is where the new function was placed."
+  (interactive)
+  (let* ((call-syntax (languide-find-surrounding-call))
+	 (function-name (let ((xs call-syntax))
+			  (catch 'found
+			    (while xs
+			      (let ((x (buffer-substring-no-properties (caar xs) (cdar xs))))
+				(if (string-match "[a-z]" x)
+				    (throw 'found x)
+				  (setq xs (cdr xs)))))
+			    nil)))
+	 (call-start (if call-syntax
+			 (apply 'min (mapcar 'car call-syntax))
+		       nil))
+	 (call-end (if call-syntax
+		       (apply 'max (mapcar 'cdr call-syntax))
+		     nil))
+	 (result-type (if (and call-start call-end)
+			  (languide-region-type call-start call-end)
+			nil)))
+    (save-excursion
+      (beginning-of-defun)
+      (let ((defn-start (point)))
+	(insert-function-declaration function-name result-type "" "")
+	defn-start))))
+
 (defmacro those-rel-limit (those rel limit)
   `(let ((result nil)
 	 (these ,those))
@@ -315,7 +343,7 @@ them in descending order of character position.")
   "Return whether a region of TYPE can be used as a code block.
 The function languide-region-block-type-needs-unification-p tells whether
 anything needs to be done to it first."
-  (memq type '(sequence t let-body progn-whole if-then-else-tail whole-statement)))
+  (memq type '(sequence t let-body progn-whole if-then-else-tail whole-statement cond-body)))
 
 (defun languide-region-block-type-needs-unification-p (type)
   "Return whether a region of TYPE needs anything doing to it to use it as a code block.
