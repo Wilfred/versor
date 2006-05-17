@@ -347,7 +347,8 @@ the call.
 @subsection Create function for call
 
 With point positioned inside a function call (currently with some
-restrictions, such as not within a string literal argument to it),
+restrictions, such as not within a string literal argument to it, and
+not within an inner call in creating the argument list),
 @command{languide-create-function-for-call} creates an empty function
 definition to suit that call, just before the current function
 definition.
