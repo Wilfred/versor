@@ -167,6 +167,9 @@ Expression handling, expressions, and functions
 * Surround with call::          Surround selection with call
                                 This wraps the selection with a
                                 call to a function.
+* Create function::             Create function for call
+                                This creates a new function to suit
+                                the function call around point
 * Remove call::                 Remove surrounding call
                                 This removes the function call
                                 surrounding point.
@@ -1136,6 +1139,9 @@ so that you can call it elsewhere.
 * Surround with call::          Surround selection with call
                                 This wraps the selection with a
                                 call to a function.
+* Create function::             Create function for call
+                                This creates a new function to suit
+                                the function call around point
 * Remove call::                 Remove surrounding call
                                 This removes the function call
                                 surrounding point.
@@ -1184,7 +1190,7 @@ place.
 In the normal Versor key bindings, this command is bound to
 @kbd{C-insert f}. 
 
-@node  Surround with call, Remove call, Convert to function, Expression handling
+@node  Surround with call, Create function, Convert to function, Expression handling
 @subsection Surround selection with call
 
 The command @command{versor-languide-surround-selection-with-call} wraps the
@@ -1194,7 +1200,24 @@ that the selection becomes the argument list of the function.
 In the normal Versor key bindings, this command is bound to
 @kbd{C-insert (}. 
 
-@node  Remove call,  , Surround with call, Expression handling
+
+@node  Create function, Remove call, Surround with call, Expression handling
+@comment  node-name,  next,  previous,  up
+@subsection Create function for call
+
+With point positioned inside a function call (currently with some
+restrictions, such as not within a string literal argument to it, and
+not within an inner call in creating the argument list),
+@command{versor-languide-create-function-for-call} (normally bound to
+@kbd{C-insert e}) creates an empty function
+definition to suit that call, just before the current function
+definition.
+
+This lets you type a call to a function that doesn't yet exist, and
+then go and create the function without having to do all of the
+completely predictable manual text entry or pasting for it.
+
+@node  Remove call,  , Create function, Expression handling
 @subsection Remove surrounding call
 
 The command @command{versor-languide-remove-function-call} removes the function
