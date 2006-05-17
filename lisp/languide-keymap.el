@@ -1,5 +1,5 @@
 ;;;; languide-keymap.el -- keymap and menu setup for languide
-;;; Time-stamp: <2006-04-25 18:55:48 jcgs>
+;;; Time-stamp: <2006-05-14 14:04:35 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -24,6 +24,7 @@
     ["Convert selection to function" versor-languide-convert-selection-to-function t]
     ["Surround selection with function call" versor-languide-surround-selection-with-call t]
     ["Remove function call" versor-languide-remove-function-call t]
+    ["Create function for call" versor-languide-create-function-for-call t]
     ["Remove control" versor-languide-remove-control]
     ["Unify statements" versor-languide-unify-statements t]
     ["Comment selection" versor-languide-comment-selection t]
@@ -52,6 +53,7 @@
 (define-key languide-map "=" 'versor-languide-convert-selection-to-variable)
 (define-key languide-map "f" 'versor-languide-convert-selection-to-function)
 (define-key languide-map "g" 'versor-languide-convert-selection-to-global-variable)
+(define-key languide-map "e" 'versor-languide-create-function-for-call)
 (define-key languide-map "(" 'versor-languide-surround-selection-with-call)
 (define-key languide-map ")" 'versor-languide-remove-function-call)
 (define-key languide-map "{" 'versor-languide-unify-statements)
