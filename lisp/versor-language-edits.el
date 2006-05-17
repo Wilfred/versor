@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-05-04 18:22:40 john>
+;;; Time-stamp: <2006-05-14 14:15:52 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -71,12 +71,20 @@ The function name is left at the top of the kill ring."
   (versor-as-motion-command item
     (languide-remove-surrounding-call (versor-overlay-start item))))
 
+(defun versor-languide-create-function-for-call ()
+  "Create a function definition suitable for the function call around point."
+  (interactive)
+  (versor-as-motion-command item
+      (let ((defn-place (languide-create-function-for-call)))
+	(goto-char (1+ defn-place))
+	(navigate-this-body))))
+
 (defun versor-languide-unify-statements ()
   "Unify statements"
   (interactive)
   (versor-as-motion-command item
-  (languide-unify-statements-region (versor-overlay-start item)
-				       (versor-overlay-end item))))
+    (languide-unify-statements-region (versor-overlay-start item)
+				      (versor-overlay-end item))))
 
 (defun versor-languide-comment-selection ()
   "Turn the selection into a comment."

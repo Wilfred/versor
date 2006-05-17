@@ -1,5 +1,5 @@
 ;;;; versor-demo.el -- demo for versor and languide
-;;; Time-stamp: <2006-05-04 19:24:07 john>
+;;; Time-stamp: <2006-05-11 11:42:41 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -43,6 +43,19 @@
 (defvar demo-slowdown 1
   "*Multiplier for delays in running demo scripts.")
 
+(defvar demo-show-commentary t
+  "*Whether to show a commentary on the demo.
+You almost certainly want this enabled. I made it suppressable so that
+I could use the demo code to prepare a series of screenshots for the
+project web pages, with the commentary text on the accompanying
+HTML.
+If the commentary is suppressed from the display, it goes into the buffer *Commentary*,
+and the user has to press a key after each step of the demo.")
+
+(defvar demo-lookat-function nil
+  "*A function to run each time the demo is ready for the user to look at it.
+Meant for taking screenshots as automatically as it will let me.")
+
 (defun demo-insert (string)
   "Insert STRING slowly"
   (let ((n (length string))
@@ -52,6 +65,22 @@
       (insert (aref string i))
       (setq i (1+ i))
       (sit-for (* .3 demo-slowdown)))))
+
+(defun demo-write-commentary (text)
+  "Write TEXT to a commentary file.
+Meant for use with preparing a series of screenshots."
+  (save-excursion
+    (set-buffer
+     (get-buffer-create "*Commentary*"))
+    (goto-char (point-max))
+    (insert "" text "\n")))
+
+(defun demo-reset-commentary ()
+  "Reset the commentary used by demo-write-commentary."
+  (save-excursion
+    (set-buffer
+     (get-buffer-create "*Commentary*"))
+    (erase-buffer)))
 
 (defun run-demo-script (script)
   "Run demo SCRIPT."
@@ -82,17 +111,25 @@
 	      (eval step)
 	      (sit-for 0)))
 	   ((stringp step)
-	    (if (string-match "\n" step)
-		(with-output-to-temp-buffer "*Demo commentary*"
-		  (message nil)
-		  (princ step))
-	      (delete-other-windows)
-	      (message step)))
+	    (if demo-show-commentary
+		(if (string-match "\n" step)
+		    (with-output-to-temp-buffer "*Demo commentary*"
+		      (message nil)
+		      (princ step))
+		  (delete-other-windows)
+		  (message step))
+	      (demo-write-commentary step)))
 	   ((null step)
 	    (delete-other-windows)
 	    (message nil))
 	   ((numberp step)
-	    (sit-for (* step demo-slowdown)))))
+	    (if demo-show-commentary
+		(sit-for (* step demo-slowdown))
+	      (if demo-lookat-function
+		  (progn
+		    (sit-for 0)
+		    (funcall demo-lookat-function))
+		(read-event))))))
 	(setq steps (cdr steps))))))
 
 (defun versor-lisp-demo-1 ()
@@ -265,6 +302,7 @@ are in scope at that point." 10
   (interactive)
   (unless (memq 'versor-current-level-name global-mode-string)
     (versor-setup 'arrows 'arrows-misc 'text-in-code 'verbose))
+  (demo-reset-commentary)
   (save-window-excursion
     (let* ((demo-dir (versor-find-demo-files))
 	   (versor-display-underlying-commands nil)
@@ -278,6 +316,7 @@ are in scope at that point." 10
 					     demo-dir)
 			   t))
 	      '("el" "c"))
+      (visit-tags-table demo-dir)
       (let ((emacs-lisp-mode-hook nil))
 	(demo-find-file (expand-file-name "demo-text.el" demo-dir)))
       (setq lisp-buffer (current-buffer))
@@ -292,6 +331,24 @@ are in scope at that point." 10
 
       (run-demo-script
        '("This is the end of the versor demo." 10)))))
+
+(defun versor-record-screenshots ()
+  "Record the screenshots for the versor web demo."
+  (interactive)
+  (let ((demo-show-commentary nil)
+	(demo-lookat-function
+	 (lambda ()
+	   ;; (message "point at %d" (point))
+	   (let ((place (point)))
+	     (shell-command "gnome-panel-screenshot --window")
+	     ;; Cén plé amaidiocht anseo? Bí an phonc níl ag dul ó áit go áit
+	     ;; (sit-for 1)
+	     ;; (message "Place %d, why %d" place (point))
+	     (goto-char place)
+	     (sit-for 0)))))
+    (message "Press any key after taking each screenshot, to advance to the next step.")
+    (versor-demo)
+    (message "End of demo")))
 
 (defun versor-demo-step-to-level (level)
   (let* ((targets (versor-find-level-by-single-name level))
@@ -310,15 +367,21 @@ are in scope at that point." 10
 		 'versor-in)))
     (while (not (= versor-level target))
       (call-interactively stepper)
-      (sit-for demo-slowdown))))
+      (if demo-lookat-function
+	  (funcall demo-lookat-function)
+	(sit-for demo-slowdown)))))
 
 (defun versor-demo-step-to-meta-level (meta-level)
   (let* ((target (versor-find-meta-level-by-name meta-level))
 	 (stepper (if (> target versor-level)
-			'versor-next-meta-level
-		      'versor-prev-meta-level)))
+		      'versor-next-meta-level
+		    'versor-prev-meta-level)))
     (while (not (= versor-meta-level target))
       (call-interactively stepper)
-      (sit-for demo-slowdown))))
+      (if demo-lookat-function
+	  (progn
+	    (sit-for 0)
+	    (funcall demo-lookat-function))
+	(sit-for demo-slowdown)))))
 
 ;;; end of versor-demo.el

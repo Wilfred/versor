@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-05-04 19:01:52 john>
+;;; Time-stamp: <2006-05-06 12:06:51 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -82,6 +82,7 @@
 (require 'statement-navigation)
 (require 'statement-definition)
 (require 'languide-bindings)
+(require 'languide-insertions)
 
 ;; todo: use Info-file-list-for-emacs
 

@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-05-02 17:24:41 john>
+;;; Time-stamp: <2006-05-06 11:27:34 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -16,18 +16,6 @@
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 (provide 'versor-research)
-
-(defun versor-command-p (command)
-  "Return whether COMMAND is part of versor."
-  (string-match "^versor-" (symbol-name command)))
-
-(defun languide-command-p (command)
-  "Return whether COMMAND is part of languide."
-  (string-match "^languide-" (symbol-name command)))
-
-(defun versor-languide-command-p (command)
-  "Return whether COMMAND is part of the versor wrapper for languide."
-  (string-match "^versor-languide-" (symbol-name command)))
 
 (defvar versor-research-buffer-before-command nil
   "The buffer we were in before the current command.")

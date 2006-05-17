@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-04-30 18:13:37 jcgs>
+;;; Time-stamp: <2006-05-17 00:12:51 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -257,7 +257,12 @@ We assume point to be at the start of the item."
 	;; called by the as-versor-command macro
 
 	(unless (versor-current-item-valid)
-	  (versor-set-current-item (point) (versor-end-of-item-position)))
+	  (versor-set-current-item
+	   (progn
+	     (when versor-trim-item-starts-to-non-space
+	       (skip-to-actual-code))
+	     (point))
+	   (versor-end-of-item-position)))
 
 	(when versor-try-to-display-whole-item
 	  (let* ((item (versor-get-current-item))
@@ -274,7 +279,11 @@ We assume point to be at the start of the item."
 
 	;; re-do this because it somehow gets taken off from time to time
 	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
-	(when versor-show-region-type
+	(when (and versor-show-region-type
+		   (not (memq this-command '(versor-out
+					     versor-in
+					     versor-next-meta-level
+					     versor-prev-meta-level))))
 	      (versor-show-region-type)))
     (error
      (progn
@@ -306,20 +315,5 @@ of conses of start . end, in versor-latest-items."
 	     versor-items)))
     ;; (versor-display-item-list (format "starting command %S" this-command) versor-latest-items)
     (delete-versor-overlay)))
-
-(defun versor-set-item-indication (arg)
-  "Set whether item indication is done.
-Positive argument means on, negative or zero is off."
-  (interactive "p")
-  (if (> arg 0)
-      (progn
-	(message "Item indication turned on")
-	(setq versor-indicate-items t)
-	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
-	(versor-indicate-current-item))
-    (message "Item indication turned off")
-    (setq versor-indicate-items nil)
-    (versor-de-indicate-current-item)
-    (remove-hook 'pre-command-hook 'versor-de-indicate-current-item)))
 
 ;;;; end of versor-selection.el

@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-05-03 13:11:39 john>
+;;; Time-stamp: <2006-05-17 00:12:51 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -33,7 +33,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup versor-motion nil
-  "Control details for versor movements."
+  "Control details for Versor movements."
   :group 'versor
   :prefix "versor-")
 
@@ -89,7 +89,7 @@ and going forward from the last meta-level takes you to the first one."
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup versor-status nil
-  "How versor displays its status information."
+  "How Versor displays its status information."
   :group 'versor)
 
 (defcustom versor-multi-line-level-display (and (boundp 'emacs-major-version)
@@ -121,7 +121,7 @@ This is useful if you can't use face attributes (see versor-use-face-attributes)
 (defcustom versor-change-cursor-color t
   "*Whether to use the cursor color to indicate the level.
 
-This refers to the normal GNUemacs cursor rather than the versor
+This refers to the normal GNUemacs cursor rather than the Versor
 selection (highlight) cursor.
 
 See versor-item-attribute for the attribute used to change the colour (or other
@@ -154,7 +154,7 @@ code that it may have a specific way of handling."
   :group 'versor-status)
 
 (defcustom versor-speaking (featurep 'emacspeak)
-  "*Whether versor should use speech output.
+  "*Whether Versor should use speech output.
 This should be set when using it from within emacspeak."
   :type 'boolean
   :group 'versor-status)
@@ -166,28 +166,35 @@ of it are visible."
   :group 'versor
   :type 'boolean)
 
-(defcustom versor-reversible (not (eq window-system 'x))
+(defcustom versor-trim-item-starts-to-non-space t
+  "*Whether to move the start of the selection so that it is not on the whitespace between items."
+  :group 'versor
+  :type 'boolean)
+
+(defcustom versor-reversible nil
   "*Whether we allow reversing.
-This is useful if you cannot use \"shift-next\" for \"previous\".
-These seem to work OK on X but not on Windows; not sure about
-other platforms/terminals yet."
+This could be useful if you have a very limited number of buttons
+available (e.g. a mouthswitch) . It is also useful if you are using
+pedals, and cannot use \"shift-next\" for \"previous\". These seem to
+work OK on X but not on Windows; not sure about other
+platforms/terminals yet."
   :group 'versor
   :type 'boolean)
 
 (defcustom versor-mode-line-begin-string " <"
-  "String corresponding to bracket for beginning of versor markers according to versor-reversed."
+  "String corresponding to bracket for beginning of Versor markers according to versor-reversed."
   :type 'string
   :group 'versor-status)
 
 (defcustom versor-mode-line-end-string (if versor-reversible "==>" ">")
-  "String corresponding to bracket for end of versor markers according to versor-reversed."
+  "String corresponding to bracket for end of Versor markers according to versor-reversed."
   :type 'string
   :group 'versor-status)
 
 (defface versor-item-face
   ;; (make-face 'versor-item)
   '((t (:inherit 'region)))
-  "Face to use for versor items"
+  "Face to use for Versor items."
   :group 'versor-status)
 
 (when versor-use-face-attributes
@@ -197,7 +204,9 @@ other platforms/terminals yet."
   (set-face-attribute 'versor-item-face nil :underline t))
 
 (defcustom versor-display-underlying-commands t
-  "*Whether to display the underlying commands that versor executes."
+  "*Whether to display the underlying commands that Versor executes.
+Useful while you are getting used to Versor, but after that you might
+want to turn it off."
   :group 'versor-status
   :type 'boolean)
 
@@ -206,10 +215,10 @@ other platforms/terminals yet."
 ;;;;;;;;;;;;;;;;;
 
  (defcustom versor-statement-insertion-with-dummy-value nil
-   "*Whether versor statement insertion puts a placeholder value in when adding something.
+   "*Whether Versor statement insertion puts a placeholder value in when adding something.
 This tries to avoid changing the semantics, for example, it uses
 \"true\" when adding \"and\" or \"if\".
-You can then change the value, using the versor alterations system."
+You can then change the value, using the Versor alterations system."
   :type 'boolean
    :group 'versor)
 
@@ -224,7 +233,7 @@ You can then change the value, using the versor alterations system."
   :group 'versor)
 
 (defcustom versor-text-in-code t
-  "*Whether versor should switch dimensions for string literals and comments.
+  "*Whether Versor should switch dimensions for string literals and comments.
 This requires font-lock-mode to be used.
 
 The current dimensions are then remembered separately, and switch to
@@ -241,12 +250,12 @@ font-lock-mode."
   :type 'boolean)
 
 (defcustom versor-text-faces '(font-lock-string-face font-lock-comment-face)
-  "Faces which versor regards as being text rather than code.
+  "Faces which Versor regards as being text rather than code.
 See versor-text-in-code-function for how this is used."
   :group 'versor)
 
 (defcustom versor-research-live-commentary nil
-  "*Whether to make a live commentary on versor and other activities."
+  "*Whether to make a live commentary on Versor and other activities."
   :type 'boolean
   :group 'versor)
 

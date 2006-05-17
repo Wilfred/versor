@@ -110,6 +110,9 @@ Expression handling, expressions, and functions
 * Remove call::                 Remove surrounding call
                                 This removes the function call
                                 surrounding point.
+* Create function::             Create function for call
+                                This creates an empty function definition
+                                to suit the function call around point.
 
 Statement handling
 
@@ -291,6 +294,9 @@ so that you can call it elsewhere.
 * Remove call::                 Remove surrounding call
                                 This removes the function call
                                 surrounding point.
+* Create function::             Create function for call
+                                This creates an empty function definition
+                                to suit the function call around point.
 @end menu
 
 @node  Employ variable, Convert to variable, Expression handling, Expression handling
@@ -329,12 +335,26 @@ The command @command{surround-region-with-call} wraps the current
 region with a call to a specified function, such that the region
 becomes the argument list of the function.
 
-@node  Remove call,  , Surround with call, Expression handling
+@node  Remove call, Create function, Surround with call, Expression handling
 @subsection Remove surrounding call
 
 The command @command{remove-surrounding-call} removes the function
 call surrounding point. This leaves the function arguments in place of
 the call.
+
+@node  Create function,  , Remove call, Expression handling
+@comment  node-name,  next,  previous,  up
+@subsection Create function for call
+
+With point positioned inside a function call (currently with some
+restrictions, such as not within a string literal argument to it),
+@command{languide-create-function-for-call} creates an empty function
+definition to suit that call, just before the current function
+definition.
+
+This lets you type a call to a function that doesn't yet exist, and
+then go and create the function without having to do all of the
+completely predictable manual text entry or pasting for it.
 
 @node  Statement handling, Navigation, Expression handling, Commands
 @comment  node-name,  next,  previous,  up
@@ -547,6 +567,8 @@ put that directory on your load-path.
 @comment  node-name,  next,  previous,  up
 @subsection Auto-edit overlay face
 
+Variable: languide-auto-edit-overlay-face
+
 Type: face
 
 Default value: '@code{((t (:background "orange")))}
@@ -558,6 +580,8 @@ it shows the changed text in this face, until the next user input.
 @node Whole statement as container, Cyclic, Auto-edit overlay face, Configuration
 @comment  node-name,  next,  previous,  up
 @subsection Whole statement as container
+
+Variable: navigate-container-whole-statement
 
 Type: boolean
 
@@ -578,6 +602,8 @@ whole if statement, rather than just the block body.
 @comment  node-name,  next,  previous,  up
 @subsection Navigate statement parts cyclically
 
+Variable: statement-navigate-parts-cyclic
+
 Type: boolean
 
 Default value: @code{nil}
@@ -587,6 +613,8 @@ Whether to step forwards from body (or tail if present) back round to head.
 @node IncludeContainer,  , Cyclic, Configuration
 @comment  node-name,  next,  previous,  up
 @subsection Navigate Statement Parts includes container
+
+Variable: statement-navigate-parts-cyclic
 
 Type: boolean
 

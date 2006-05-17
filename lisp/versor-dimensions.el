@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-04-07 14:46:27 john>
+;;; Time-stamp: <2006-05-09 10:17:58 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -408,7 +408,7 @@ With optional LEVEL-OFFSET, add that to the level first."
 
 (defvar versor-meta-dimensions-valid-for-modes
   '(((emacs-lisp-mode lisp-mode scheme-mode lisp-interaction-mode)
-     t "cartesian" "structural" "text")
+     t "cartesian" "structural" "text" "program")
     ((texinfo-mode tex-mode latex-mode html-mode html-helper-mode)
      t "cartesian" "text" "structured text" "tables")
     ((c-mode perl-mode java-mode)

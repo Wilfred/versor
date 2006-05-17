@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-05-03 13:06:04 john>
+;;; Time-stamp: <2006-05-09 11:25:38 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -46,7 +46,7 @@ The result is in the form of a property list."
   (setq versor-current-level-name (versor-level-name versor-level)
 	versor-current-meta-level-name (versor-meta-level-name versor-meta-level))
   (if (and versor-multi-line-level-display explicit)
-      (versor-display-dimensions-2d)
+      (versor-display-current-dimensions)
     (if one
 	(if of-these
 	    (versor-display-highlighted-choice one of-these)
@@ -128,8 +128,9 @@ The result is in the form of a property list."
   "The length of the longest meta-level name.
 Used for display purposes, and cached here.")
 
-(defun versor-display-dimensions-2d ()
-  "Indicate the current meta-level and level, in a multi-line message."
+(defun versor-display-current-dimensions ()
+  "Indicate the current meta-level and level, in a multi-line message.
+The message goes away as soon as you enter any input."
   (interactive)
   (unless versor-max-meta-name-length
     (setq versor-max-meta-name-length
