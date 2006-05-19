@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-05-18 15:55:00 jcgs>
+;;; Time-stamp: <2006-05-19 11:56:11 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -305,10 +305,12 @@ The following arguments suppress some of the default behaviours:
     (versor-global-set-key [ down ]    'versor-over-next)
     (when (member 'meta keysets)
       (versor-global-set-key [ M-up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ M-down ]  'versor-next-meta-level))
+      (versor-global-set-key [ M-down ]  'versor-next-meta-level)
+      (versor-global-set-key "\C-?" 'versor-describe-selection))
     (when (member 'ctrl-x keysets)
       (versor-global-set-key [ ?\C-x up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ ?\C-x down ]  'versor-next-meta-level))
+      (versor-global-set-key [ ?\C-x down ]  'versor-next-meta-level)
+      (versor-global-set-key "\C-x?" 'versor-describe-selection))
     (versor-global-set-key [ C-up ]    'versor-over-start)
     (versor-global-set-key [ C-down ]  'versor-over-end)
 
