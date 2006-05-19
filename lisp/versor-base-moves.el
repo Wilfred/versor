@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-05-04 12:12:42 john>
+;;; Time-stamp: <2006-05-18 11:06:36 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -139,9 +139,6 @@
 	(forward-sexp from)
 	(point))
     (error nil)))
-
-(defvar versor-reformat-automatically t
-  "If non-nil, some versor movements call reformatting commands.")
 
 (defmodel versor-backward-up-list (arg)
   "Like backward-up-list, but with some versor stuff around it.
