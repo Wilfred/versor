@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-05-06 11:27:34 jcgs>
+;;; Time-stamp: <2006-05-18 15:24:07 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -74,6 +74,10 @@ movements that came between them.")
     "Each entry is the list of non-versor movement commands leading
 directly to a non-versor edit.")
 
+(defun versor-get-equivalent-command (command)
+  "Find the versor equivalent for COMMAND, if any."
+  (cdr (assoc command versor-equivalent-commands)))
+
 (defun versor-research-post-command-function ()
   "Record what happened during this command."
   (when (and (eq (current-buffer) versor-research-buffer-before-command)
@@ -86,8 +90,7 @@ directly to a non-versor edit.")
 	       (command-was-versor (versor-command-p this-command))
 	       (command-was-languide (languide-command-p this-command))
 	       (command-was-versor-languide (versor-languide-command-p this-command))
-	       (command-type-string (concat "versor-research-"
-					    (cond
+	       (command-type-string (concat (cond
 					     (command-was-versor-languide "versor-languide")
 					     (command-was-languide "languide")
 					     (command-was-versor "versor")
@@ -101,35 +104,63 @@ directly to a non-versor edit.")
 					     ((not (eq (point) versor-research-starting-position)) "move")
 					     (t "other"))))
 	       ;; todo: try to get it all done in the "symbol-building" style above
-	       (command-type (if command-was-versor
-				 (if versor-research-change-happened
-				     (if (zerop (third versor-research-change-happened))
-					 'versor-insertion
-				       'versor-deletion)
-				   (if (eq (point) versor-research-starting-position)
-				       'versor-non-edit-non-move
-				     'versor-move))
-			       (if versor-research-change-happened
-				   (if (zerop (third versor-research-change-happened))
-				       'non-versor-insertion
-				     'non-versor-deletion)
-				 (if (eq (point) versor-research-starting-position)
-				       'non-versor-non-edit-non-move
-				     'non-versor-move)))))
+	       (command-type (intern command-type-string)))
 	  (when commentary
 	    (message "Command was %S(%S) (previous was %S)"
 		     command-type
 		     command-type-string
 		     versor-research-previous-command-type))
+	  (when (and versor-indicate-missed-opportunities
+		     (not (string-match "inibuf" (buffer-name)))
+		     (not command-was-versor))
+	    (let ((equivalent (or (versor-get-equivalent-command this-command)
+				  (if (memq this-command versor-used-commands)
+				      this-command
+				    nil))))
+	      (when equivalent
+		(let* ((action-this (versor-find-in-current-dimension equivalent))
+		       (action-over (versor-find-in-current-dimension equivalent 1))
+		       (access-command-this (versor-command-for-action action-this))
+		       (access-command-over (versor-command-for-action action-over 1))
+		       (keys (if access-command-this
+				 (where-is-internal access-command-this)
+			       (if access-command-over
+				   (where-is-internal access-command-over)
+				 nil))))
+		  (when (or access-command-this
+			    access-command-over)
+		    (if keys
+			(progn
+			  (message "You could have used %s (%s)"
+				   (or access-command-this
+				       access-command-over)
+				   (mapconcat 'key-description keys " or "))
+			  (when (numberp versor-indicate-missed-opportunities)
+			    (sit-for versor-indicate-missed-opportunities)))
+		      (when (eq versor-indicate-missed-opportunities 'all)
+			(message "You could have used %s"
+				 (or access-command-this
+				     access-command-over)))))))))
 	  (if (eq command-type versor-research-previous-command-type)
+	      ;; If several consecutive commands are of the same
+	      ;; general type, build up a chain of them.
 	      (push (cons this-command versor-research-change-happened)
 		    versor-research-same-type-command-chain)
-	    ;; here is the interesting bit -- particularly the
-	    ;; transitions between versor and non-versor commands
+	    ;; The type of command has changed, between navigation and
+	    ;; editing, or between versor and non versor. This is the
+	    ;; interesting bit -- particularly the transitions between
+	    ;; versor and non-versor commands.
 	    (cond
-	     ((memq command-type '(versor-insertion versor-deletion))
+	     ((memq command-type '(versor-insertion
+				   versor-deletion
+				   versor-languide-insertion
+				   versor-languide-deletion
+				   languide-insertion
+				   languide-deletion))
 	      (cond
-	       ((eq versor-research-previous-command-type 'versor-move)
+	       ((memq versor-research-previous-command-type '(versor-move
+							      versor-languide-move
+							      languide-move))
 		;; this is the one we like -- a versor command after versor moves
 		(when commentary (message "versor edit after versor moves"))
 		(push versor-research-same-type-command-chain
@@ -137,7 +168,9 @@ directly to a non-versor edit.")
 		)
 	       ((eq versor-research-previous-command-type 'non-versor-move)
 		;; versor command after non-versor move
-		(if (eq versor-research-previous-previous-command-type 'versor-move)
+		(if (memq versor-research-previous-previous-command-type '(versor-move
+									   versor-languide-move
+									   languide-move))
 		    (progn
 		      ;; non-versor move may have been an adjustment after a versor move
 		      (when commentary (message "versor edit after versor moves with manual adjustment"))
@@ -155,7 +188,9 @@ directly to a non-versor edit.")
 	      (cond
 	       ((eq versor-research-previous-command-type 'non-versor-move)
 		;; old-fashioned non-versor emacs editing, but did they use versor first then adjust?
-		(if (eq versor-research-previous-previous-command-type 'versor-move) 
+		(if (memq versor-research-previous-previous-command-type '(versor-move
+									   versor-languide-move
+									   languide-move)) 
 		    (progn
 		      (when commentary (message "non versor edit after versor moves with manual adjustment"))
 		      (push (cons versor-research-same-type-command-chain
@@ -164,7 +199,9 @@ directly to a non-versor edit.")
 		  (when commentary (message "non versor edit after non versor moves"))
 		  (push versor-research-same-type-command-chain
 			versor-research-non-versor-edit-after-non-versor-moves)))
-	       ((eq versor-research-previous-command-type 'versor-move)
+	       ((memq versor-research-previous-command-type '(versor-move
+							      languide-move
+							      versor-languide-move))
 		;; using versor to navigate but not to edit
 		(when commentary (message "non versor edit after versor moves"))
 		(push versor-research-same-type-command-chain
