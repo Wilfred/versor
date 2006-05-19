@@ -1,5 +1,5 @@
 ;;;; languide-keymap.el -- keymap and menu setup for languide
-;;; Time-stamp: <2006-05-14 14:04:35 jcgs>
+;;; Time-stamp: <2006-05-19 11:54:48 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,7 @@
     ["Move to enclosing scoping point" versor-languide-enclosing-scoping-point t]
     ["Move to enclosing decision point" versor-languide-enclosing-decision-point t]
     ["Employ variable" versor-languide-employ-variable t]
+    ["Describe selection" versor-describe-selection t]
     ))
 
 (easy-menu-define versor-languide-menu nil
@@ -62,6 +63,7 @@
 (define-key languide-map "@" 'versor-languide-make-iterative)
 (define-key languide-map "^" 'versor-languide-remove-control)
 (define-key languide-map ";" 'versor-languide-comment-selection)
+(define-key languide-map "\C-h" 'versor-describe-selection)
 
 (define-key global-map "\M-#" 'languide-map)
 
