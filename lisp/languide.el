@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-05-06 12:06:51 jcgs>
+;;; Time-stamp: <2006-05-19 13:04:11 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -201,37 +201,48 @@ otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil.")
 
-(defun region-type-description (start end)
-  "Return a description of the region type between START and END."
+(defun region-type-description (start end &optional display)
+  "Return a description of the region type between START and END.
+When interactive, or with optional third argument non-nil, display the result."
   (interactive "r")
-  (let ((type (languide-region-type (or start (region-beginning))
-				    (or end (region-end)))))
-    (cond
-     ((memq type '(sequence t))
-      (if region-type-description-always
-      "code block"
-      nil))
-     (languide-region-detail-string
-      (format "region type %S; %s" type languide-region-detail-string))
-     ((null type)
-      (if region-type-description-always
-	  "unknown region type"
-	nil))
-     (t
-      (format "region type %S" type)))))
+  (let* ((type (languide-region-type (or start (region-beginning))
+				     (or end (region-end))))
+	 (description (cond
+		       ((memq type '(sequence t))
+			(if region-type-description-always
+			    "code block"
+			  nil))
+		       (languide-region-detail-string
+			(format "region type %S; %s" type languide-region-detail-string))
+		       ((null type)
+			(if region-type-description-always
+			    "unknown region type"
+			  nil))
+		       (t
+			(format "region type %S" type)))))
+    (when (or display
+	      (interactive-p))
+      (message "%s" description))
+    description))
 
 (defvar languide-supported-modes
   '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode)
   "Modes for which languide has support.")
 
-(defun versor-show-region-type ()
+(defun versor-describe-selection ()
   "Show the type of the selected region"
+  (interactive)
   (when (memq major-mode languide-supported-modes)
-    (let* ((item (versor-get-current-item))
-	   (description (region-type-description (car item) (cdr item))))
-      (when description
-	(message "%s" description)
-	(versor-speak "%s" description)))))
+    (save-excursion
+      (let* ((items (versor-get-current-items))
+	     (item (car items))
+	     (description (region-type-description
+			   (versor-overlay-start item)
+			   (versor-overlay-end item))))
+	(when description
+	  (message "%s" description)
+	  (versor-speak "%s" description))
+	(versor-set-current-items items)))))
 
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing.
