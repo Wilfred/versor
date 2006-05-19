@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2006-05-18 15:39:26 jcgs>
+;;; Time-stamp: <2006-05-19 11:18:02 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -155,7 +155,11 @@ This symbol may be given inside a vector to define-key etc")
   "Generate the value for pedals-code-alist"
   (mapcar (function
 	   (lambda (name)
-	     (cons name (aref (symbol-value name) 0))))
+	     (let ((value (symbol-value name)))
+	       (if (arrayp value)
+		   (cons name (aref value 0))
+		 (message "No key seems to be assigned to %S" name)
+		 (cons name nil)))))
 	  pedal-code-names))
 
 (defun pedal-name (keyname)
