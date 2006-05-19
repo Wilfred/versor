@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-05-16 10:40:04 jcgs>
+;;; Time-stamp: <2006-05-18 15:55:00 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -296,8 +296,8 @@ The following arguments suppress some of the default behaviours:
       (versor-global-set-key [ M-left ]  'versor-out)
       (versor-global-set-key [ M-right ] 'versor-in))
     (when (member 'ctrl-x keysets)
-      (versor-global-set-key [ C-x left ]  'versor-out)
-      (versor-global-set-key [ C-x right ] 'versor-in))
+      (versor-global-set-key [ ?\C-x left ]  'versor-out)
+      (versor-global-set-key [ ?\C-x right ] 'versor-in))
     (versor-global-set-key [ C-left ]  'versor-extend-item-backwards)
     (versor-global-set-key [ C-right ] 'versor-extend-item-forwards)
 
@@ -307,8 +307,8 @@ The following arguments suppress some of the default behaviours:
       (versor-global-set-key [ M-up ]    'versor-prev-meta-level)
       (versor-global-set-key [ M-down ]  'versor-next-meta-level))
     (when (member 'ctrl-x keysets)
-      (versor-global-set-key [ C-x up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ C-x down ]  'versor-next-meta-level))
+      (versor-global-set-key [ ?\C-x up ]    'versor-prev-meta-level)
+      (versor-global-set-key [ ?\C-x down ]  'versor-next-meta-level))
     (versor-global-set-key [ C-up ]    'versor-over-start)
     (versor-global-set-key [ C-down ]  'versor-over-end)
 
@@ -357,8 +357,8 @@ The following arguments suppress some of the default behaviours:
       (versor-global-set-key [ M-kp-left ]  'versor-out)
       (versor-global-set-key [ M-kp-right ] 'versor-in))
     (when (memq 'ctrl-x keysets)
-      (versor-global-set-key [ C-x kp-left ]  'versor-out)
-      (versor-global-set-key [ C-x kp-right ] 'versor-in))
+      (versor-global-set-key [ ?\C-x kp-left ]  'versor-out)
+      (versor-global-set-key [ ?\C-x kp-right ] 'versor-in))
     (versor-global-set-key [ C-kp-left ]  'versor-start)
     (versor-global-set-key [ C-kp-right ] 'versor-end)
     (versor-global-set-key [ kp-home ]    'versor-start)
@@ -376,8 +376,8 @@ The following arguments suppress some of the default behaviours:
       (versor-global-set-key [ M-kp-up ]    'versor-prev-meta-level)
       (versor-global-set-key [ M-kp-down ]  'versor-next-meta-level))
     (when (member 'ctrl-x keysets)
-      (versor-global-set-key [ C-x kp-up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ C-x kp-down ]  'versor-next-meta-level))
+      (versor-global-set-key [ ?\C-x kp-up ]    'versor-prev-meta-level)
+      (versor-global-set-key [ ?\C-x kp-down ]  'versor-next-meta-level))
     (versor-global-set-key [ C-kp-up ]    'versor-over-start)
     (versor-global-set-key [ C-kp-down ]  'versor-over-end)
 
