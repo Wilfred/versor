@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-05-17 00:12:51 jcgs>
+;;; Time-stamp: <2006-05-18 15:14:39 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -254,8 +254,22 @@ font-lock-mode."
 See versor-text-in-code-function for how this is used."
   :group 'versor)
 
+(defcustom versor-reformat-automatically t
+  "If non-nil, some versor movements call reformatting commands."
+  :type 'boolean
+  :group 'versor)
+
 (defcustom versor-research-live-commentary nil
   "*Whether to make a live commentary on Versor and other activities."
+  :type 'boolean
+  :group 'versor)
+
+(defcustom versor-indicate-missed-opportunities t
+  "*Whether to indicate when you used a non-versor command when a versor command was available.
+For this to work, you must have given 'research among the arguments
+to versor-setup.
+If set to 'all, shows versor commands that are not currently reachable by direct keystrokes.
+If set to a number, waits that number of seconds after telling you."
   :type 'boolean
   :group 'versor)
 
