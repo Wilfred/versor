@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-05-09 10:17:58 jcgs>
+;;; Time-stamp: <2006-05-18 11:55:16 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -461,5 +461,116 @@ Used by versor-local, but defined in versor-dimensions."
   ;; levels for the mode, but couldn't get it to work -- something about the
   ;; mode being set strangely in the minibuffer, I think
 )
+
+(defvar versor-equivalent-commands
+  '(
+    ;; the first few are the ones for which versor has a near
+    ;; equivalent
+    (backward-paragraph . versor-backward-paragraph)
+    (backward-up-list . versor-backward-up-list)
+    (kill-word . versor-delete-word)
+    (down-list . versor-down-list)
+    (forward-paragraph . versor-end-of-paragraph)
+    (forward-word . versor-end-of-word)
+    (forward-paragraph . versor-forward-paragraph)
+    (end-of-defun . versor-next-defun)
+    (next-line . versor-next-line)
+    (forward-word . versor-next-word)
+    (beginning-of-defun . versor-previous-defun)
+    (previous-line . versor-previous-line)
+    (beginning-of-line . versor-start-of-line)
+    (forward-sexp . next-sexp)
+    )
+  "Alist mapping commands to their nearest Versor equivalents.")
+
+(defvar versor-used-commands
+  '(backward-char
+    backward-phrase
+    backward-sentence
+    backward-word
+    beginning-of-buffer
+    beginning-of-defun
+    end-of-buffer
+    end-of-defun
+    end-of-line
+    end-of-phrase
+    first-sexp
+    forward-char
+    forward-page
+    forward-phrase
+    forward-sentence
+    forward-sexp
+    innermost-list
+    last-sexp
+    latest-statement-navigation-end
+    mark-sexp
+    navigate-this-body
+    navigate-this-head
+    nested-blocks-backward
+    nested-blocks-enter
+    nested-blocks-forward
+    nested-blocks-leave-backwards
+    next-sexp
+    next-statement
+    previous-sexp
+    previous-statement
+    statement-navigate-parts-next
+    statement-navigate-parts-previous
+    transpose-chars
+    transpose-lines
+    transpose-paragraphs
+    transpose-sentences
+    transpose-sexps
+    transpose-words
+    versor-backward-paragraph
+    versor-backward-up-list
+    versor-delete-word
+    versor-down-list
+    versor-dwim-lispishly
+    versor-dwim-textually
+    versor-end-of-paragraph
+    versor-end-of-word
+    versor-first-cell
+    versor-first-defun
+    versor-first-row
+    versor-forward-paragraph
+    versor-last-cell
+    versor-last-defun
+    versor-last-row
+    versor-next-cell
+    versor-next-defun
+    versor-next-line
+    versor-next-row
+    versor-next-word
+    versor-previous-cell
+    versor-previous-defun
+    versor-previous-line
+    versor-previous-row
+    versor-start-of-line
+    )
+  "Commands that Versor uses directly as actions.")
+
+(defun versor-find-in-current-dimension (command &optional level-offset)
+  "Return the versor command that would run COMMAND in the current dimension."
+  (car (rassoc command (versor-current-level level-offset))))
+
+(defun versor-command-for-action (action &optional next-level)
+  "Return the versor command that would do ACTION in the current level.
+With optional second arg non-nil, look in the next level up instead."
+  (cdr (assoc action
+	      (if next-level
+		  '((first . versor-over-start)
+		    (previous . versor-over-prev)
+		    (next . versor-over-next)
+		    (last . versor-over-end))
+		'((first . versor-start)
+		  (previous . versor-prev)
+		  (next . versor-next)
+		  (last . versor-end)
+		  (end . versor-end-of-item)
+		  (delete . versor-kill)
+		  (copy . versor-copy)
+		  (transpose . versor-transpose)
+		  (mark . versor-mark))))))
 
 ;;;; end of versor-dimensions.el
