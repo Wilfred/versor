@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-05-18 15:14:39 jcgs>
+;;; Time-stamp: <2006-05-19 11:52:55 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -141,7 +141,7 @@ You can only use this from Emacs 21 onwards."
   :type '(set (const :background) (const :foreground) (const :underline))
   :group 'versor-status)
 
-(defcustom versor-show-region-type t
+(defcustom versor-describe-selection t
   "Whether Versor should comment much on what it is doing.
 If non-nil, Versor will tell you when you have selected a piece of
 code that it may have a specific way of handling."
