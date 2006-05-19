@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2006-03-09 14:52:32 john>
+;;; Time-stamp: <2006-05-18 15:39:26 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -122,6 +122,48 @@ This symbol may be given inside a vector to define-key etc")
 (defvar pedals-use-kp-divide t
   ;; maybe should be t on WinNT and nil elsewhere?
   "Whether to use kp-divide instead of kp-down")
+
+(defvar pedal-code-names
+  '(pedal-onward
+    pedal-C-onward
+    pedal-M-onward
+    pedal-S-onward
+    pedal-C-S-onward
+    pedal-M-S-onward
+    pedal-C-M-S-onward
+    pedal-aux
+    pedal-C-aux
+    pedal-M-aux
+    pedal-S-aux
+    pedal-C-S-aux
+    pedal-M-S-aux
+    pedal-C-M-S-aux
+    pedal-menu
+    pedal-C-menu
+    pedal-M-menu
+    pedal-S-menu
+    pedal-C-S-menu
+    pedal-M-S-menu
+    pedal-C-M-S-menu)
+  "The variable names we use to hold the pedal codes.")
+
+(defvar pedals-code-alist
+  nil
+  "Alist mapping pedal variable names to the keys used for those pedals.")
+
+(defun pedals-make-code-alist ()
+  "Generate the value for pedals-code-alist"
+  (mapcar (function
+	   (lambda (name)
+	     (cons name (aref (symbol-value name) 0))))
+	  pedal-code-names))
+
+(defun pedal-name (keyname)
+  "Return the pedal name for KEYNAME."
+  (or (car (rassoc keyname pedals-code-alist))
+      keyname))
+
+;; todo: write around-advice on key-description, to give the pedal names by calling pedal-name where appropriate
 
 (defun pedals-setup-codes ()
   "Set up the pedal codes"
@@ -269,7 +311,8 @@ This symbol may be given inside a vector to define-key etc")
 	   pedal-S-menu [ S-kp-3 ]
 	   pedal-C-S-menu [ C-S-kp-3 ]
 	   pedal-M-S-menu [ M-S-kp-3 ]
-	   pedal-C-M-S-menu [ C-M-S-kp-3 ])))))
+	   pedal-C-M-S-menu [ C-M-S-kp-3 ]))))
+  (setq pedals-code-alist (pedals-make-code-alist)))
 
 (defun pedals-test-keys ()
   "Read key events and display what they were.
