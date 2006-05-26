@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-05-19 13:04:11 john>
+;;; Time-stamp: <2006-05-24 19:06:37 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -199,7 +199,8 @@ that is, is something that could be made into a compound statement or
 expression, return t. 
 otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
-information; otherwise should clear it to nil.")
+information; otherwise should clear it to nil.
+languide-region-detail-level says how much incidental information to include.")
 
 (defun region-type-description (start end &optional display)
   "Return a description of the region type between START and END.
@@ -242,7 +243,8 @@ When interactive, or with optional third argument non-nil, display the result."
 	(when description
 	  (message "%s" description)
 	  (versor-speak "%s" description))
-	(versor-set-current-items items)))))
+	(when (interactive-p)
+	  (versor-set-current-items items))))))
 
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing.
