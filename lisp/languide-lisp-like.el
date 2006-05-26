@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-05-04 14:19:42 john>
+;;; Time-stamp: <2006-05-24 19:29:48 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -268,6 +268,24 @@ of the defun."
 	       (format "(\\(rplaca\\|rplacd\\|incf\\|decf\\) +\\(%s\\)" variable)
 	       bod t)
 	  (throw 'got-assignment (point)))))))
+
+(defmodal variable-declaration-texts (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
+  "Return the texts for a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
+TYPE and INITIAL-VALUE may be null, but the NAME is required.
+The result is a list of three strings: any preceding whitespace,
+the actual declaration, and any following whitespace."
+  (list
+   (concat
+    (if (= (char-before) close-bracket) 
+	"\n" "")
+    (let ((indent (calculate-lisp-indent)))
+      (make-string (+ 6 (cond
+			 ((integerp indent) indent)
+			 ((consp indent) (car indent))
+			 4))
+		   ? )))
+   (concat "(" name " " initial-value ")")
+   ""))
 
 (defmodal insert-variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
@@ -542,10 +560,12 @@ that is, is something that could be made into a compound statement or
 expression, return t. 
 Otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
-information; otherwise should clear it to nil."
+information; otherwise should clear it to nil.
+languide-region-detail-level says how much incidental information to include."
   (setq languide-region-detail-string nil)
   (cond
    ((save-excursion (goto-char from)
+		    ;; this tests whether the selection is a single expression
 		    (skip-to-actual-code to)
 		    (and (not (looking-at "("))
 			 (save-excursion
@@ -563,8 +583,17 @@ information; otherwise should clear it to nil."
 	   (start-syntax (char-syntax start-char)))
       (cond
        ((eq start-char 34)
+	(when (> languide-region-detail-level 1)
+	  (setq languide-region-detail-string (format "contents: \"%s\""
+						      (buffer-substring-no-properties
+						       (1+ from)
+						       (1- (safe-scan-sexps from 1))))))
 	'string-literal)
        ((eq start-char ??)
+	(when (> languide-region-detail-level 1)
+	  (let ((charval))
+	    (setq languide-region-detail-string (format "value: %c; code: %x"
+							charval charval))))
 	'character-literal)
        ((and (>= start-char ?0) (<= start-char ?9))
 	'numeric-constant)
@@ -621,7 +650,8 @@ information; otherwise should clear it to nil."
 			     (= which-s-member 2)
 			     (= n-parts (- s-members 1)))
 			(progn
-			  (setq languide-region-detail-string (format "%d parts" n-parts))
+			  (when (> languide-region-detail-level 0)
+			    (setq languide-region-detail-string (format "%d parts" n-parts)))
 			  'cond-body)
 		      t)))
 		 ((memq sursurrounding-functor '(let let*))
@@ -640,24 +670,32 @@ information; otherwise should clear it to nil."
 			  (n-bindings 0))
 		      (while (setq this-binding (safe-scan-sexps this-binding 1))
 			(setq n-bindings (1+ n-bindings)))
-		      (setq languide-region-detail-string (format "%d bindings" n-bindings))
+		      (when (> languide-region-detail-level 0)
+			(setq languide-region-detail-string (format "%d bindings" n-bindings)))
 		      'let-bindings)
 		  nil))
 	       ((and (= which-s-member 3)
 		     (= n-parts (- s-members 2)))
 		(progn
-		  (setq languide-region-detail-string (format "%d parts" n-parts))
+		  (when (> languide-region-detail-level 0)
+		    (setq languide-region-detail-string (format "%d parts" n-parts)))
 		  'let-body))
 	       (t t)))
 	     ;; todo: lots more to do here
-	     ((memq functor '(progn save-excursion save-window-excursion)) 'progn-whole)
+	     ((memq functor '(progn save-excursion save-window-excursion))
+	      (when (> languide-region-detail-level 0)
+		;; this one isn't right yet
+		;; (setq languide-region-detail-string (format "%d parts" n-parts))
+		)
+	      'progn-whole)
 	     ((memq surrounding-functor '(when unless))
 	      (if (eq which-s-member 2)
 		  'if-condition
 		(if (and (= which-s-member 3)
 			 (= n-parts (- s-members 2)))
 		    (progn
-		      (setq languide-region-detail-string (format "%d parts" n-parts))
+		      (when (> languide-region-detail-level 0)
+			(setq languide-region-detail-string (format "%d parts" n-parts)))
 		      'if-then-body)
 		  t)))
 	     ((and (eq surrounding-functor 'if)
@@ -674,11 +712,20 @@ information; otherwise should clear it to nil."
 	       ((and (= which-s-member 4)
 		     (= n-parts (- s-members 3)))
 		(progn
-		  (setq languide-region-detail-string (format "%d parts" n-parts))
+		  (when (> languide-region-detail-level 0)
+		    (setq languide-region-detail-string (format "%d parts" n-parts)))
 		  'if-then-else-tail))
 	       (t t)))
 	     (t t))))
-	 (t nil))))))
+	 (t
+	  (when (> languide-region-detail-level 1)
+	    (cond 
+	     ((zerop (nth 0 pps))
+	      (setq languide-region-detail-string "Not the same level at both ends"))
+	     ((>= (nth 6 pps) 0)
+	      (setq languide-region-detail-string "Dips in the middle"))
+	     (t nil)))
+	  nil))))))
 
 (defmodal adjust-binding-point (lisp-mode emacs-lisp-mode lisp-interaction-mode) (variables-needed)
   "If appropriate, move to the first point at which all of VARIABLES-NEEDED are defined.
