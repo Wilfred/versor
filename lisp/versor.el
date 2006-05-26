@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-05-19 11:56:11 john>
+;;; Time-stamp: <2006-05-22 09:19:28 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -43,7 +43,7 @@
 ;; todo: use custom
 ;; todo: use Info-file-list-for-emacs
 
-(defvar version-version "1.03"
+(defvar version-version "1.05"
   "The version number for this release of versor.")
 
 ;;;;;;;;;;;;;;;
