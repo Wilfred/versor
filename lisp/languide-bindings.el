@@ -1,5 +1,5 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2006-05-03 15:02:10 john>
+;;; Time-stamp: <2006-05-24 11:17:38 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -105,6 +105,16 @@ of the defun.")
 
 (defmodel variable-last-possibly-assigned-before (variable wherebefore)
   "Return the position of the most recent assignment to VARIABLE before WHEREBEFORE.")
+
+(defmodel variable-declaration-texts (name type initial-value)
+  "Return the texts for a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
+TYPE and INITIAL-VALUE may be null, but the NAME is required.
+The result is a list of three strings: any preceding whitespace,
+the actual declaration, and any following whitespace.
+This may not be quite as refined as insert-variable-declaration, which has
+the chance to play around with the buffer text. variable-declaration-text
+is used to generate after-strings for overlays, to suggest possible
+bindings to the user.")
 
 (defmodel insert-variable-declaration (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
