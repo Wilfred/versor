@@ -1,5 +1,5 @@
 ;;;; languide-custom.el -- customization definitions for languide
-;;; Time-stamp: <2006-04-25 11:19:56 jcgs>
+;;; Time-stamp: <2006-05-24 19:06:37 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -53,6 +53,16 @@ whole if statement, rather than just the block body."
 (defcustom statement-navigate-parts-include-container t
   "*Whether to step forwards from body (or tail if present) or back from head, to container."
   :type 'boolean
+  :group 'languide)
+
+(defcustom languide-make-variables-interactively t
+  "*Whether to let the user scan between several possible binding points for new variables."
+  :type 'boolean
+  :group 'languide)
+
+(defcustom olanguide-region-detail-level 5
+  "*The level of extra detail to be included in languide-region-detail-string by languide-region-type."
+  :type 'integer
   :group 'languide)
 
 (defcustom languide-debug-messages nil
