@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-05-02 17:20:40 john>
+;;; Time-stamp: <2006-05-24 19:07:10 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -735,6 +735,29 @@ This lets clever implementations put the definition as far out as possible."
 	open)
     nil))
 
+(defmodal variable-declaration-texts  (c-mode java-mode) (name type initial-value)
+  "Return the texts for a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
+TYPE and INITIAL-VALUE may be null, but the NAME is required.
+The result is a list of three strings: any preceding whitespace,
+the actual declaration, and any following whitespace."
+  (list (if (save-excursion
+	      (let ((here (point)))
+		(back-to-indentation)
+		(= here (point))))
+	    ""
+	  (concat "\n" (make-string (- (save-excursion (back-to-indentation) (point))
+				       (save-excursion (beginning-of-line 1) (point)))
+				    ? )))
+	(concat 
+	 (if type
+	     (concat type " ")
+	   "void ")
+	 name
+	 (if initial-value
+	     (concat " = " initial-value ";")
+	   ""))
+	""))
+  
 (defmodal insert-variable-declaration (c-mode java-mode) (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
 Assumes we are at the obvious point to add a new variable.
@@ -1066,7 +1089,8 @@ that is, is something that could be made into a compound statement or
 expression, return t. 
 Otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
-information; otherwise should clear it to nil."
+information; otherwise should clear it to nil.
+languide-region-detail-level says how much incidental information to include."
   (setq languide-region-detail-string nil)
   (save-excursion
     (let* ((ppe (parse-partial-sexp from to))
