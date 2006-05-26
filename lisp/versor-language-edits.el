@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-05-14 14:15:52 jcgs>
+;;; Time-stamp: <2006-05-24 16:50:44 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -18,15 +18,32 @@
 (provide 'versor-language-edits)
 (require 'languide-edits)
 
-(defun versor-languide-convert-selection-to-variable (name)
-  "Make a variable declaration holding the current selection, and substitute it.
-Useful when you realize you want to re-use a value you had calculated in-line.
-The variable name is left at the top of the kill ring."
+(defun versor-languide-convert-selection-to-variable (name &optional nearest)
+  "Make a variable declaration for NAME initialized to the selection, and replace the selection with it.
+Useful when you realize you want to re-use a value you had calculated
+in-line.
+If languide-make-variables-interactively is non-nil, let the user choose the scope;
+otherwise, use the following rules:
+A likely scope is found automatically, but is often
+optimistically wide. With prefix arg, take the narrowest scope. With a
+positive number as prefix, take that numbered scope outward from the
+selection. With a negative number as prefix, let the user choose the
+scope interactively. The variable name is left at the top of the kill
+ring."
   (interactive "sVariable name: ")
   (versor-as-motion-command item
-     (languide-convert-region-to-variable (versor-overlay-start item)
-					  (versor-overlay-end item)
-					  name)))
+    (languide-convert-region-to-variable (versor-overlay-start item)
+					 (versor-overlay-end item)
+					 name
+					 (if current-prefix-arg
+					     (if (numberp current-prefix-arg)
+						 (if (< current-prefix-arg 0)
+						     'interactive
+						   current-prefix-arg)
+					       (if (eq current-prefix-arg '-)
+						   'interactive
+						 nil))
+					   t) )))
 
 (defun versor-languide-convert-selection-to-global-variable (name)
   "Make a variable declaration holding the current selection, and substitute it.
