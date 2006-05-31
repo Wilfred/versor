@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-05-18 11:06:36 jcgs>
+;;; Time-stamp: <2006-05-30 14:41:42 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -817,5 +817,108 @@ If so, it is called on the other two arguments."
   (interactive)
   (goto-char (point-max))
   (beginning-of-defun 1))
+
+(defun versor-else-first-placeholder ()
+  "Move to the first placeholder."
+  (interactive)
+  (goto-char (point-min))
+  (else-next-placeholder))
+
+(defun versor-else-last-placeholder ()
+  "Move to the last placeholder."
+  (interactive)
+  (goto-char (point-max))
+  (else-previous-placeholder))
+
+(defvar versor-latest-mark 0
+  "The latest mark versor's \"mark\" dimension has gone to in this buffer.")
+
+(make-variable-buffer-local 'versor-latest-mark)
+
+(defvar versor-sorted-marks nil
+  "The marks in this buffer, sorted for versor to use.")
+
+(make-variable-buffer-local 'versor-sorted-marks)
+
+(defvar versor-latest-sorted-mark 0
+  "The latest mark versor's \"sorted-mark\" dimension has gone to in this buffer.")
+
+(make-variable-buffer-local 'versor-latest-sorted-mark)
+
+(defadvice push-mark (after versor () activate)
+  "Invalidate versor's mark-related data when a new mark is made."
+  (setq versor-latest-mark 0
+	versor-sorted-marks nil
+	versor-latest-sorted-mark 0))
+
+(defadvice pop-mark (after versor () activate)
+  "Invalidate versor's mark-related data when a old mark is popped."
+  (setq versor-latest-mark 0
+	versor-sorted-marks nil
+	versor-latest-sorted-mark 0))
+
+(defun first-mark ()
+  "Move to the first-mark"
+  (interactive)
+  (setq versor-latest-mark 0)
+  (goto-char (nth versor-latest-mark mark-ring)))
+
+(defun previous-mark (&optional n)
+  "Move to the previous-mark"
+  (interactive "p")
+  (setq versor-latest-mark (min (1+ versor-latest-mark)
+				(1- (length mark-ring))))
+  (goto-char (nth versor-latest-mark mark-ring)))
+
+(defun next-mark (&optional n)
+  "Move to the next-mark"
+  (interactive "p")
+  (setq versor-latest-mark (max (1- versor-latest-mark)
+				0))
+  (goto-char (nth versor-latest-mark mark-ring)))
+
+(defun last-mark ()
+  "Move to the last-mark"
+  (interactive "p")
+  (setq versor-latest-mark (1- (length mark-ring)))
+  (goto-char (nth versor-latest-mark mark-ring)))
+
+(defun versor-make-sorted-marks ()
+  "Make a sorted copy of the mark ring."
+  (when (null versor-sorted-marks)
+    (setq versor-sorted-marks
+	  (sort (copy-alist mark-ring)
+		'<)
+	  versor-latest-sorted-mark 0)))
+
+(defun first-sorted-mark ()
+  "Move to the first-sorted-mark"
+  (interactive)
+  (versor-make-sorted-marks)
+  (setq versor-latest-sorted-mark 0)
+  (goto-char (nth versor-latest-sorted-mark versor-sorted-marks)))
+
+(defun previous-sorted-mark (&optional n)
+  "Move to the previous-sorted-mark"
+  (interactive "p")
+  (versor-make-sorted-marks)
+  (setq versor-latest-sorted-mark (min (1+ versor-latest-sorted-mark)
+				(1- (length versor-sorted-marks))))
+  (goto-char (nth versor-latest-sorted-mark versor-sorted-marks)))
+
+(defun next-sorted-mark (&optional n)
+  "Move to the next-sorted-mark"
+  (interactive "p")
+  (versor-make-sorted-marks)
+  (setq versor-latest-sorted-mark (max (1- versor-latest-sorted-mark)
+				0))
+  (goto-char (nth versor-latest-sorted-mark versor-sorted-marks)))
+
+(defun last-sorted-mark ()
+  "Move to the last-sorted-mark"
+  (interactive "p")
+  (versor-make-sorted-marks)
+  (setq versor-latest-sorted-mark (1- (length versor-sorted-marks)))
+  (goto-char (nth versor-latest-sorted-mark versor-sorted-marks)))
 
 ;;;; end of versor-base-moves.el
