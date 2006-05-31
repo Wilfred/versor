@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-05-18 11:55:16 jcgs>
+;;; Time-stamp: <2006-05-31 17:15:47 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -58,10 +58,18 @@ Other uses for this might be found.")
 (defun versor-make-movemap-set (name &rest movemaps)
   "Make a set of movemaps called NAME from the remaining arguments.
 The lowest-level (finest-grain) movemap should come first.
+Any nil elements are not included.
 A movemap-set represents a metalevel of movements.
 Also, all the movemap-sets are grouped together using another movemap-set,
 called moves-moves, which is the root variable of the versor system."
-  (apply 'vector name movemaps))
+  (if (memq nil movemaps)
+      (let ((mm nil))
+	(while movemaps
+	  (when (car movemaps)
+	    (setq mm (cons (car movemaps) mm)))
+	  (setq movemaps (cdr movemaps)))
+	(apply 'vector name (nreverse mm)))
+    (apply 'vector name movemaps)))
 
 (defun versor-make-movemap (name)
   "Make a movemap called NAME.
@@ -110,7 +118,10 @@ See the definition of versor-make-movemap for details of move maps."
 	 (lambda (name)
 	   (set (intern (concat "movemap-" name))
 		(versor-make-movemap name))))
-	'("chars"
+	'("default-chars"
+	  "default-lines"
+	  "default-pages"
+	  "chars"
 	  "lines"
 	  "pages"
 	  "exprs"
@@ -125,7 +136,52 @@ See the definition of versor-make-movemap for details of move maps."
 	  "blocks"
 	  "block-depth"
 	  "cells"
-	  "rows"))
+	  "rows"
+	  "mark-ring"
+	  "sorted-mark-ring"
+	  "tempo"
+	  "else"
+	  "property-changes"
+	  "references"))
+
+(versor-define-moves movemap-default-chars
+		      '((color "purple"
+)
+			(first beginning-of-line)
+			(previous backward-char)
+			(next forward-char)
+			(last end-of-line)
+			;; (delete delete-char)
+			(transpose transpose-chars)
+			))
+
+(versor-define-moves movemap-default-lines
+		     '((color "black")
+		       (other-color "gray")
+		       (:background "black")
+		       (:foreground "white")
+		       (first beginning-of-buffer)
+		       (previous previous-line)
+		       (next next-line)
+		       (last end-of-buffer)
+		       (end-of-item end-of-line)
+		       ;; (delete kill-line)
+			(transpose transpose-lines)
+		       ))
+
+(versor-define-moves movemap-default-pages
+		     '((color "black")
+		       (other-color "gray")
+		       (first beginning-of-buffer)
+		       (previous
+			;; scroll-down
+			forward-page
+			)
+		       (next
+			;; scroll-up
+			forward-page
+			)
+		       (last end-of-buffer)))
 
 (versor-define-moves movemap-chars
 		      '((color "purple")
@@ -311,10 +367,68 @@ See the definition of versor-make-movemap for details of move maps."
 		       (next versor-next-row)
 		       (last versor-last-row)))
 
+(versor-define-moves movemap-mark-ring
+		     '((color "orange")
+		       (:background "orange")
+		       (:foreground "blue")
+		       (first first-mark)
+		       (previous previous-mark)
+		       (next next-mark)
+		       (last last-mark)))
+
+(versor-define-moves movemap-sorted-mark-ring
+		     '((color "orange")
+		       (:background "orange")
+		       (:foreground "blue")
+		       (first first-sorted-mark)
+		       (previous previous-sorted-mark)
+		       (next next-sorted-mark)
+		       (last last-sorted-mark)))
+
+(versor-define-moves movemap-tempo
+  '((color "orange")
+    (:background "orange")
+    (:foreground "blue")
+    (first )
+    (previous )
+    (next )
+    (last )))
+
+(versor-define-moves movemap-else
+  '((color "orange")
+    (:background "orange")
+    (:foreground "blue")
+    (first versor-else-first-placeholder)
+    (previous else-previous-placeholder)
+    (next else-next-placeholder)
+    (last versor-else-last-placeholder)))
+
+(versor-define-moves movemap-property-changes
+  '((color "orange")
+    (:background "orange")
+    (:foreground "blue")
+    (first )
+    (previous )
+    (next )
+    (last )))
+
+(versor-define-moves movemap-references
+  '((color "orange")
+    (:background "orange")
+    (:foreground "blue")
+    (first )
+    (previous )
+    (next )
+    (last )))
 
 ;; See versor-make-movemap-set for details of movemap-sets
 		       
-(setq moves-cartesian (versor-make-movemap-set "cartesian"
+(setq moves-default (versor-make-movemap-set "default"
+					     movemap-default-chars
+					     movemap-default-lines
+					     movemap-default-pages)
+
+      moves-cartesian (versor-make-movemap-set "cartesian"
 					       movemap-chars
 					       movemap-lines
 					       movemap-pages)
@@ -349,16 +463,26 @@ See the definition of versor-make-movemap for details of move maps."
 					     movemap-exprs
 					     movemap-statement-parts
 					     movemap-statements
-					     movemap-defuns))
+					     movemap-defuns)
+
+      moves-markers (versor-make-movemap-set "markers"
+					     movemap-mark-ring
+					     movemap-sorted-mark-ring
+					     (if (featurep 'tempo) movemap-tempo nil)
+					     (if (featurep 'else) movemap-else nil)
+					     movemap-property-changes))
 
 (defvar moves-moves
   (versor-make-movemap-set "metamoves"
+			   moves-default
 			   moves-cartesian
 			   moves-structural
 			   moves-text
 			   moves-structured-text
 			   moves-tables
-			   moves-program)
+			   moves-program
+			   ;; moves-markers
+			   )
   "The map of meta-moves.
 See versor-make-movemap-set for the description of move map sets.
 Note that this is a reuse of that data type at a different level. ")
@@ -519,6 +643,10 @@ Used by versor-local, but defined in versor-dimensions."
     transpose-chars
     transpose-lines
     transpose-paragraphs
+    else-next-placeholder
+    else-previous-placeholder
+    versor-else-first-placeholder
+    versor-else-last-placeholder
     transpose-sentences
     transpose-sexps
     transpose-words
