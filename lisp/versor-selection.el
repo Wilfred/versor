@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-05-19 11:53:04 john>
+;;; Time-stamp: <2006-05-30 14:16:56 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -124,7 +124,7 @@ the buffer positions in the items you have yet to edit."
 	     versor-items
 	     )))
 	 ))
-    (message "%S" result)
+    ;; (message "%S" result)
     result))
 
 (defun versor-overlay-start (olay)
