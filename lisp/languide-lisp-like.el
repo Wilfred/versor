@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-05-24 19:29:48 jcgs>
+;;; Time-stamp: <2006-05-31 17:13:58 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -548,6 +548,161 @@ Each element is a list of:
       (1- i))))
 
 (defmodal languide-region-type (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+  (from to)
+  "Try to work out what type of thing the code between FROM and TO is.
+Results can be things like if-then-body, if-then-else-tail, progn-whole,
+while-do-head, defun-body, and so on. If one of these is returned, the
+code must be exactly that (apart from leading and trailing
+whitespace).
+If it is not recognizable as anything in particular, but ends at the
+same depth as it starts, and never goes below that depth in between,
+that is, is something that could be made into a compound statement or
+expression, return t. 
+Otherwise return nil.
+May set languide-region-detail-string to a string giving the user incidental
+information; otherwise should clear it to nil."
+  (setq languide-region-detail-string nil)
+  (cond
+   ((save-excursion (goto-char from)
+		    (skip-to-actual-code to)
+		    (and (not (looking-at "("))
+			 (save-excursion
+			   (backward-char)
+			   (skip-to-actual-code-backwards)
+			   (backward-char)
+			   (not (looking-at "(")))
+			 (progn
+			   (forward-sexp)
+			   (let ((expr-1-end (point)))
+			     (goto-char to)
+			     (skip-to-actual-code-backwards from)
+			     (eq (point) expr-1-end)))))
+    (let* ((start-char (char-after from))
+	   (start-syntax (char-syntax start-char)))
+      (cond
+       ((eq start-char 34)
+	'string-literal)
+       ((eq start-char ??)
+	'character-literal)
+       ((and (>= start-char ?0) (<= start-char ?9))
+	'numeric-constant)
+       ((or (eq start-syntax ?w)
+	    (eq start-syntax ?_))
+	'symbol))))
+   (t (let* ((pps (save-excursion (parse-partial-sexp from to))))
+	(cond
+	 ((and (zerop (nth 0 pps))	; same level at both ends
+	       (>= (nth 6 pps) 0))	; no dip in level between ends
+	  (let* ((n-parts (count-sexps from to))
+		 (f-start (safe-scan-lists from 1 -1))
+		 (f-end (and f-start
+			     (safe-scan-sexps f-start 1)))
+		 (functor (and f-end
+			       (intern
+				(buffer-substring-no-properties f-start f-end))))
+		 (surrounding-start (safe-scan-lists from -1 1))
+		 (surrounding-end (and surrounding-start
+				       (safe-scan-sexps surrounding-start 1)))
+		 (sf-start (and surrounding-start
+				(safe-scan-lists surrounding-start 1 -1)))
+		 (sf-end (and sf-start
+			      (safe-scan-sexps sf-start 1)))
+		 (surrounding-functor (and sf-end
+					   (not (= (char-after sf-start) open-bracket))
+					   (intern
+					    (buffer-substring-no-properties sf-start sf-end))))
+		 (s-members (and sf-start
+				 surrounding-end
+				 (count-sexps sf-start (1- surrounding-end))))
+		 (which-s-member (and sf-start
+				      (count-sexps sf-start from))))
+	    ;; (message "functor %S; surrounding-functor %S, of which we are %S of %S" functor surrounding-functor which-s-member s-members)
+	    (cond
+	     ((eq surrounding-functor nil)
+	      ;; could be an individual let binding, or something like
+	      ;; that, but is likely not to be a common or garden code sexp
+	      (let* ((sursurrounding-start (safe-scan-lists surrounding-start -1 1))
+		     (ssf-start (and sursurrounding-start
+				     (safe-scan-lists sursurrounding-start 1 -1)))
+		     (ssf-end (and sf-start
+				   (safe-scan-sexps ssf-start 1)))
+		     (sursurrounding-functor (and ssf-end
+						  (not (= (char-after ssf-start) open-bracket))
+						  (intern
+						   (buffer-substring-no-properties ssf-start ssf-end)))))
+		(cond
+		 ((eq sursurrounding-functor 'cond)
+		  (if (eq which-s-member 0)
+		      'cond-condition
+		    ;; (message "cond body which=%S n=%S members=%S" which-s-member n-parts s-members)
+		    (if (and (numberp which-s-member)
+			     (= which-s-member 2)
+			     (= n-parts (- s-members 1)))
+			(progn
+			  (setq languide-region-detail-string (format "%d parts" n-parts))
+			  'cond-body)
+		      t)))
+		 ((memq sursurrounding-functor '(let let*))
+		  'variable-binding)
+		 (t nil))))
+	     ((eq which-s-member 0)
+	      'functor)
+	     ((eq surrounding-functor 'cond)
+	      'cond-clause)
+	     ((eq functor 'defun) defun-body)
+	     ((memq surrounding-functor '(let let*))
+	      (cond
+	       ((eq which-s-member 2)
+		(if (eq n-parts 1)
+		    (let ((this-binding f-start)
+			  (n-bindings 0))
+		      (while (setq this-binding (safe-scan-sexps this-binding 1))
+			(setq n-bindings (1+ n-bindings)))
+		      (setq languide-region-detail-string (format "%d bindings" n-bindings))
+		      'let-bindings)
+		  nil))
+	       ((and (= which-s-member 3)
+		     (= n-parts (- s-members 2)))
+		(progn
+		  (setq languide-region-detail-string (format "%d parts" n-parts))
+		  'let-body))
+	       (t t)))
+	     ;; todo: lots more to do here
+	     ((memq functor '(progn save-excursion save-window-excursion)) 'progn-whole)
+	     ((memq surrounding-functor '(when unless))
+	      (if (eq which-s-member 2)
+		  'if-condition
+		(if (and (= which-s-member 3)
+			 (= n-parts (- s-members 2)))
+		    (progn
+		      (setq languide-region-detail-string (format "%d parts" n-parts))
+		      'if-then-body)
+		  t)))
+	     ((and (eq surrounding-functor 'if)
+		   (numberp which-s-member))
+	      (cond 
+	       ((= which-s-member 2)
+		(if (= n-parts 1)
+		    'if-condition
+		  nil))
+	       ((= which-s-member 3)
+		(if (= n-parts 1)
+		    'if-body
+		  nil))
+	       ((and (= which-s-member 4)
+		     (= n-parts (- s-members 3)))
+		(progn
+		  (setq languide-region-detail-string (format "%d parts" n-parts))
+		  'if-then-else-tail))
+	       (t t)))
+	     (t t))))
+	 (t nil))))))
+
+;;; I've reverted this from the following fancy version for now, as
+;;; it's causing strings not to be highlighted -- will reinstate the
+;;; clever version later
+
+(defmodal languide-region-type-new (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   (from to)
   "Try to work out what type of thing the code between FROM and TO is.
 Results can be things like if-then-body, if-then-else-tail, progn-whole,
