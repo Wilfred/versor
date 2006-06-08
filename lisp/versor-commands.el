@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-05-10 20:23:41 jcgs>
+;;; Time-stamp: <2006-06-08 12:13:09 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -505,23 +505,26 @@ normal Emacs commands. Our corresponding insertion commands understand
 this."
   (interactive)
   (versor-as-motion-command current-item
-   (let ((ready-made (versor-get-action 'delete)))
-     (if ready-made
-	 (versor-call-interactively ready-made)
-       (mapcar
-	(lambda (item)
-	  (let* ((start (versor-overlay-start item))
-		 (end (versor-overlay-end item))
-		 (cut-string (buffer-substring start end)))
-	    (when (boundp 'label-with-adjacent-whitespace)
-	      (label-with-adjacent-whitespace start end cut-string))
-	    (message "Killing %s" (abbreviate-cut-string cut-string))
-	    (kill-new cut-string)
-	    (delete-region start end)
-	    (versor-trim-whitespace start)))
-	(versor-last-item-first))))
-   (if (fboundp 'update-shown-stacks)	; from rpn-edit.el
-       (update-shown-stacks))))
+    (let ((ready-made (versor-get-action 'delete)))
+      (if ready-made
+	  (versor-call-interactively ready-made)
+	(mapcar
+	 (lambda (item)
+	   (let* ((start (versor-overlay-start item))
+		  (end (versor-overlay-end item))
+		  (cut-string (buffer-substring start end)))
+	     (when (boundp 'label-with-adjacent-whitespace)
+	       (label-with-adjacent-whitespace start end cut-string))
+	     (message "Killing %s" (abbreviate-cut-string cut-string))
+	     (kill-new cut-string)
+	     (delete-region start end)
+	     (versor-trim-whitespace start)
+	     (when (and (not (eq item (car versor-items)))
+			(overlayp item))
+	       (delete-overlay item))))
+	 (versor-last-item-first))))
+    (if (fboundp 'update-shown-stacks)	; from rpn-edit.el
+	(update-shown-stacks))))
 
 (defun versor-yank (&optional arg)
   "Versor wrapper for yank.
