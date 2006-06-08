@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-05-30 14:41:42 john>
+;;; Time-stamp: <2006-06-08 13:24:42 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -191,14 +191,16 @@ Makes a two-part selection, of opening and closing brackets."
 (defmodal versor-backward-up-list (html-mode html-helper-mode) (arg)
   "Like backward-up-list, but with versor stuff around it, and for HTML blocks."
   (nested-blocks-leave-backwards)
-  (let ((open-start (match-beginning 0))
-	(open-end (match-end 0)))
-    (nested-blocks-forward)
-    (let ((close-start (match-beginning 0))
-	  (close-end (match-end 0)))
-      (make-versor-overlay open-start open-end)
-      (versor-extra-overlay close-start close-end)
-      (goto-char open-start))))
+  (when (looking-at (nested-blocks-start))
+    (let ((open-start (match-beginning 0))
+	  (open-end (match-end 0)))
+      (nested-blocks-forward)
+      (when (re-search-backward (nested-blocks-end) open-end t)
+	(let ((close-start (match-beginning 0))
+	      (close-end (match-end 0)))
+	  (make-versor-overlay open-start open-end)
+	  (versor-extra-overlay close-start close-end)
+	  (goto-char open-start))))))
 
 (defmodel versor-down-list (arg)
   "Like down-list, but with some versor stuff around it."
@@ -221,7 +223,11 @@ Makes a two-part selection, of opening and closing brackets."
 
 (defmodal versor-down-list (html-mode html-helper-mode) (arg)
   "Like down-list, but with versor stuff around it, and for HTML block structure."
-  (nested-blocks-enter))
+  (nested-blocks-enter)
+  (let ((start (point)))
+    (next-texp 1)
+    (versor-set-current-item start (point))
+    (goto-char start)))
 
 ;; left over from trying a window selection dimension
 ;; (defun other-window-backwards (n)
@@ -348,33 +354,39 @@ Makes a two-part selection, of opening and closing brackets."
 	    (skip-to-actual-code))
 	(message "No more sexps")))))
 
+(defun next-texp (n)
+  "Move to the Nth next text expression."
+  (while (> n 0)
+    (cond
+     ((save-excursion
+	(skip-to-actual-code)
+	(looking-at "<[^/]"))
+      (skip-to-actual-code)
+      (nested-blocks-forward))
+     ((save-excursion
+	(skip-syntax-backward " ")
+	(looking-at sentence-end))
+      (skip-to-actual-code)
+      (forward-sentence))
+     ((save-excursion
+	(skip-to-actual-code)
+	(looking-at "[[({]"))
+      (skip-to-actual-code)
+      (forward-sexp 1))
+     (t
+      (forward-word 1)))
+    (setq n (1- n))))
+
 (defmodal next-sexp (html-mode html-helper-mode) (n)
   "next-sexp for html.
 Treats paired tags as brackets, and tries to do sensible
 things with natural language punctuation."
-  (cond
-   ((save-excursion
-      (skip-to-actual-code)
-      (looking-at "<[^/]"))
-    (skip-to-actual-code)
-    (let ((start (point)))
-      (nested-blocks-forward)
-      (versor-set-current-item start (point))))
-   ((save-excursion
-      (let ((started (point)))
-	(and (re-search-backward sentence-end (point-min) t)
-	     (skip-to-actual-code)
-	     (= started (point)))))
-    (skip-to-actual-code)
-    (let ((start (point)))
-      (forward-sentence)
-      (versor-set-current-item start (point))))
-   ((looking-at "[[({]")
-    (skip-to-actual-code)
-    (let ((start (point)))
-      (forward-sexp n)
-      (versor-set-current-item start (point))))
-   (t (forward-word 1))))
+  (next-texp n)
+  (skip-syntax-forward " .")
+  (let ((start (point)))
+    (next-texp 1)
+    (versor-set-current-item start (point))
+    (goto-char start)))
 
 (defmodel previous-sexp (n)
   "Move backward N sexps.
@@ -392,23 +404,39 @@ Like backward-sexp but stops without error on reaching the start."
 	  (safe-backward-up-list)
 	(message "No more previous sexps")))))
 
+(defun previous-texp (n)
+  "Move to the Nth previous text expression."
+  (while (> n 0)
+    (cond
+     ((save-excursion
+	(skip-syntax-backward " .")
+	(backward-char 1)
+	(looking-at ">"))
+      (skip-to-actual-code-backwards)
+      (nested-blocks-backward))
+     ((save-excursion
+	(skip-syntax-backward " ")
+	(backward-char 1)
+	(looking-at sentence-end))
+      (skip-to-actual-code-backwards)
+      (backward-sentence))
+     ((save-excursion
+	(skip-to-actual-code-backwards)
+	(backward-char 1)
+	(looking-at "[])}]"))
+      (skip-to-actual-code-backwards)
+      (backward-sexp 1))
+     (t
+      (backward-word 1)))
+    (setq n (1- n))))
+
 (defmodal previous-sexp (html-mode html-helper-mode) (n)
   "Move backward N html blocks."
-  (cond
-   ((save-excursion
-      (let ((start (point)))
-	(and (re-search-backward (nested-blocks-end) (point-min) t)
-	     (progn (goto-char (match-end 0))
-		    (skip-to-actual-code))
-	     (>= (point) start))))
-    (re-search-backward (nested-blocks-end) (point-min) t)
-    (let ((end (match-end 0)))
-      (goto-char end)
-      (nested-blocks-backward)
-      (versor-set-current-item (point) end)))
-   ;; todo: add handling of sentences
-   ;; todo: add handling of real brackets
-   (t (backward-word 1))))
+  (previous-texp n)
+  (let ((start (point)))
+    (next-texp 1)
+    (versor-set-current-item start (point))
+    (goto-char start)))
 
 (defmodel innermost-list ()
   "Move in by sexps until you can go in no more."
@@ -515,17 +543,31 @@ Stay within the current sentence."
 ;;   (interactive)
 ;; )
 
-(defun tempo-first-mark ()
+(defun tempo-first-mark (n)
   "Go to the first tempo marker."
-  (interactive)
-  (let ((first-mark (first tempo-marks)))
-    (when first-mark (goto-char first-mark))))
+  (interactive "p")
+  (goto-char (point-min))
+  (tempo-forward-mark))
 
-(defun tempo-last-mark ()
+(defun tempo-previous-mark ()
+  "Go to the previous tempo marker."
+  (interactive "p")
+  (while (> n 0)
+    (tempo-backward-mark)
+    (setq n (1- n))))
+
+(defun tempo-next-mark (n)
+  "Go to the next tempo marker."
+  (interactive "p")
+  (while (> n 0)
+    (tempo-forward-mark)
+    (setq n (1- n))))
+
+(defun tempo-last-mark (n)
   "Go to the last tempo marker."
-  (interactive)
-  (let ((last-mark (last tempo-marks)))
-    (when last-mark (goto-char last-mark))))
+  (interactive "p")
+  (goto-char (point-max))
+  (tempo-backward-mark))
 
 (defun versor-set-mode-properties (mode properties)
   "Set the mode-specific versor properties for MODE to be PROPERTIES.
@@ -920,5 +962,25 @@ If so, it is called on the other two arguments."
   (versor-make-sorted-marks)
   (setq versor-latest-sorted-mark (1- (length versor-sorted-marks)))
   (goto-char (nth versor-latest-sorted-mark versor-sorted-marks)))
+		       
+(defun goto-first-property-change (n)
+  "Go to the first property change."
+  (interactive "p")
+  (goto-char (next-property-change (point-min) (current-buffer))))
+
+(defun goto-next-property-change (n)
+  "Go to the next property change."
+  (interactive "p")
+  (goto-char (next-property-change (point) (current-buffer))))
+		       
+(defun goto-previous-property-change (n)
+  "Go to the previous property change."
+  (interactive "p")
+  (goto-char (previous-property-change (point) (current-buffer))))
+		       
+(defun goto-last-property-change (n)
+  "Go to the last property change."
+  (interactive "p")
+  (goto-char (previous-property-change (point-max) (current-buffer))))
 
 ;;;; end of versor-base-moves.el
