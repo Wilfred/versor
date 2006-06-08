@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-05-31 17:15:47 john>
+;;; Time-stamp: <2006-06-08 18:32:56 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -386,40 +386,40 @@ See the definition of versor-make-movemap for details of move maps."
 		       (last last-sorted-mark)))
 
 (versor-define-moves movemap-tempo
-  '((color "orange")
-    (:background "orange")
-    (:foreground "blue")
-    (first )
-    (previous )
-    (next )
-    (last )))
+		     '((color "orange")
+		       (:background "orange")
+		       (:foreground "blue")
+		       (first (tempo-first-mark))
+		       (previous tempo-previous-mark)
+		       (next tempo-next-mark)
+		       (last (tempo-last-mark))))
 
 (versor-define-moves movemap-else
-  '((color "orange")
-    (:background "orange")
-    (:foreground "blue")
-    (first versor-else-first-placeholder)
-    (previous else-previous-placeholder)
-    (next else-next-placeholder)
-    (last versor-else-last-placeholder)))
+		     '((color "orange")
+		       (:background "orange")
+		       (:foreground "blue")
+		       (first versor-else-first-placeholder)
+		       (previous else-previous-placeholder)
+		       (next else-next-placeholder)
+		       (last versor-else-last-placeholder)))
 
 (versor-define-moves movemap-property-changes
-  '((color "orange")
-    (:background "orange")
-    (:foreground "blue")
-    (first )
-    (previous )
-    (next )
-    (last )))
+		     '((color "orange")
+		       (:background "orange")
+		       (:foreground "blue")
+		       (first (goto-first-property-change))
+		       (previous (goto-next-property-change))
+		       (next (goto-previous-property-change))
+		       (last (goto-last-property-change))))
 
 (versor-define-moves movemap-references
-  '((color "orange")
-    (:background "orange")
-    (:foreground "blue")
-    (first )
-    (previous )
-    (next )
-    (last )))
+		     '((color "orange")
+		       (:background "orange")
+		       (:foreground "blue")
+		       (first )
+		       (previous )
+		       (next )
+		       (last )))
 
 ;; See versor-make-movemap-set for details of movemap-sets
 		       
@@ -532,11 +532,11 @@ With optional LEVEL-OFFSET, add that to the level first."
 
 (defvar versor-meta-dimensions-valid-for-modes
   '(((emacs-lisp-mode lisp-mode scheme-mode lisp-interaction-mode)
-     t "cartesian" "structural" "text" "program")
+     t "cartesian" "structural" "text" "program" "markers")
     ((texinfo-mode tex-mode latex-mode html-mode html-helper-mode)
-     t "cartesian" "text" "structured text" "tables")
+     t "cartesian" "structural" "text" "structured text" "tables" "markers")
     ((c-mode perl-mode java-mode)
-     t "cartesian" "structural" "program" "text")
+     t "cartesian" "structural" "program" "text" "markers")
     (t nil))				; allow any
   "*Controls which meta-dimensions are valid for which major modes.
 If t, all meta-dimensions are allowed in all major modes.
