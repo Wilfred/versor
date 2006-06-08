@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-05-30 14:16:56 john>
+;;; Time-stamp: <2006-06-08 12:10:07 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -229,7 +229,10 @@ You should normally call versor-set-current-item rather than this."
       (delete-overlay overlay)))
   ;; get rid of any extras
   (when versor-items
-    (mapcar 'delete-overlay (cdr versor-items))
+    (mapcar #'(lambda (o)
+		(when (overlayp o)
+		  (delete-overlay o)))
+	    (cdr versor-items))
     (rplacd versor-items nil)))
 
 (defun versor-clear-current-item-indication ()
