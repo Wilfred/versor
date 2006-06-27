@@ -1,5 +1,5 @@
 ;;;; statement-cache.el -- cache statement data for statement-navigation.el
-;;; Time-stamp: <2006-05-03 15:02:55 john>
+;;; Time-stamp: <2006-06-12 18:46:09 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -87,7 +87,7 @@ See the variable statements-known."
 	    (setq statements-prev statements
 		  statements (cdr statements)))
 	  (unless done
-	    (message "reached end of statements list, so adding new one at end")
+	    ;; (message "reached end of statements list, so adding new one at end")
 	    (rplacd statements-prev
 		    (list
 		     (setq latest-statement-known (list start end type)))))))
