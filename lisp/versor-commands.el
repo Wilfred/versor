@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-06-08 12:13:09 jcgs>
+;;; Time-stamp: <2006-06-27 11:45:46 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -38,6 +38,13 @@ It is enabled by the variable versor-reversible, which see.")
 ;;;; more structure ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defvar versor-am-in-text-in-code nil
+  ;; This is set in versor-text-in-code, but we want to be able to
+  ;; refer from it in versor-as-versor-command even if we're not using
+  ;; text-in-code, so it is defined here.
+  "Whether we were last in text embedded in code, i.e. comment or string.
+Local to each buffer.")
+
 (defmacro versor-as-versor-command (&rest versor-body)
   "Run BODY as a versor command, if versor-mode is enabled,
 or if not called interactively.
@@ -46,9 +53,42 @@ command to be run."
   `(if (or versor-mode
 	   (not (interactive-p)))
        (progn
-	 ,@versor-body)
+	 (if versor-auto-change-for-modes
+	     ;; If we are keeping a different dimension for each mode,
+	     ;; check whether the mode has changed. It's not
+	     ;; sufficient to use a hook that detects buffer or mode
+	     ;; changes after each command, because you can come out
+	     ;; of the minibuffer without triggering a command hook.
+	     (let ((new-pair (assoc (if (and versor-text-in-code
+					     versor-am-in-text-in-code)
+					(symbol-name major-mode)
+				      major-mode)
+				    versor-mode-current-levels)))
+	       (when (and new-pair
+			  (or (not (eq versor-meta-level (cadr new-pair)))
+			      (not (eq versor-level (cddr new-pair)))))
+		 (setq versor-meta-level (cadr new-pair)
+		       versor-level (cddr new-pair))
+		 (versor-set-status-display t)))
+	   ;; If not changing dimensions per-mode, we might be
+	   ;; changing them per-buffer, so have a look for that here.
+	   (when (and versor-per-buffer
+		      (or (not (eq versor-meta-level versor-this-buffer-meta-level))
+			  (not (eq versor-level versor-this-buffer-level))))
+	     (setq versor-meta-level versor-this-buffer-meta-level
+		   versor-level versor-this-buffer-level)
+	     (versor-set-status-display t)))
+	 (progn
+	   ,@versor-body)
+	 ;; We remember the per-buffer dimensions here, in case the
+	 ;; command body has changed them; but we don't update
+	 ;; versor-mode-current-levels, because that is handled in the
+	 ;; code that changes the dimension
+	 (setq versor-this-buffer-meta-level versor-meta-level
+	    versor-this-buffer-level versor-level)
+	 )
      (let ((old-def (lookup-key versor-original-bindings-map
-			       (this-command-keys-vector))))
+				(this-command-keys-vector))))
        (if old-def
 	   (call-interactively old-def)))))
 
@@ -77,8 +117,12 @@ if there is no end-of-item."
        ;; the few commands that want to do otherwise, must re-set this
        ;; one just after using this macro
        (setq versor-extension-direction nil)
-       (versor-indicate-current-item)
-       (run-hooks 'versor-post-command-hook))))
+       ;; Now act on the versor-set-current-item done by the command
+       ;; body, if it did one; otherwise, try to work out the
+       ;; appropriate item selection, based on point and on the
+       ;; current dimension
+  (versor-indicate-current-item)
+  (run-hooks 'versor-post-command-hook))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; commands begin here ;;;;
