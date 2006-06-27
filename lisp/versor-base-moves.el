@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-06-08 13:24:42 jcgs>
+;;; Time-stamp: <2006-06-27 12:48:30 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -313,9 +313,12 @@ Makes a two-part selection, of opening and closing brackets."
     
 (defmodal next-sexp (fundamental-mode) (n)
   "Move forward N sexps.
-  Like forward-sexp but moves to the start of the next sexp rather than the
-  end of the current one, and so skips leading whitespace etc.
-  See versor-allow-move-to-end-of-last for some finer control."
+Like forward-sexp but moves to the start of the next sexp rather than the
+end of the current one, and so skips leading whitespace etc.
+See versor-allow-move-to-end-of-last for some finer control.
+This is the default implementation (defined as fundamental-mode) and it
+should be used for normal programming language modes, including the various
+kinds of Lisp modes."
   (interactive "p")
   (let* ((where (safe-scan-sexps (point) n))
 	 (one-more (safe-scan-sexps where 1)))
@@ -360,7 +363,11 @@ Makes a two-part selection, of opening and closing brackets."
     (cond
      ((save-excursion
 	(skip-to-actual-code)
-	(looking-at "<[^/]"))
+	(cond
+	 ((memq major-mode '(html-helper-mode html-mode))
+	  (looking-at "<[^/]"))
+	 ((eq major-mode 'latex-mode)
+	  (looking-at "\\\\[a-z]+"))))
       (skip-to-actual-code)
       (nested-blocks-forward))
      ((save-excursion
@@ -395,7 +402,10 @@ Like backward-sexp but stops without error on reaching the start."
 
 (defmodal previous-sexp (fundamental-mode) (n)
   "Move backward N sexps.
-Like backward-sexp but stops without error on reaching the start."
+Like backward-sexp but stops without error on reaching the start.
+This is the default implementation (defined as fundamental-mode) and it
+should be used for normal programming language modes, including the various
+kinds of Lisp modes."
   (interactive "p")
   (let ((where (safe-scan-sexps (point) (- n))))
     (if where
@@ -410,8 +420,14 @@ Like backward-sexp but stops without error on reaching the start."
     (cond
      ((save-excursion
 	(skip-syntax-backward " .")
-	(backward-char 1)
-	(looking-at ">"))
+	(cond
+	 ((memq major-mode '(html-helper-mode html-mode))
+	  (backward-char 1)
+	  (looking-at ">"))
+	 ((eq major-mode 'latex-mode)
+	  (skip-chars-backward "\\a-z{}")
+	  (looking-at "\\\\end{[a-z]+}")
+	  )))
       (skip-to-actual-code-backwards)
       (nested-blocks-backward))
      ((save-excursion
@@ -469,10 +485,10 @@ and never on the space or punctuation before it."
   "Delete N words."
   (interactive "p")
   (versor-as-motion-command item
-   (let* ((spaced (and (= (char-before (car item)) ? )
-		       (= (char-after (cdr item)) ? ))))
-     (delete-region (car item) (cdr item))
-     (if spaced (just-one-space)))))
+    (let* ((spaced (and (= (char-before (car item)) ? )
+			(= (char-after (cdr item)) ? ))))
+      (delete-region (car item) (cdr item))
+      (if spaced (just-one-space)))))
 
 (defun forward-phrase (n)
   "Move forward a phrase, or, with argument, that number of phrases.
