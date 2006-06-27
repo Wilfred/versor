@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-06-08 12:10:07 jcgs>
+;;; Time-stamp: <2006-06-27 12:02:29 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -242,6 +242,14 @@ up for itself only if the command didn't set them for it."
   (setq versor-indication-known-valid nil)
   (delete-versor-overlay))
 
+
+(defvar versor-quiet-commands '(versor-out
+				versor-in
+				versor-next-meta-level
+				versor-prev-meta-level)
+  ;; todo: mention in manual
+  "Commands after which the region description is not announced.")
+
 (defun versor-indicate-current-item ()
   "Make the current item distinctly visible.
 This is intended to be called at the end of all versor commands.
@@ -252,17 +260,25 @@ We assume point to be at the start of the item."
   (condition-case error-var
       (progn
 
-	;; the command we have just run may have set these for us,
-	;; if it knows in such a way that it can tell us much faster
-	;; than we could work out for ourselves; they are cleared at
-	;; the start of each command by
-	;; versor-clear-current-item-indication, which, like us, is
-	;; called by the as-versor-command macro
+	;; The command we have just run may have set these for us, if
+	;; it knows in such a way that it can tell us much faster than
+	;; we could work out for ourselves (only relevant for commands
+	;; written specially for versor -- if it's a command which
+	;; came with GNUemacs, we have to work it out here); they are
+	;; cleared at the start of each command by
+	;; versor-clear-current-item-indication, which, like this
+	;; function, is called by the versor-as-motion-command macro
 
 	(unless (versor-current-item-valid)
 	  (versor-set-current-item
 	   (progn
 	     (when versor-trim-item-starts-to-non-space
+	       ;; To maintain consistency, it generally makes sense to
+	       ;; adjust point so that it's at the start of some
+	       ;; non-blank text; most commands will probably do this
+	       ;; anyway, but here we just make sure, which makes it
+	       ;; easier to borrow underlying commands not written
+	       ;; specially for versor.
 	       (skip-to-actual-code))
 	     (point))
 	   (versor-end-of-item-position)))
@@ -282,18 +298,17 @@ We assume point to be at the start of the item."
 
 	;; re-do this because it somehow gets taken off from time to time
 	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
+	;; Put up a textual description of the selection in the
+	;; mini-buffer; this is probably the most sensible point to
+	;; attach a spoken description in emacspeak.
 	(when (and versor-describe-selection
-		   (not (memq this-command '(versor-out
-					     versor-in
-					     versor-next-meta-level
-					     versor-prev-meta-level))))
-	      (versor-describe-selection)))
+		   (not (memq this-command versor-quiet-commands)))
+	  (versor-describe-selection)))
     (error
      (progn
        ;; (message "Caught error %S in item indication" error-var)
        ;; (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
-       (versor-de-indicate-current-item)
-       ))))
+       (versor-de-indicate-current-item)))))
 
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
