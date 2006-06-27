@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-05-24 16:50:44 jcgs>
+;;; Time-stamp: <2006-06-12 11:47:22 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -257,7 +257,7 @@ P")
 	  (setq binding-points (cdr binding-points)))
 	(unless (eq (point) (car binding-points))
 	  ;; (setq os (cons (make-overlay (point) (point)) os) p (1+ p))
-	  (overlay-put (car os) 'after-string (propertize "final" 'face (cons 'background-color "red")))
+	  ;; (overlay-put (car os) 'after-string (propertize "final" 'face (cons 'background-color "red")))
 	  (setq binding-points (cons (point) binding-points)))
 	(setq binding-points (nreverse binding-points))
 	(when (and (eq nearest 'interactive)
