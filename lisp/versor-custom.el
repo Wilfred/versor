@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-05-19 11:52:55 john>
+;;; Time-stamp: <2006-06-27 11:24:17 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -167,7 +167,13 @@ of it are visible."
   :type 'boolean)
 
 (defcustom versor-trim-item-starts-to-non-space t
-  "*Whether to move the start of the selection so that it is not on the whitespace between items."
+  "*Whether to move the start of the selection so that it is not on the whitespace between items.
+To maintain consistency, it generally makes sense to adjust point so
+that it's at the start of some non-blank text; most commands will
+probably do this anyway, but here we just make sure, which makes it
+easier to borrow underlying commands not written specially for versor.
+However, it's easy to include a flag to switch this off just in case
+anyone prefers it that way."
   :group 'versor
   :type 'boolean)
 
