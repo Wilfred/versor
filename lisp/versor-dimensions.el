@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-06-08 18:32:56 john>
+;;; Time-stamp: <2006-06-24 19:39:58 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -580,11 +580,7 @@ Like assoc, return the element of list for which it matches."
 
 (defvar versor-mode-current-levels nil
   "Alist of mode name symbols to the current meta-level and level for that mode.
-Used by versor-local, but defined in versor-dimensions."
-  ;; I tried getting versor-local's versor-mode-change-function to remember the
-  ;; levels for the mode, but couldn't get it to work -- something about the
-  ;; mode being set strangely in the minibuffer, I think
-)
+Used by versor-local, but defined in versor-dimensions.")
 
 (defvar versor-equivalent-commands
   '(
