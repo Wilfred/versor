@@ -1,5 +1,5 @@
 ;;; versor-text-in-code.el -- versatile cursor handling of strings and comments
-;;; Time-stamp: <2006-04-10 16:09:43 john>
+;;; Time-stamp: <2006-06-26 19:02:48 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -14,7 +14,7 @@
 ;; 
 ;; emacs-versor is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-`;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
 ;; 
 ;; You should have received a copy of the GNU General Public License
@@ -24,10 +24,6 @@
 (provide 'versor-text-in-code)
 (require 'versor-names)
 (require 'versor-dimensions)
-
-(defvar versor-am-in-text-in-code nil
-  "Whether we were last in text embedded in code, i.e. comment or string.
-Local to each buffer.")
 
 (defvar versor-non-text-meta-level (versor-find-meta-level-by-name "cartesian")
   "The meta-level used when last not in a comment or string.")
@@ -48,17 +44,23 @@ Local to each buffer.")
 	  versor-text-meta-level
 	  versor-text-level))
 
+(defun versor-am-in-text ()
+  "Return whether we are in text within code."
+  (let* ((face-here (get-text-property (point) 'face))
+	 (face-before (get-text-property (max (1- (point))
+					      (point-min)) 'face))
+	 (am-in-text (and (memq face-here versor-text-faces)
+			  (memq face-before versor-text-faces))))
+    am-in-text))
+
 (defun versor-text-in-code-function ()
   "Detect whether we have landed in a comment or string, and set versor up accordingly.
 This piggy-backs onto font-lock-mode.
 Meant to go on post-command-hook."
   (when versor-text-in-code
     (condition-case error-var
-	(let* ((face-here (get-text-property (point) 'face))
-	       (face-before (get-text-property (max (1- (point))
-						    (point-min)) 'face))
-	       (am-in-text (and (memq face-here versor-text-faces)
-				(memq face-before versor-text-faces))))
+	(let* ((am-in-text (versor-am-in-text)))
+	  ;; has it changed?
 	  (unless (eq am-in-text versor-am-in-text-in-code)
 	    (setq versor-am-in-text-in-code am-in-text)
 	    (if am-in-text
