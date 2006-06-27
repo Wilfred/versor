@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-05-09 11:25:38 jcgs>
+;;; Time-stamp: <2006-06-25 15:15:02 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -83,9 +83,13 @@ The result is in the form of a property list."
 					     versor-item-attribute)))))
   (versor-speak "moving by %s %s" versor-current-meta-level-name versor-current-level-name)
   ;; remember what dimension we were last in, mode-by-mode
-  (let ((old-pair (assoc major-mode versor-mode-current-levels)))
+  (let* ((mode (if (and versor-text-in-code
+			versor-am-in-text-in-code)
+		   (symbol-name major-mode)
+		 major-mode))
+	 (old-pair (assoc mode versor-mode-current-levels)))
     (if (null old-pair)
-	(push (cons major-mode (cons versor-meta-level versor-level))
+	(push (cons mode (cons versor-meta-level versor-level))
 	      versor-mode-current-levels)
       (rplaca (cdr old-pair) versor-meta-level)
       (rplacd (cdr old-pair) versor-level))))
