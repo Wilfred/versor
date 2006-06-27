@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2006-04-10 10:16:00 john>
+;;; Time-stamp: <2006-06-27 12:33:06 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -65,17 +65,29 @@
   "Display which levels are currently used for each mode."
   (interactive)
   (when (null marked) (setq marked (list major-mode)))
-  (let ((format-string (format "%%c %% %ds: %%s:%%s\n"
+  (let ((format-string (format "%%c %% %ds(%%c): %%s:%%s\n"
 			       (apply 'max
 				      (mapcar 'length
-					      (mapcar 'symbol-name
+					      (mapcar (lambda (name)
+							(if (stringp name)
+							    name
+							  (symbol-name name)))
 						      (mapcar 'car
 							      versor-mode-current-levels)))))))
+    (setq versor-mode-current-levels
+	  (sort versor-mode-current-levels
+		#'(lambda (a b)
+		    (if (string= (car a) (car b))
+			(stringp (car b))
+		      (string< (car a) (car b))))))
     (with-output-to-temp-buffer (if label label "*Modal levels*")
       (dolist (level versor-mode-current-levels)
 	(princ (format format-string
 		       (if (member (car level) marked) ?* ? )
 		       (car level)
+		       (if (stringp (car level))
+			   ?s
+			 ?c)
 		       (aref (aref moves-moves (cadr level)) 0)
 		       (first (aref (aref moves-moves (cadr level))
 				    (cddr level)))))))))
