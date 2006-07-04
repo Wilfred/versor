@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-06-27 12:11:18 jcgs>
+;;; Time-stamp: <2006-07-04 19:24:02 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -250,7 +250,13 @@ When interactive, or with optional third argument non-nil, display the result."
   "If in a comment, move to just before it, else do nothing.
 Returns whether it did anything."
   (if text-mode-variant
-      (when (comment-beginning)
+      (when (eq (get-text-property (point) 'face)
+		'font-lock-comment-face) 
+	;; If we can, get to the start of the comment (but inside it),
+	;; in case there are multiple comment starters. If
+	;; comment-beginning isn't available, we just do what we can.
+	(when comment-end-skip	; comment-beginning needs this non-nil
+	  (comment-beginning))
 	(re-search-backward comment-start-skip (point-min) t))
     (if (safe-scan-lists (point) -1 1)
 	(let* ((bod (save-excursion (beginning-of-defun) (point)))
