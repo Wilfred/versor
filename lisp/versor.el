@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-06-27 17:37:30 john>
+;;; Time-stamp: <2006-07-04 15:02:23 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -306,7 +306,7 @@ The following arguments suppress some of the default behaviours:
     (when (member 'meta keysets)
       (versor-global-set-key [ M-up ]    'versor-prev-meta-level)
       (versor-global-set-key [ M-down ]  'versor-next-meta-level)
-      (versor-global-set-key "\C-?" 'versor-describe-selection))
+      (versor-global-set-key "\C-x?" 'versor-describe-selection))
     (when (member 'ctrl-x keysets)
       (versor-global-set-key [ ?\C-x up ]    'versor-prev-meta-level)
       (versor-global-set-key [ ?\C-x down ]  'versor-next-meta-level)
@@ -415,10 +415,15 @@ The following arguments suppress some of the default behaviours:
 
   (setq versor-setup-done t))
 
+(defvar versor-latest-spoken-message ""
+  "The most recent message to be spoken from Versor.")
+
 (defun versor-speak (format-string &rest args)
   "If versor-speaking is non-nil, say FORMAT-STRING, using it to format ARGS."
-  (when versor-speaking
-    (dtk-speak (apply 'format format-string args))))
+  (let* ((msg (apply 'format format-string args)))
+    (setq versor-latest-spoken-message msg)
+    (when versor-speaking
+      (dtk-speak msg))))
 
 ;;  a little convenience for when editing the source code of versor
 (put 'versor-as-motion-command 'lisp-indent-function 1)
