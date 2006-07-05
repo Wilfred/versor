@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2006-06-27 12:33:06 jcgs>
+;;; Time-stamp: <2006-07-04 16:26:33 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -65,15 +65,17 @@
   "Display which levels are currently used for each mode."
   (interactive)
   (when (null marked) (setq marked (list major-mode)))
-  (let ((format-string (format "%%c %% %ds(%%c): %%s:%%s\n"
-			       (apply 'max
-				      (mapcar 'length
-					      (mapcar (lambda (name)
-							(if (stringp name)
-							    name
-							  (symbol-name name)))
-						      (mapcar 'car
-							      versor-mode-current-levels)))))))
+  (let* ((lengths (mapcar 'length
+			  (mapcar (lambda (name)
+				    (if (stringp name)
+					name
+				      (symbol-name name)))
+				  (mapcar 'car
+					  versor-mode-current-levels))))
+	 (format-string (format "%%c %% %ds: %%s%%s:%%s%%s\n"
+				(if (> (length lengths) 1)
+				    (apply 'max lengths)
+				  20))))
     (setq versor-mode-current-levels
 	  (sort versor-mode-current-levels
 		#'(lambda (a b)
@@ -86,15 +88,24 @@
 		       (if (member (car level) marked) ?* ? )
 		       (car level)
 		       (if (stringp (car level))
-			   ?s
-			 ?c)
+			   "\""
+			 "<")
 		       (aref (aref moves-moves (cadr level)) 0)
 		       (first (aref (aref moves-moves (cadr level))
-				    (cddr level)))))))))
+				    (cddr level)))
+		       (if (stringp (car level))
+			   "\""
+			 ">"))))
+      (princ (if versor-am-in-text-in-code
+		 "\nIn text\n"
+	       "In code\n"))
+      (princ (format "post-command-hook=%S\n" post-command-hook))
+      )))
 
 (defun versor-popup-modal-levels (&optional label marked)
   "Briefly display the modal levels. Mostly for debugging."
   (save-window-excursion
+    (sit-for 2)
     (versor-display-modal-levels label marked)
     (sit-for 4)))
 
@@ -102,15 +113,6 @@
 
 (add-hook 'mode-selection-hook 'versor-mode-change-function)
 (add-hook 'buffer-selection-hook 'versor-buffer-change-function)
-
-(defun versor-mode-levels-triplet (spec)
-  "Convert SPEC to the form needed for versor-mode-current-levels.
-SPEC is a list of mode name (as symbol), meta-level and level names (as strings).
-The result is (mode . (meta . level)) with meta and level as numbers.
-This is a convenience function for use with mapcar for your .emacs to
-produce a ready-made starting point for versor-mode-current-levels."
-  (cons (first spec)
-	(versor-find-level-by-double-name (second spec) (third spec))))
 
 ;;;; end of versor-local.el
 
