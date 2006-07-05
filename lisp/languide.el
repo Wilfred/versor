@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-07-04 19:24:02 john>
+;;; Time-stamp: <2006-07-05 14:48:39 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -246,12 +246,26 @@ When interactive, or with optional third argument non-nil, display the result."
 	(when (interactive-p)
 	  (versor-set-current-items items))))))
 
+(defun in-comment-p ()
+  "Return whether point seems to be in a comment."
+  (if font-lock-mode
+      (eq (get-text-property (point) 'face)
+	  'font-lock-comment-face)
+    (if (equal comment-end "")
+	(save-excursion
+	  (re-search-backward comment-start-skip (point-at-bol) t))
+	(let ((ce (save-excursion
+		    (re-search-backward comment-end-skip (point-min) t)))
+	      (cs (save-excursion
+		    (re-search-backward comment-start-skip (point-min) t))))
+	  (> cs ce)))))
+
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing.
 Returns whether it did anything."
+  (interactive)
   (if text-mode-variant
-      (when (eq (get-text-property (point) 'face)
-		'font-lock-comment-face) 
+      (when (in-comment-p) 
 	;; If we can, get to the start of the comment (but inside it),
 	;; in case there are multiple comment starters. If
 	;; comment-beginning isn't available, we just do what we can.
