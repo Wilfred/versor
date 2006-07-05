@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-07-05 15:52:00 john>
+;;; Time-stamp: <2006-07-05 16:15:29 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -546,6 +546,12 @@ Stay within the current sentence."
 		     (point)))
 	 (using-sentence-start nil)
 	 (in-end-area (save-excursion
+			(when (bolp)
+			  ;; phrase-end recognition can be confused by
+			  ;; being just after a newline that is just
+			  ;; after a phrase end
+			  (end-of-line 0)
+			  (setq old-point (point)))
 			(re-search-backward phrase-end sentence t)
 			(if (>= (match-end 0) old-point)
 			    (match-beginning 0)
