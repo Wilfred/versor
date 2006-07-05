@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-06-27 12:48:30 jcgs>
+;;; Time-stamp: <2006-07-05 15:52:00 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -467,12 +467,36 @@ kinds of Lisp modes."
       (setq p n))
     (goto-char p)))
 
+(defun versor-previous-word (n)
+  "Move backward a word, or, with argument, that number of words.
+Like backward-word but skips comments."
+  (interactive "p")
+  (let ((was-in-comment (in-comment-p)))
+    (while (> n 0)
+      (backward-word 1)
+      (if (in-comment-p)
+	  (unless was-in-comment
+	    (while (in-comment-p)
+	      (backward-out-of-comment)
+	      (backward-word 1)))
+	(when was-in-comment
+	  (comment-search-backward)))
+      (setq n (1- n)))))
+
 (defun versor-next-word (n)
   "Move forward a word, or, with argument, that number of words.
 Like forward-word but leaves point on the first character of the word,
-and never on the space or punctuation before it."
+and never on the space or punctuation before it; and skips comments."
   (interactive "p")
-  (forward-word n)
+  (let ((was-in-comment (in-comment-p)))
+    (while (> n 0)
+      (forward-word 1)
+      (if (in-comment-p)
+	  (unless was-in-comment
+	    (forward-comment 1))
+	(when was-in-comment
+	  (comment-search-forward (point-max))))
+      (setq n (1- n))))
   (skip-syntax-forward "^w"))
 
 (defun versor-end-of-word (n)
