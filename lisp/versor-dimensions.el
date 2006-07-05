@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-06-24 19:39:58 jcgs>
+;;; Time-stamp: <2006-07-04 16:26:33 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -22,6 +22,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (provide 'versor-dimensions)
+(require 'versor-names)
 
 (mapcar 'makunbound '(versor-current-level-name moves-moves versor-meta-level versor-level))
 
@@ -133,8 +134,8 @@ See the definition of versor-make-movemap for details of move maps."
 	  "phrases"
 	  "sentences"
 	  "paragraphs"
-	  "blocks"
-	  "block-depth"
+	  ;; "blocks"
+	  ;; "block-depth"
 	  "cells"
 	  "rows"
 	  "mark-ring"
@@ -335,20 +336,20 @@ See the definition of versor-make-movemap for details of move maps."
 		       (transpose transpose-paragraphs)
 		       (dwim versor-dwim-textually)))
 
-(versor-define-moves movemap-blocks
-		     '((color "green")
-		       (:underline "dark green")
-		       (:foreground "white")
-		       (:background "pale green")
-		       (previous nested-blocks-backward)
-		       (next nested-blocks-forward)))
+;; (versor-define-moves movemap-blocks
+;; 		     '((color "green")
+;; 		       (:underline "dark green")
+;; 		       (:foreground "white")
+;; 		       (:background "pale green")
+;; 		       (previous nested-blocks-backward)
+;; 		       (next nested-blocks-forward)))
 
-(versor-define-moves movemap-block-depth
-		     '((color "orange")
-		       (:foreground "black")
-		       (:background "orange")
-		       (previous nested-blocks-leave-backwards)
-		       (next nested-blocks-enter)))
+;; (versor-define-moves movemap-block-depth
+;; 		     '((color "orange")
+;; 		       (:foreground "black")
+;; 		       (:background "orange")
+;; 		       (previous nested-blocks-leave-backwards)
+;; 		       (next nested-blocks-enter)))
 
 (versor-define-moves movemap-cells
 		     '((color "blue")
@@ -449,9 +450,10 @@ See the definition of versor-make-movemap for details of move maps."
       moves-structured-text (versor-make-movemap-set "structured text"
 						     movemap-chars
 						     movemap-words
-						     ;; movemap-paragraphs
-						     movemap-blocks
-						     movemap-block-depth)
+						     movemap-exprs
+						     movemap-depth
+						     movemap-sentences
+						     movemap-paragraphs)
 
       moves-tables (versor-make-movemap-set "tables"
 					    movemap-chars
@@ -533,7 +535,7 @@ With optional LEVEL-OFFSET, add that to the level first."
 (defvar versor-meta-dimensions-valid-for-modes
   '(((emacs-lisp-mode lisp-mode scheme-mode lisp-interaction-mode)
      t "cartesian" "structural" "text" "program" "markers")
-    ((texinfo-mode tex-mode latex-mode html-mode html-helper-mode)
+    ((texinfo-mode text-mode mail-mode tex-mode latex-mode html-mode html-helper-mode)
      t "cartesian" "structural" "text" "structured text" "tables" "markers")
     ((c-mode perl-mode java-mode)
      t "cartesian" "structural" "program" "text" "markers")
@@ -578,9 +580,41 @@ Like assoc, return the element of list for which it matches."
 	  (and (not allowing) (not mentioned)))))
    (t t)))
 
-(defvar versor-mode-current-levels nil
+(defun versor-mode-levels-triplet (spec)
+  "Convert SPEC to the form needed for versor-mode-current-levels.
+SPEC is a list of mode name (as symbol), meta-level and level names (as strings).
+The result is (mode . (meta . level)) with meta and level as numbers.
+This is a convenience function for use with mapcar for your .emacs to
+produce a ready-made starting point for versor-mode-current-levels."
+  (cons (first spec)
+	(versor-find-level-by-double-name (second spec) (third spec))))
+
+(defvar versor-mode-current-levels 
+  (mapcar 'versor-mode-levels-triplet
+	  '((emacs-lisp-mode "structural" "exprs")
+	    ("emacs-lisp-mode" "text" "words")
+	    (lisp-interaction-mode "structural" "exprs")
+	    (c-mode "program" "statement-parts")
+	    ("c-mode" "text" "words")
+	    (text-mode "cartesian" "lines")
+	    (html-helper-mode "structured text" "words")
+	    ("html-helper-mode" "text" "chars")
+	    (html-mode "structured text" "words")
+	    ("html-mode" "text" "chars")
+	    (latex-mode "structured text" "words")
+	    ("latex-mode" "text" "chars")
+	    (texinfo-mode "structured text" "words")
+	    ("texinfo-mode" "text" "chars")
+	    ))
   "Alist of mode name symbols to the current meta-level and level for that mode.
-Used by versor-local, but defined in versor-dimensions.")
+Used by versor-local, but defined in versor-dimensions.
+To enable per-mode switching of versor dimensions, set the variable
+versor-auto-change-for-modes non-nil.
+As well as mode name symbols, you can put strings naming the modes;
+these specify the meta-level and level to use for embedded strings
+within that mode (such as string literals, and comments).
+To enable the separate handling of embedded text, set 
+versor-text-in-code non-nil.")
 
 (defvar versor-equivalent-commands
   '(
