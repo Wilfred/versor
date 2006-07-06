@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-07-05 16:15:29 john>
+;;; Time-stamp: <2006-07-06 14:48:02 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -407,7 +407,8 @@ This is the default implementation (defined as fundamental-mode) and it
 should be used for normal programming language modes, including the various
 kinds of Lisp modes."
   (interactive "p")
-  (let ((where (safe-scan-sexps (point) (- n))))
+  (let* ((parse-sexp-ignore-comments t)
+	 (where (safe-scan-sexps (point) (- n))))
     (if where
 	(goto-char where)
       (if versor-move-out-when-at-end
