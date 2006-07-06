@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-06-27 11:45:46 jcgs>
+;;; Time-stamp: <2006-07-05 17:24:14 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -447,6 +447,7 @@ With optional LEVEL-OFFSET, add that to the level first."
       (setq versor-extension-direction 'forwards))
     (let ((direction versor-extension-direction))
       (versor-as-motion-command item
+	;; todo: handle unset items
 	(let* ((start (versor-overlay-start item))
 	       (end (versor-overlay-end item)))
 	  (versor-next level-offset)
@@ -467,6 +468,7 @@ With optional LEVEL-OFFSET, add that to the level first."
       (setq versor-extension-direction 'backwards))
     (let ((direction versor-extension-direction))
       (versor-as-motion-command item
+	;; todo: handle unset items
 	(let* ((start (versor-overlay-start item))
 	       (end (versor-overlay-end item)))
 	  (versor-prev level-offset)
