@@ -1,5 +1,5 @@
 ;;;; versor-tracking.el -- tracking ordinary cursor, or using mouse, for versor
-;;; Time-stamp: <2006-04-28 18:51:32 jcgs>
+;;; Time-stamp: <2006-07-07 14:53:16 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -20,15 +20,35 @@
 (defun versor-select-around-point (where)
   "Move the selection to surround WHERE (point, interactively)."
   (interactive "d")
-  (goto-char where)
-  (let* ((item (versor-invent-item))
-	 (start (car item))
-	 (end (cdr item)))
-    (versor-set-current-item start end)
-    (if (< (point) start)
-	(goto-char start)
-      (if (> (point) end)
-	  (goto-char end)))))
+  (versor-as-motion-command old-item
+    (goto-char where)
+    (let* ((item (versor-invent-item))
+	   (start (car item))
+	   (end (cdr item)))
+      (versor-set-current-item start end)
+      (if (< (point) start)
+	  (goto-char start)
+	(if (> (point) end)
+	    (goto-char end))))))
+
+(defun versor-is-selected (position)
+  "Return whether POSITION is within the current versor selection."
+  (catch 'found
+    (let ((pieces (versor-get-current-items)))
+      (while pieces
+	(when (and (>= position (versor-overlay-start (car pieces)))
+		   (<= position (versor-overlay-end (car pieces))))
+	  (throw 'found (car pieces)))
+	(setq pieces (cdr pieces)))
+      nil)))
+
+(defun versor-tracking-hook ()
+  "A post-command-hook function for versor to track normal movements."
+  (save-excursion
+    (condition-case evar
+	(unless nil ; (versor-is-selected (point))
+	  (versor-select-around-point (point)))
+      (error nil))))
 
 (defun versor-mouse-action (event)
   (interactive "e")
@@ -43,8 +63,9 @@
       (when (numberp where)
 	(versor-select-around-point where)))))
 
-(global-set-key [mouse-1]	'versor-mouse-action)
-;; (global-set-key [down-mouse-1]	'versor-mouse-action)
-;; (global-set-key [up-mouse-1]	'versor-mouse-action)
+(defun versor-mouse-setup ()
+  "Make Versor use the mouse."
+  (interactive)
+  (global-set-key [mouse-1] 'versor-mouse-action))
 
 ;;; end of versor-tracking.el
