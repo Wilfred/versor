@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-07-06 14:48:02 john>
+;;; Time-stamp: <2006-07-06 18:29:16 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -359,6 +359,7 @@ kinds of Lisp modes."
 
 (defun next-texp (n)
   "Move to the Nth next text expression."
+  ;; todo: skip comments
   (while (> n 0)
     (cond
      ((save-excursion
@@ -384,8 +385,8 @@ kinds of Lisp modes."
       (forward-word 1)))
     (setq n (1- n))))
 
-(defmodal next-sexp (html-mode html-helper-mode) (n)
-  "next-sexp for html.
+(defmodal next-sexp (html-mode html-helper-mode tex-mode latex-mode) (n)
+  "next-sexp for markup languages.
 Treats paired tags as brackets, and tries to do sensible
 things with natural language punctuation."
   (next-texp n)
@@ -417,6 +418,7 @@ kinds of Lisp modes."
 
 (defun previous-texp (n)
   "Move to the Nth previous text expression."
+  ;; todo: skip comments -- I think skip-to-actual-code-backwards should be doing this, but I'm not convinced that it really is
   (while (> n 0)
     (cond
      ((save-excursion
@@ -447,8 +449,8 @@ kinds of Lisp modes."
       (backward-word 1)))
     (setq n (1- n))))
 
-(defmodal previous-sexp (html-mode html-helper-mode) (n)
-  "Move backward N html blocks."
+(defmodal previous-sexp (html-mode html-helper-mode tex-mode latex-mode) (n)
+  "Move backward N markup blocks."
   (previous-texp n)
   (let ((start (point)))
     (next-texp 1)
