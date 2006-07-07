@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-07-04 15:02:23 john>
+;;; Time-stamp: <2006-07-07 14:50:52 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -246,6 +246,8 @@ amongst the arguments:
                     allowing code-oriented movement in actual code, and
                     text-oriented movement in embedded natural language text
   'menu          -- define a menu of versor commands
+  'mouse         -- define the mouse button to make a versor selection of
+                    the appropriate dimension
   'verbose       -- blather about what it is doing
 
 The following arguments suppress some of the default behaviours:
@@ -276,12 +278,16 @@ The following arguments suppress some of the default behaviours:
   (when (memq 'menu keysets)
     (require 'versor-menu))
 
+  (when (memq 'verbose keysets)
+    (setq versor-verbose t))
+
   (when (memq 'research keysets)
     (require 'versor-research)
     (versor-research-start))
 
-  (when (memq 'verbose keysets)
-    (setq versor-verbose t))
+  (when (memq 'mouse keysets)
+    (require 'versor-tracking)
+    (versor-mouse-setup))
 
   (unless (memq 'use-region-face keysets)
     (setq versor-item-attribute :background))
@@ -289,123 +295,134 @@ The following arguments suppress some of the default behaviours:
   (when (memq 'quiet-underlying keysets)
     (setq versor-display-underlying-commands nil))
 
-  (when (memq 'arrows keysets)
-    (versor-global-set-key [ left ]    'versor-prev)
-    (versor-global-set-key [ right ]   'versor-next)
-    (when (member 'meta keysets)
-      (versor-global-set-key [ M-left ]  'versor-out)
-      (versor-global-set-key [ M-right ] 'versor-in))
-    (when (member 'ctrl-x keysets)
-      (versor-global-set-key [ ?\C-x left ]  'versor-out)
-      (versor-global-set-key [ ?\C-x right ] 'versor-in))
-    (versor-global-set-key [ C-left ]  'versor-extend-item-backwards)
-    (versor-global-set-key [ C-right ] 'versor-extend-item-forwards)
 
-    (versor-global-set-key [ up ]      'versor-over-prev)
-    (versor-global-set-key [ down ]    'versor-over-next)
-    (when (member 'meta keysets)
-      (versor-global-set-key [ M-up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ M-down ]  'versor-next-meta-level)
-      (versor-global-set-key "\C-x?" 'versor-describe-selection))
-    (when (member 'ctrl-x keysets)
-      (versor-global-set-key [ ?\C-x up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ ?\C-x down ]  'versor-next-meta-level)
-      (versor-global-set-key "\C-x?" 'versor-describe-selection))
-    (versor-global-set-key [ C-up ]    'versor-over-start)
-    (versor-global-set-key [ C-down ]  'versor-over-end)
+  (let ((tracking (memq 'tracking keysets)))
 
-    (define-key versor-altering-map [ left ] 'versor-alter-item-prev)
-    (define-key versor-altering-map [ right ] 'versor-alter-item-next)
-    (define-key versor-altering-map [ up ] 'versor-alter-item-over-prev)
-    (define-key versor-altering-map [ down ] 'versor-alter-item-over-next)
-    )
+    (when tracking
+      (require 'versor-tracking)
+      (add-hook 'post-command-hook 'versor-tracking-hook))
 
-  (when (memq 'arrows-misc keysets)
-    ;; todo: I think I can make better use of these -- perhaps put versor-begin-altering-item and versor-dwim on them?
-    (require 'languide-keymap)		; I don't think you can autoload keymaps, but perhaps I should try?
-    (versor-global-set-key [ prior ]   'versor-over-over-prev)
-    (versor-global-set-key [ next ]    'versor-over-over-next)
-    (versor-global-set-key [ C-prior ] 'versor-over-over-start)
-    (versor-global-set-key [ C-next ]  'versor-over-over-end)
+    (when (memq 'arrows keysets)
+      (unless tracking
+	(versor-global-set-key [ left ]    'versor-prev)
+	(versor-global-set-key [ right ]   'versor-next))
+      (when (member 'meta keysets)
+	(versor-global-set-key [ M-left ]  'versor-out)
+	(versor-global-set-key [ M-right ] 'versor-in))
+      (when (member 'ctrl-x keysets)
+	(versor-global-set-key [ ?\C-x left ]  'versor-out)
+	(versor-global-set-key [ ?\C-x right ] 'versor-in))
+      (versor-global-set-key [ C-left ]  'versor-extend-item-backwards)
+      (versor-global-set-key [ C-right ] 'versor-extend-item-forwards)
 
-    (versor-global-set-key [ home ]    'versor-start)
-    (versor-global-set-key [ end ]     'versor-end)
-    (versor-global-set-key [ C-home ]  'versor-start-of-item)
-    (versor-global-set-key [ C-end ]   'versor-end-of-item)
+      (unless tracking
+	(versor-global-set-key [ up ]      'versor-over-prev)
+	(versor-global-set-key [ down ]    'versor-over-next))
+      (when (member 'meta keysets)
+	(versor-global-set-key [ M-up ]    'versor-prev-meta-level)
+	(versor-global-set-key [ M-down ]  'versor-next-meta-level)
+	(versor-global-set-key "\C-x?" 'versor-describe-selection))
+      (when (member 'ctrl-x keysets)
+	(versor-global-set-key [ ?\C-x up ]    'versor-prev-meta-level)
+	(versor-global-set-key [ ?\C-x down ]  'versor-next-meta-level)
+	(versor-global-set-key "\C-x?" 'versor-describe-selection))
+      (versor-global-set-key [ C-up ]    'versor-over-start)
+      (versor-global-set-key [ C-down ]  'versor-over-end)
 
-    (versor-global-set-key [ M-home ] 'versor-dwim)    
+      (define-key versor-altering-map [ left ] 'versor-alter-item-prev)
+      (define-key versor-altering-map [ right ] 'versor-alter-item-next)
+      (define-key versor-altering-map [ up ] 'versor-alter-item-over-prev)
+      (define-key versor-altering-map [ down ] 'versor-alter-item-over-next)
+      )
 
-    ;; todo: why isn't this a normal global-set-key?
-    (define-key (current-global-map) [ insert ]   'versor-insertion-placement-keymap)
-    (versor-global-set-key [ M-insert ] 'versor-begin-altering-item)
-    (define-key global-map [ C-insert ] 'languide-map)
-    (define-key versor-altering-map [ insert ] 'versor-end-altering-item)
-    (define-key versor-altering-map [ return ] 'versor-end-altering-item)
+    (when (memq 'arrows-misc keysets)
+      ;; todo: I think I can make better use of these -- perhaps put versor-begin-altering-item and versor-dwim on them?
+      (require 'languide-keymap) ; I don't think you can autoload keymaps, but perhaps I should try?
+      (versor-global-set-key [ prior ]   'versor-over-over-prev)
+      (versor-global-set-key [ next ]    'versor-over-over-next)
+      (versor-global-set-key [ C-prior ] 'versor-over-over-start)
+      (versor-global-set-key [ C-next ]  'versor-over-over-end)
 
-    (versor-global-set-key [ delete ]   'versor-kill)
-    (versor-global-set-key [ M-delete ] 'versor-copy)
-    (define-key versor-altering-map [ delete ] 'versor-abandon-altering-item)
+      (versor-global-set-key [ home ]    'versor-start)
+      (versor-global-set-key [ end ]     'versor-end)
+      (versor-global-set-key [ C-home ]  'versor-start-of-item)
+      (versor-global-set-key [ C-end ]   'versor-end-of-item)
 
-    (define-key versor-insertion-placement-keymap [ left ]  'versor-insert-before)
-    (define-key versor-insertion-placement-keymap [ right ] 'versor-insert-after)
-    (define-key versor-insertion-placement-keymap [ up ]    'versor-insert-around)
-    (define-key versor-insertion-placement-keymap [ down ]  'versor-insert-within)
-    )
+      (versor-global-set-key [ M-home ] 'versor-dwim)    
 
-  (when (memq 'keypad keysets)
-    (versor-global-set-key [ kp-left ]    'versor-prev)
-    (versor-global-set-key [ kp-right ]   'versor-next)
-    (when (memq 'meta keysets)
-      (versor-global-set-key [ M-kp-left ]  'versor-out)
-      (versor-global-set-key [ M-kp-right ] 'versor-in))
-    (when (memq 'ctrl-x keysets)
-      (versor-global-set-key [ ?\C-x kp-left ]  'versor-out)
-      (versor-global-set-key [ ?\C-x kp-right ] 'versor-in))
-    (versor-global-set-key [ C-kp-left ]  'versor-start)
-    (versor-global-set-key [ C-kp-right ] 'versor-end)
-    (versor-global-set-key [ kp-home ]    'versor-start)
-    (versor-global-set-key [ kp-end ]     'versor-end)
-    (versor-global-set-key [ C-kp-home ]  'versor-start-of-item)
-    (versor-global-set-key [ C-kp-end ]   'versor-end-of-item)
-    (versor-global-set-key [ M-kp-home ] 'versor-dwim)
+      ;; todo: why isn't this a normal global-set-key?
+      (define-key (current-global-map) [ insert ]   'versor-insertion-placement-keymap)
+      (versor-global-set-key [ M-insert ] 'versor-begin-altering-item)
+      (define-key global-map [ C-insert ] 'languide-map)
+      (define-key versor-altering-map [ insert ] 'versor-end-altering-item)
+      (define-key versor-altering-map [ return ] 'versor-end-altering-item)
 
-    (define-key versor-altering-map [ kp-left ] 'versor-alter-item-prev)
-    (define-key versor-altering-map [ kp-right ] 'versor-alter-item-next)
+      (versor-global-set-key [ delete ]   'versor-kill)
+      (versor-global-set-key [ M-delete ] 'versor-copy)
+      (define-key versor-altering-map [ delete ] 'versor-abandon-altering-item)
+
+      (define-key versor-insertion-placement-keymap [ left ]  'versor-insert-before)
+      (define-key versor-insertion-placement-keymap [ right ] 'versor-insert-after)
+      (define-key versor-insertion-placement-keymap [ up ]    'versor-insert-around)
+      (define-key versor-insertion-placement-keymap [ down ]  'versor-insert-within)
+      )
+
+    (when (memq 'keypad keysets)
+      (unless tracking
+	(versor-global-set-key [ kp-left ]    'versor-prev)
+	(versor-global-set-key [ kp-right ]   'versor-next))
+      (when (memq 'meta keysets)
+	(versor-global-set-key [ M-kp-left ]  'versor-out)
+	(versor-global-set-key [ M-kp-right ] 'versor-in))
+      (when (memq 'ctrl-x keysets)
+	(versor-global-set-key [ ?\C-x kp-left ]  'versor-out)
+	(versor-global-set-key [ ?\C-x kp-right ] 'versor-in))
+      (versor-global-set-key [ C-kp-left ]  'versor-start)
+      (versor-global-set-key [ C-kp-right ] 'versor-end)
+      (versor-global-set-key [ kp-home ]    'versor-start)
+      (versor-global-set-key [ kp-end ]     'versor-end)
+      (versor-global-set-key [ C-kp-home ]  'versor-start-of-item)
+      (versor-global-set-key [ C-kp-end ]   'versor-end-of-item)
+      (versor-global-set-key [ M-kp-home ] 'versor-dwim)
+
+      (define-key versor-altering-map [ kp-left ] 'versor-alter-item-prev)
+      (define-key versor-altering-map [ kp-right ] 'versor-alter-item-next)
   
-    (versor-global-set-key [ kp-up ]      'versor-over-prev)
-    (versor-global-set-key [ kp-down ]    'versor-over-next)
-    (when (member 'meta keysets)
-      (versor-global-set-key [ M-kp-up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ M-kp-down ]  'versor-next-meta-level))
-    (when (member 'ctrl-x keysets)
-      (versor-global-set-key [ ?\C-x kp-up ]    'versor-prev-meta-level)
-      (versor-global-set-key [ ?\C-x kp-down ]  'versor-next-meta-level))
-    (versor-global-set-key [ C-kp-up ]    'versor-over-start)
-    (versor-global-set-key [ C-kp-down ]  'versor-over-end)
+      (unless tracking
+	(versor-global-set-key [ kp-up ]      'versor-over-prev)
+	(versor-global-set-key [ kp-down ]    'versor-over-next))
+      (when (member 'meta keysets)
+	(versor-global-set-key [ M-kp-up ]    'versor-prev-meta-level)
+	(versor-global-set-key [ M-kp-down ]  'versor-next-meta-level))
+      (when (member 'ctrl-x keysets)
+	(versor-global-set-key [ ?\C-x kp-up ]    'versor-prev-meta-level)
+	(versor-global-set-key [ ?\C-x kp-down ]  'versor-next-meta-level))
+      (versor-global-set-key [ C-kp-up ]    'versor-over-start)
+      (versor-global-set-key [ C-kp-down ]  'versor-over-end)
 
-    (define-key versor-altering-map [ kp-up ] 'versor-alter-item-over-prev)
-    (define-key versor-altering-map [ kp-down ] 'versor-alter-item-over-next)
+      (define-key versor-altering-map [ kp-up ] 'versor-alter-item-over-prev)
+      (define-key versor-altering-map [ kp-down ] 'versor-alter-item-over-next)
 
-    (versor-global-set-key [ kp-prior ]   'versor-over-over-prev)
-    (versor-global-set-key [ kp-next ]    'versor-over-over-next)
-    (versor-global-set-key [ C-kp-prior ] 'versor-over-over-start)
-    (versor-global-set-key [ C-kp-next ]  'versor-over-over-end))
+      (versor-global-set-key [ kp-prior ]   'versor-over-over-prev)
+      (versor-global-set-key [ kp-next ]    'versor-over-over-next)
+      (versor-global-set-key [ C-kp-prior ] 'versor-over-over-start)
+      (versor-global-set-key [ C-kp-next ]  'versor-over-over-end))
 
-  (when (memq 'keypad-misc keysets)
-    (versor-global-set-key [ kp-enter ]  'versor-copy)
-    (define-key (current-global-map)
-                    [ kp-insert ] 'versor-insertion-placement-keymap)
-    (versor-global-set-key [ kp-delete ] 'versor-kill)
-    (versor-global-set-key [ kp-add ]    'other-window)
+    (when (memq 'keypad-misc keysets)
+      (versor-global-set-key [ kp-enter ]  'versor-copy)
+      (define-key (current-global-map)
+	[ kp-insert ] 'versor-insertion-placement-keymap)
+      (versor-global-set-key [ kp-delete ] 'versor-kill)
+      (versor-global-set-key [ kp-add ]    'other-window)
 
-    (define-key (current-global-map) [ C-kp-delete ]   'versor-begin-altering-item)
-    (define-key global-map [ C-kp-insert ] 'languide-map)
+      (define-key (current-global-map) [ C-kp-delete ]   'versor-begin-altering-item)
+      (define-key global-map [ C-kp-insert ] 'languide-map)
 
-    (define-key versor-insertion-placement-keymap [ kp-left ]  'versor-insert-before)
-    (define-key versor-insertion-placement-keymap [ kp-right ] 'versor-insert-after)
-    (define-key versor-insertion-placement-keymap [ kp-up ]    'versor-insert-around)
-    (define-key versor-insertion-placement-keymap [ kp-down ]  'versor-insert-within)
-    )
+      (define-key versor-insertion-placement-keymap [ kp-left ]  'versor-insert-before)
+      (define-key versor-insertion-placement-keymap [ kp-right ] 'versor-insert-after)
+      (define-key versor-insertion-placement-keymap [ kp-up ]    'versor-insert-around)
+      (define-key versor-insertion-placement-keymap [ kp-down ]  'versor-insert-within)
+      ))
 
   (setq versor-mode t)
   
