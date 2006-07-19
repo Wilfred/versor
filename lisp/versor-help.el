@@ -1,5 +1,5 @@
 ;;;; versor-help.el -- help for versor
-;;; Time-stamp: <2006-05-19 11:06:25 john>
+;;; Time-stamp: <2006-07-18 09:39:27 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -91,7 +91,6 @@
 				       (lambda (a b)
 					 (let ((ca (car a))
 					       (cb (car b)))
-					   ;; (message "Comparing %S (%S) with %S (%S)" a (type-of a) b (type-of b))
 					   (if (symbolp ca)
 					       (if (symbolp cb)
 						   (string< (symbol-name ca) (symbol-name cb))
@@ -100,7 +99,7 @@
 						 t
 					       (< ca cb))))))))))
 	      (princ "\n\nThis can be followed by any of the following ways of getting an\n")
-	      (princ "insertable string or strings (where N is 2 if inserting around the")
+	      (princ "insertable string or strings (where N is 2 if inserting around the\n")
 	      (princ "selection, else 1):")
 	      (while kinds
 		(let ((kd (documentation (cdar kinds))))
