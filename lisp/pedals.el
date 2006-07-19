@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2006-05-19 11:18:02 john>
+;;; Time-stamp: <2006-07-19 12:23:23 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -276,15 +276,15 @@ This symbol may be given inside a vector to define-key etc")
        pedal-aux [ kp-end ]
        pedal-C-aux [ C-kp-end ]
        pedal-M-aux [ M-kp-end ]
-       pedal-S-aux [ end ]
-       pedal-C-S-aux [ C-end ]
+       pedal-S-aux [ S-kp-end ]
+       pedal-C-S-aux [ C-S-kp-end ]
        pedal-M-S-aux [ M-S-kp-end ]	; unfortunately not distinguishable by help?
        pedal-C-M-S-aux [ C-M-S-kp-1 ]
 
        pedal-menu [ kp-next ]
        pedal-C-menu [ C-kp-next ]
        pedal-M-menu [ M-kp-next ]
-       pedal-S-menu [ next ] ; pedal-S-menu [ kp-next ]
+       pedal-S-menu [ S-kp-next ]
        pedal-C-S-menu [ C-S-kp-next ]
        pedal-M-S-menu [ M-S-kp-next ]
        pedal-C-M-S-menu [ C-M-S-kp-next ]
