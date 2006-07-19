@@ -1,5 +1,5 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2006-05-10 20:27:13 jcgs>
+;;; Time-stamp: <2006-07-18 10:25:20 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -25,6 +25,12 @@
 ;; less pleasing -- the rest was really fiddly
 
 (provide 'nested-blocks)
+
+;; We define each part of the syntax for each major mode by an alist
+;; of major mode name to regular expression. An alternative would be
+;; to make these buffer-local variables, and set them up in a hook for
+;; each major mode. I think that would be clumsier than this, and
+;; harder to find the necessary data if you want to make any changes.
 
 (defvar nested-blocks-mode-starts
   ;; todo: update to include TeX family and sh
@@ -62,16 +68,22 @@
 
 (defvar nested-blocks-mode-ignorables
   ;; todo: update to include TeX family and sh
-  ;; todo: should have a way of saying that something is a start and an implicit end, like <li> in HTML and @section in LaTeX
   '((html-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\(meta\\)\\)")
     (html-helper-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\([hb]r\\)\\|\\(img\\)\\|\\(meta\\)\\|\\(![a-z]\\)\\)")
     (sgml-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\)")
     (t .  ";"))
   "Alist showing things that look like nested block structure but are not.")
 
+(defvar nested-blocks-mode-list-items
+  '((html-mode . "<\\(li\\)[^>]*>")
+    (html-helper-mode . "<\\(li\\)[^>]*>")
+    (latex-mode . "\\\\\\(item\\|chapter\\|\\(sub\\)*section\\)"))
+  "Alist showing list item separators for each mode.
+This is for any markup syntax that does not have a beginning and an end, but occurs in a sequence of the same type.")
+
 (defvar nested-blocks-mode-any
   ;; todo: update to include TeX family and sh
-  '((latex-mode . "\\(\\\\\\(begin\\|end\\){\\([a-z]+\\)}\\)")
+  '((latex-mode . "\\\\\\(\\(\\(begin\\|end\\){\\([a-z]+\\)}\\)\\|item\\|chapter\\|\\(sub\\)*section\\)")
     (c-mode . "[({})]")
     (html-mode . "</?\\([^>]+\\)>")
     (html-helper-mode . "\\(<!--\\)\\|\\(</?\\([^>]+\\)>\\)\\|\\(-->\\)")
@@ -84,8 +96,10 @@ It's a bit clumsy for the programmer to have to declare it explicitly
 but the performance should be a lot better than combining them
 automatically, given the nature, for example, of HTML blocks.")
 
+;; Now some functions to access the elements of the alists above:
+
 (defun nested-blocks-start ()
-  "Alist of major mode to the starter for nested blocks in this mode.
+  "For this major mode, look up the starter for nested blocks in this mode.
 A sensible default is provided if no mode-specific value is available."
   (let ((pattern (cdr (assoc major-mode nested-blocks-mode-starts))))
     (if pattern
@@ -93,7 +107,7 @@ A sensible default is provided if no mode-specific value is available."
       (cdr (assoc t nested-blocks-mode-starts)))))
 
 (defun nested-blocks-end ()
-  "Alist of major mode to the ender for nested blocks in this mode.
+  "For this major mode, look up the ender for nested blocks in this mode.
 A sensible default is provided if no mode-specific value is available."
   (let ((pattern (cdr (assoc major-mode nested-blocks-mode-ends))))
     (if pattern
@@ -101,7 +115,7 @@ A sensible default is provided if no mode-specific value is available."
       (cdr (assoc t nested-blocks-mode-ends)))))
 
 (defun nested-blocks-comment-start ()
-  "Alist of major mode to the starter for nested blocks in this mode.
+  "For this major mode, look up the starter for nested blocks in this mode.
 A sensible default is provided if no mode-specific value is available."
   (let ((pattern (cdr (assoc major-mode nested-blocks-mode-comment-starts))))
     (if pattern
@@ -109,7 +123,7 @@ A sensible default is provided if no mode-specific value is available."
       (cdr (assoc t nested-blocks-mode-comment-starts)))))
 
 (defun nested-blocks-comment-end ()
-  "Alist of major mode to the ender for nested blocks in this mode.
+  "For this major mode, look up the ender for nested blocks in this mode.
 A sensible default is provided if no mode-specific value is available."
   (let ((pattern (cdr (assoc major-mode nested-blocks-mode-comment-ends))))
     (if pattern
@@ -117,55 +131,50 @@ A sensible default is provided if no mode-specific value is available."
       (cdr (assoc t nested-blocks-mode-comment-ends)))))
 
 (defun nested-blocks-ignore ()
-  "Alist of major mode to the \"ignorables\" regexp for nested blocks in this mode.
+  "For this major mode, look up the \"ignorables\" regexp for nested blocks in this mode.
 A sensible default is provided if no mode-specific value is available."
   (let ((pattern (cdr (assoc major-mode nested-blocks-mode-ignorables))))
     (if pattern
 	pattern
       (cdr (assoc t nested-blocks-mode-ignorables)))))
 
+(defun nested-blocks-list-item ()
+  "For this major mode, look up the list-item regexp for nested blocks in this mode.
+A sensible default is provided if no mode-specific value is available."
+  (let ((pattern (cdr (assoc major-mode nested-blocks-mode-list-items))))
+    (if pattern
+	pattern
+      (cdr (assoc t nested-blocks-mode-list-items)))))
+
 (defun nested-blocks-any ()
-  "Alist of major mode to the start-or-ender-or-ignorable regexp for nested blocks in this mode.
+  "For this major mode, look up the start-or-ender-or-ignorable regexp for nested blocks in this mode.
 A sensible default is provided if no mode-specific value is available."
   (let ((pattern (cdr (assoc major-mode nested-blocks-mode-any))))
     (if pattern
 	pattern
       (cdr (assoc t nested-blocks-mode-any)))))
 
+;;; Movement commands
+
 (defun nested-blocks-enter ()
   "Into the next nested block forwards."
   (interactive)
-  ;; (re-search-forward (nested-blocks-start))
-  (nested-blocks-forward 1 1)
-  )
+  (nested-blocks-forward 1 1))
 
 (defun nested-blocks-leave ()
   "Move forwards out of current nested block."
   (interactive)
-  ;;(re-search-forward (nested-blocks-end))
-  (nested-blocks-forward 1 -1)
-  )
+  (nested-blocks-forward 1 -1))
 
 (defun nested-blocks-leave-backwards ()
   "Move backwards out of current nested block."
   (interactive)
-  ;;(re-search-backward (nested-blocks-start))
-  (nested-blocks-backward 1 -1)
-  )
+  (nested-blocks-backward 1 -1))
 
-(defun nested-blocks-another ()
-  "Use the nested block behind point as a template to insert a new one."
-  (interactive)
-  (let ((template (save-excursion
-		    (nested-blocks-backward)
-		    (let ((start (point)))
-		      (nested-blocks-forward)
-		      (nested-blocks-template start (point))))))
-    (apply 'insert template)))
-
-(defvar number-colours (vector "red" "pink" "orange" "yellow" "green"
+(defvar nested-blocks-number-colours (vector "red" "pink" "orange" "yellow" "green"
 			       "cyan" "sky blue" "deep sky blue" "dodger blue"
-			       "purple" "white" "grey" "brown"))
+			       "purple" "white" "grey" "brown")
+  "For debugging nested-blocks.")
 
 (defvar nested-blocks-debug nil
   "*Whether to output messages while moving around nested blocks.")
@@ -185,60 +194,78 @@ Second argument says what level to stop at."
 	(end (nested-blocks-end))
 	(comment-start (nested-blocks-comment-start))
 	(comment-end (nested-blocks-comment-end))
+	(list-item (nested-blocks-list-item))
 	(any (nested-blocks-any))
 	(ignore (nested-blocks-ignore))
 	(depth 0)
-	(comment-depth 0)
-	)
+	(comment-depth 0))
     (unless (numberp n) (setq n 1))
     (unless (numberp d) (setq d 0))
     (when nested-blocks-debug
-      (message "trying to classify tags, using any=\"%s\" start=\"%s\" end=\"%s\" ignore=\"%s\"" any start end ignore))
+      (message "trying to classify tags, using any=\"%s\" start=\"%s\" end=\"%s\" list-item=\"%s\" ignore=\"%s\""
+	       any start end list-item ignore))
     (while (> n 0)
-      (catch 'found
-	(while (re-search-forward any (point-max) t)
-	  (save-match-data
-	    (let ((starting (match-beginning 0))
-		  (ending (match-end 0))
-		  (old-depth depth))
-	      (when nested-blocks-debug
-		(message "At %d:\"%s\"" (point) (buffer-substring-no-properties starting ending)))
-	      (save-excursion
-		(goto-char (match-beginning 0))
-		(cond
-		 ((and comment-start (looking-at comment-start))
-		  (setq comment-depth (1+ comment-depth))
-		  (when nested-blocks-debug
-		    (message "deeper comment: %d" comment-depth)))
-		 ((and comment-end (looking-at comment-end))
-		  (setq comment-depth (1- comment-depth))
-		  (when nested-blocks-debug
-		    (message "shallower comment: %d" comment-depth)))
-		 ((and ignore (looking-at ignore))
-		  (when nested-blocks-debug
-		    (message "ignoring: %d" depth))
-		  t)
-		 ((looking-at start)
-		  (when (zerop comment-depth)
-		    (setq depth (1+ depth)))
-		  (when nested-blocks-debug
-		    (message "deeper: %d%s" depth (if (zerop comment-depth) "" " but in comment"))))
-		 ((looking-at end)
-		  (when (zerop comment-depth)
-		    (setq depth (1- depth)))
-		  (when nested-blocks-debug
-		    (message "shallower: %d%s" depth (if (zerop comment-depth) "" " but in comment"))))
-		 (t (error
-		     "inconsistency in nested-block patterns: \"%s\" matched \"any\" but nothing specific"
-		     (buffer-substring-no-properties starting ending))))
-		(when nested-blocks-debug-show-structure
-		  (put-text-property (if (< depth old-depth) ending starting) (point-max)
-				     'face (cons 'background-color
-						 (aref number-colours depth))))
-		(when (= depth d)
-		  (throw 'found (point))))))
-	  nil))
+      (let ((on-list (save-match-data
+		       (if (looking-at list-item)
+			   (match-string-no-properties 1)
+			 nil))))
+	(when on-list
+	  (goto-char (match-end 0)))
+	(goto-char
+	 (catch 'found
+	   (while (re-search-forward any (point-max) t)
+	     (save-match-data
+	       (let ((starting (match-beginning 0))
+		     (ending (match-end 0))
+		     (old-depth depth))
+		 (when nested-blocks-debug
+		   (message "At %d:\"%s\"" (point) (buffer-substring-no-properties starting ending)))
+		 (save-excursion
+		   (goto-char starting)
+		   (cond
+		    ((and comment-start (looking-at comment-start))
+		     (setq comment-depth (1+ comment-depth))
+		     (when nested-blocks-debug
+		       (message "deeper comment: %d" comment-depth)))
+		    ((and comment-end (looking-at comment-end))
+		     (setq comment-depth (1- comment-depth))
+		     (when nested-blocks-debug
+		       (message "shallower comment: %d" comment-depth)))
+		    ((and list-item (looking-at list-item))
+		     (when nested-blocks-debug
+		       (message "list item at %d (%s)" depth (if on-list "working on list" "not not on list"))))
+		    ((and ignore (looking-at ignore))
+		     (when nested-blocks-debug
+		       (message "ignoring: %d" depth))
+		     t)
+		    ((looking-at start)
+		     (when (zerop comment-depth)
+		       (setq depth (1+ depth)))
+		     (when nested-blocks-debug
+		       (message "deeper: %d%s" depth (if (zerop comment-depth) "" " but in comment"))))
+		    ((looking-at end)
+		     (when (zerop comment-depth)
+		       (setq depth (1- depth)))
+		     (when nested-blocks-debug
+		       (message "shallower: %d%s" depth (if (zerop comment-depth) "" " but in comment"))))
+		    (t (error
+			"inconsistency in nested-block patterns: \"%s\" matched \"any\" but nothing specific"
+			(buffer-substring-no-properties starting ending))))
+		   (when nested-blocks-debug-show-structure
+		     (put-text-property (if (< depth old-depth) ending starting) (point-max)
+					'face (cons 'background-color
+						    (aref nested-blocks-number-colours depth))))
+		   (if on-list
+		       (when (or (< depth d)
+				 (and (looking-at list-item)
+				      (string= (match-string-no-properties 1) on-list)
+				      (= depth d)))
+			 (throw 'found starting))
+		     (when (= depth d) 
+		       (throw 'found ending))))))
+	     nil))))
       (setq n (1- n)))
+    (when nested-blocks-debug (message "nested-blocks-forward selecting %d..%d" starting-point (point)))
     (versor-set-current-item starting-point (point))))
 
 (defun nested-blocks-backward (&optional n d)
@@ -249,6 +276,7 @@ Second argument says what level to stop at."
   (interactive "p")
   (let ((start (nested-blocks-start))
 	(end (nested-blocks-end))
+	(list-item (nested-blocks-list-item))
 	(comment-start (nested-blocks-comment-start))
 	(comment-end (nested-blocks-comment-end))
 	(any (nested-blocks-any))
@@ -276,6 +304,9 @@ Second argument says what level to stop at."
 		  (setq comment-depth (1- comment-depth))
 		  (when nested-blocks-debug
 		    (message "shallower comment: %d" comment-depth)))
+		 ((and list-item (looking-at list-item))
+		  (when nested-blocks-debug
+		    (message "list item at %d" depth)))
 		 ((and ignore (looking-at ignore))
 		  (when nested-blocks-debug
 		    (message "ignoring: %d" depth))
@@ -297,6 +328,8 @@ Second argument says what level to stop at."
 		    (throw 'found (point))))))))
       (setq n (1- n)))))
 
+;;; Use of blocks as templates
+
 (defun nested-blocks-template (start end)
   "Make a nested block template from the buffer between START and END.
 This is a list of strings."
@@ -309,5 +342,15 @@ This is a list of strings."
 	(push (buffer-substring-no-properties (match-beginning 0) (match-end 0))
 	      template))
       (nreverse template))))
+
+(defun nested-blocks-another ()
+  "Use the nested block behind point as a template to insert a new one."
+  (interactive)
+  (let ((template (save-excursion
+		    (nested-blocks-backward)
+		    (let ((start (point)))
+		      (nested-blocks-forward)
+		      (nested-blocks-template start (point))))))
+    (apply 'insert template)))
 
 ;; end of nested-blocks.el
