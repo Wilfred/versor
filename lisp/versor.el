@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-07-07 14:50:52 john>
+;;; Time-stamp: <2006-07-18 13:01:22 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -182,8 +182,11 @@ With arg, turn Versor mode on if and only if arg is positive."
 		  '(""		; needed to stop fancy control actions
 					; in the rest of this list
 		    versor-mode-line-begin-string
-		    versor-current-meta-level-name ":"
-		    versor-current-level-name
+		    versor-current-meta-level-name ":")
+		  (if versor-mode-line-show-both-dimensions
+		      '(versor-current-over-level-name "/")
+		    nil)
+		  '(versor-current-level-name
 		    versor-mode-line-end-string)))))
 
 (defun versor-disable-mode-line-display ()
@@ -193,7 +196,11 @@ With arg, turn Versor mode on if and only if arg is positive."
       (while rest
 	(if (eq (cadr (cdr rest)) 'versor-mode-line-begin-string)
 	    (progn
-	      (rplacd rest (nthcdr 7 rest))
+	      (rplacd rest (nthcdr
+			    (if (memq 'versor-current-over-level-name rest)
+				9
+			      7)
+			    rest))
 	      (setq rest nil))
 	  (setq rest (cdr rest)))))))
 
