@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-07-05 15:53:30 john>
+;;; Time-stamp: <2006-07-11 11:17:32 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -505,6 +505,9 @@ With optional LEVEL-OFFSET, add that to the level first."
 (defun versor-action (level action)
   "From LEVEL get ACTION, which will be a move such as next or previous."
   (cdr (assoc action level)))
+
+(defvar versor-current-over-level-name (first (versor-current-level 1))
+  "The name of the current versor level, for display in the global-mode-string")
 
 (defvar versor-current-level-name (first (versor-current-level))
   "The name of the current versor level, for display in the global-mode-string")
