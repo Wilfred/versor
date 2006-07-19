@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-06-27 11:24:17 jcgs>
+;;; Time-stamp: <2006-07-18 15:30:32 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -92,6 +92,12 @@ and going forward from the last meta-level takes you to the first one."
   "How Versor displays its status information."
   :group 'versor)
 
+(defcustom versor-mode-line-show-both-dimensions t
+  "*Whether to show the major dimension as well as the minor dimension, in the mode line.
+You might want to turn this off if your mode line is already has a lot in it."
+  :type 'boolean
+  :group 'versor-status)
+
 (defcustom versor-multi-line-level-display (and (boundp 'emacs-major-version)
 					     (>= emacs-major-version 21))
   "*Whether to use multi-line indication of the current meta-level and level."
@@ -151,6 +157,14 @@ code that it may have a specific way of handling."
 (defcustom region-type-description-always nil
   "Whether to show the region type even if it is banal."
   :type 'boolean
+  :group 'versor-status)
+
+(defcustom languide-text-word-counters
+  '((tex-mode . tex-count-words)
+    (latex-mode . tex-count-words))
+  "*How versor should announce the number of words in the selection.
+This is only meant for text-based modes."
+  :type 'alist
   :group 'versor-status)
 
 (defcustom versor-speaking (featurep 'emacspeak)
