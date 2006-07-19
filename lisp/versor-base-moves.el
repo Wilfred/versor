@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-07-06 18:29:16 jcgs>
+;;; Time-stamp: <2006-07-18 15:18:58 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -32,20 +32,20 @@
   "Like forward-paragraph, but don't end up on a blank line."
   (interactive "p")
   (forward-paragraph n)
-  (message "forward-paragraph %d; then forward over blank lines" n)
+  ;; (message "forward-paragraph %d; then forward over blank lines" n)
   (if (> n 0)
       (while (looking-at "^$")
-	(message "skipping blank line at start of paragraph")
+	;; (message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
 (defun versor-backward-paragraph (&optional n)
   "Like backward-paragraph, but don't end up on a blank line."
   (interactive "p")
   (backward-paragraph (1+ n))
-  (message "backward-paragraph %d; then forward over blank lines" n)
+  ;; (message "backward-paragraph %d; then forward over blank lines" n)
   (if (> n 0)
       (while (looking-at "^$")
-	(message "skipping blank line at start of paragraph")
+	;; (message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
 (defun versor-end-of-paragraph (&optional arg)
@@ -188,7 +188,7 @@ Makes a two-part selection, of opening and closing brackets."
     (versor-extra-overlay (1- end) end)
     (cons start end)))
 
-(defmodal versor-backward-up-list (html-mode html-helper-mode) (arg)
+(defmodal versor-backward-up-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
   "Like backward-up-list, but with versor stuff around it, and for HTML blocks."
   (nested-blocks-leave-backwards)
   (when (looking-at (nested-blocks-start))
@@ -214,14 +214,20 @@ Makes a two-part selection, of opening and closing brackets."
     (previous-sexp 1)
     (safe-down-list args))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
-  (make-versor-overlay (point) (1+ (point))) ; TODO: should probably be versor-set-current-item
-  (when (looking-at "\\s(")
-    (save-excursion
+  (if (looking-at "\\s(")
+      (save-excursion
+	(versor-set-current-item (point) (1+ (point)))
+	(forward-sexp 1)
+	;; (message "extra overlay at %d..%d" (1- (point)) (point))
+	;; TODO: should probably be versor-add-to-current-item when I've written one
+	(versor-extra-overlay (1- (point)) (point)))
+    (let ((start (point)))
       (forward-sexp 1)
-      ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-      (versor-extra-overlay (1- (point)) (point))))) ; TODO: should probably be versor-add-to-current-item when I've written one
+      (versor-set-current-item start (point))
+      (goto-char start))
+    ))
 
-(defmodal versor-down-list (html-mode html-helper-mode) (arg)
+(defmodal versor-down-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
   "Like down-list, but with versor stuff around it, and for HTML block structure."
   (nested-blocks-enter)
   (let ((start (point)))
@@ -358,31 +364,49 @@ kinds of Lisp modes."
 	(message "No more sexps")))))
 
 (defun next-texp (n)
-  "Move to the Nth next text expression."
+  "Move to the Nth next text expression.
+Treat tagged markup blocks like bracketted expressions.
+Treat paragraphs (in languages where they are marked by blank lines) as though
+they had markup tags. Likewise, treat sentences as blocks."
   ;; todo: skip comments
   (while (> n 0)
-    (cond
-     ((save-excursion
+    (let ((start (point)))
+      (cond
+       ;; tagged blocks
+       ((save-excursion
+	  (skip-to-actual-code)
+	  (cond
+	   ((memq major-mode '(html-helper-mode html-mode))
+	    (looking-at "<[^/]"))
+	   ((eq major-mode 'latex-mode)
+	    (looking-at "\\\\[a-z]+"))))
 	(skip-to-actual-code)
-	(cond
-	 ((memq major-mode '(html-helper-mode html-mode))
-	  (looking-at "<[^/]"))
-	 ((eq major-mode 'latex-mode)
-	  (looking-at "\\\\[a-z]+"))))
-      (skip-to-actual-code)
-      (nested-blocks-forward))
-     ((save-excursion
-	(skip-syntax-backward " ")
-	(looking-at sentence-end))
-      (skip-to-actual-code)
-      (forward-sentence))
-     ((save-excursion
+	(nested-blocks-forward))
+       ;; paragraphs
+       ((save-excursion
+	  (goto-char (max (save-excursion
+			    (beginning-of-line 0)
+			    (back-to-indentation)
+			    (point))
+			  start))
+	  (looking-at paragraph-start))
+	(forward-paragraph)
+	(skip-to-actual-code))
+       ;; sentences
+       ((save-excursion
+	  (skip-syntax-backward " " start)
+	  (looking-at sentence-end))
 	(skip-to-actual-code)
-	(looking-at "[[({]"))
-      (skip-to-actual-code)
-      (forward-sexp 1))
-     (t
-      (forward-word 1)))
+	(forward-sentence))
+       ;; brackets
+       ((save-excursion
+	  (skip-to-actual-code)
+	  (looking-at "[[({]"))
+	(skip-to-actual-code)
+	(forward-sexp 1))
+       ;; if nothing else, take a word as an expression
+       (t
+	(forward-word 1))))
     (setq n (1- n))))
 
 (defmodal next-sexp (html-mode html-helper-mode tex-mode latex-mode) (n)
@@ -390,7 +414,9 @@ kinds of Lisp modes."
 Treats paired tags as brackets, and tries to do sensible
 things with natural language punctuation."
   (next-texp n)
-  (skip-syntax-forward " .")
+  ;; (message "next-sexp skipping from %d" (point))
+  (skip-syntax-forward " .>")
+  ;; (message "next-sexp skipped to %d" (point))
   (let ((start (point)))
     (next-texp 1)
     (versor-set-current-item start (point))
@@ -417,10 +443,13 @@ kinds of Lisp modes."
 	(message "No more previous sexps")))))
 
 (defun previous-texp (n)
-  "Move to the Nth previous text expression."
+  "Move to the Nth previous text expression.Treat tagged markup blocks like bracketted expressions.
+Treat paragraphs (in languages where they are marked by blank lines) as though
+they had markup tags. Likewise, treat sentences as blocks."
   ;; todo: skip comments -- I think skip-to-actual-code-backwards should be doing this, but I'm not convinced that it really is
   (while (> n 0)
     (cond
+     ;; tagged blocks
      ((save-excursion
 	(skip-syntax-backward " .")
 	(cond
@@ -428,25 +457,37 @@ kinds of Lisp modes."
 	  (backward-char 1)
 	  (looking-at ">"))
 	 ((eq major-mode 'latex-mode)
-	  (skip-chars-backward "\\a-z{}")
-	  (looking-at "\\\\end{[a-z]+}")
-	  )))
+	  (skip-chars-backward "\\\\a-z{}")
+	  (looking-at "\\\\end{[a-z]+}"))))
       (skip-to-actual-code-backwards)
       (nested-blocks-backward))
+    ;; paragraphs 
+     ((save-excursion
+	(beginning-of-line 0)
+	(back-to-indentation) 
+	(looking-at paragraph-start))
+      (backward-paragraph 2)
+      (skip-to-actual-code))
+     ;; sentences
      ((save-excursion
 	(skip-syntax-backward " ")
 	(backward-char 1)
 	(looking-at sentence-end))
       (skip-to-actual-code-backwards)
       (backward-sentence))
+     ;; brackets
      ((save-excursion
 	(skip-to-actual-code-backwards)
 	(backward-char 1)
 	(looking-at "[])}]"))
       (skip-to-actual-code-backwards)
       (backward-sexp 1))
+     ;; words, but if it's really a tag, go back to the start of the tag syntax
      (t
-      (backward-word 1)))
+      (backward-word 1)
+      (when (or (eq (char-before) ?\\)
+		(eq (char-before) ?<))
+	(backward-char 1))))
     (setq n (1- n))))
 
 (defmodal previous-sexp (html-mode html-helper-mode tex-mode latex-mode) (n)
