@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-07-05 14:48:39 john>
+;;; Time-stamp: <2006-07-18 15:34:49 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -228,12 +228,19 @@ When interactive, or with optional third argument non-nil, display the result."
 
 (defvar languide-supported-modes
   '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode)
-  "Modes for which languide has support.")
+  "Modes for which Languide has support.")
 
 (defun versor-describe-selection ()
-  "Show the type of the selected region"
+  "Show the type of the Versor selection."
   (interactive)
-  (when (memq major-mode languide-supported-modes)
+  (cond
+   (nil					; todo: needs further work
+    (assq major-mode languide-text-word-counters)
+    (save-excursion
+    (funcall (cdr (assq major-mode languide-text-word-counters))
+	     (versor-overlay-start item)
+	     (versor-overlay-end item))))
+   ((memq major-mode languide-supported-modes)
     (save-excursion
       (let* ((items (versor-get-current-items))
 	     (item (car items))
@@ -244,7 +251,7 @@ When interactive, or with optional third argument non-nil, display the result."
 	  (message "%s" description)
 	  (versor-speak "%s" description))
 	(when (interactive-p)
-	  (versor-set-current-items items))))))
+	  (versor-set-current-items items)))))))
 
 (defun in-comment-p ()
   "Return whether point seems to be in a comment."
