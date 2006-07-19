@@ -1,5 +1,5 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2006-04-30 17:57:57 jcgs>
+;;; Time-stamp: <2006-07-18 20:12:02 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -46,11 +46,13 @@ Generated automatically from the movement dimensions table, moves-moves.")
   "Define the vocal commands."
   (interactive)
   (dolist (level (versor-all-level-names))
+    ;; define a command to select this level
     (let* ((selector-function-name (intern (concat "versor-select-" level)))
-	   (selector-function-body `(lambda ()
-				      ,(format "Set the versor dimension to %s." level)
-				      (interactive)
-				      (versor-select-named-level ,level)))
+	   (selector-function-body
+	    `(lambda ()
+	       ,(format "Set the versor dimension to %s.\n\nThis function was generated automatically by define-versor-vocal." level)
+	       (interactive)
+	       (versor-select-named-level ,level)))
 	   )
       ;; (message "Defining %S to be %S" selector-function-name selector-function-body)
       (fset selector-function-name selector-function-body)
@@ -61,29 +63,53 @@ Generated automatically from the movement dimensions table, moves-moves.")
 	       vr-versor-dimension-command-list
 	       :test 'equal))
 
+    ;; for this level, define the four versor movements
     (dolist (action '("first" "previous" "next" "last"))
       (let* ((unit (singular level))
 	     (action-function-name (intern (format "versor-voice-%s-%s" action unit)))
 	     (action-voice-command (format "%s %s" action unit))
-	     (action-function-body `(lambda (n)
-				      ,(format "Move to the %s %s" action level)
-				      (interactive "p")
-				      (let* ((level-pair (versor-find-level-by-single-name ,level))
-					     (versor-meta-level-shadow (car level-pair))
-					     (versor-level-shadow (cdr level-pair))
-					     (action (versor-get-action ',(intern action))))
-					(funcall action n)))))
+	     (action-function-body
+	      `(lambda (n)
+		 ,(format "Move to the %s %s\n\nThis function was generated automatically by define-versor-vocal."
+			  action level)
+		 (interactive "p")
+		 (let* ((level-pair (versor-find-level-by-single-name ,level))
+			(versor-meta-level-shadow (car level-pair))
+			(versor-level-shadow (cdr level-pair))
+			(action (versor-get-action ',(intern action))))
+		   (funcall action n)))))
 	(unless (boundp action-function-name)
 	  (fset action-function-name action-function-body))
 	(pushnew (cons action-voice-command action-function-name)
 		 vr-versor-dimension-command-list
-		 :test 'equal))))
+		 :test 'equal)))
+
+    ;; (dolist (action '("start of" "end of"))
+;;       (let* ((unit (singular level))
+;; 	     (action-function-name (intern (format "versor-voice-%s-%s" action unit)))
+;; 	     (action-voice-command (format "%s %s" action unit))
+;; 	     (action-function-body
+;; 	      `(lambda (n)
+;; 		 ,(format "Move to the %s the %s\n\nThis function was generated automatically by define-versor-vocal."
+;; 			  action level)
+;; 		 (interactive "p")
+;; 		 (let* ((level-pair (versor-find-level-by-single-name ,level))
+;; 			(versor-meta-level-shadow (car level-pair))
+;; 			(versor-level-shadow (cdr level-pair))
+;; 			(action (versor-get-action ',(intern action))))
+;; 		   (funcall action n)))))
+;; 	(unless (boundp action-function-name)
+;; 	  (fset action-function-name action-function-body))
+;; 	(pushnew (cons action-voice-command action-function-name)
+;; 		 vr-versor-dimension-command-list
+;; 		 :test 'equal)))
+    )
 
   (dolist (meta-level (versor-meta-level-names))
     (let* ((name (car meta-level))
 	   (symbol (intern (concat "versor-select-meta-" name)))
 	   (body `(lambda ()
-		    ,(format "Set the versor meta-dimension to %s." name)
+		    ,(format "Set the versor meta-dimension to %s.\n\nThis function was generated automatically by define-versor-vocal." name)
 		    (interactive)
 		    (versor-select-named-meta-level ,name))))
       (fset symbol body)
@@ -97,6 +123,7 @@ Generated automatically from the movement dimensions table, moves-moves.")
   '(
     ("next one" . versor-next)
     ("onwards" . versor-next)
+    ("backwards" . versor-prev)
     ("back one" . versor-prev)
     ("previous one" . versor-prev)
     ("extend" . versor-extend-item-forwards)
