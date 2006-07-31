@@ -1,5 +1,5 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2006-07-18 10:25:20 jcgs>
+;;; Time-stamp: <2006-07-30 22:46:43 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -68,18 +68,28 @@
 
 (defvar nested-blocks-mode-ignorables
   ;; todo: update to include TeX family and sh
-  '((html-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\(meta\\)\\)")
+  '((html-mode . "</?\\(\\(br\\)\\|\\(img\\)\\(meta\\)\\)")
     (html-helper-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\([hb]r\\)\\|\\(img\\)\\|\\(meta\\)\\|\\(![a-z]\\)\\)")
     (sgml-mode . "</?\\(\\(li\\)\\|\\(d[dt]\\)\\|\\(br\\)\\|\\(img\\)\\)")
     (t .  ";"))
   "Alist showing things that look like nested block structure but are not.")
 
 (defvar nested-blocks-mode-list-items
-  '((html-mode . "<\\(li\\)[^>]*>")
-    (html-helper-mode . "<\\(li\\)[^>]*>")
+  '((html-mode . "<\\(\\(li\\)\\|\\(d[dt]\\)\\)[^>]*>")
+    (html-helper-mode . "<\\(\\(li\\)\\|\\(d[dt]\\)\\)[^>]*>")
     (latex-mode . "\\\\\\(item\\|chapter\\|\\(sub\\)*section\\)"))
   "Alist showing list item separators for each mode.
 This is for any markup syntax that does not have a beginning and an end, but occurs in a sequence of the same type.")
+
+(defvar nested-blocks-mode-unitary-items
+  '((html-mode . "<[^/>]+/>")
+    (html-helper-mode . "<[^/>]+/>")
+    ;; (latex-mode . "")
+    )
+  "Alist showing list item separators for each mode.
+This is for markup syntax that is a complete block in its own right.
+These regexps may be quite general, and it's safe to make them catchalls that
+will accidentally catch the other forms of syntax, as they're tested for last.")
 
 (defvar nested-blocks-mode-any
   ;; todo: update to include TeX family and sh
@@ -209,9 +219,11 @@ Second argument says what level to stop at."
 		       (if (looking-at list-item)
 			   (match-string-no-properties 1)
 			 nil))))
+	(message "on-list, match-end=%S" (match-end 0))
 	(when on-list
 	  (goto-char (match-end 0)))
 	(goto-char
+	 ;; todo: get this working when already past the last thing it could usefully handle
 	 (catch 'found
 	   (while (re-search-forward any (point-max) t)
 	     (save-match-data
@@ -221,6 +233,7 @@ Second argument says what level to stop at."
 		 (when nested-blocks-debug
 		   (message "At %d:\"%s\"" (point) (buffer-substring-no-properties starting ending)))
 		 (save-excursion
+		   (message "starting=%S" starting)
 		   (goto-char starting)
 		   (cond
 		    ((and comment-start (looking-at comment-start))
@@ -233,7 +246,7 @@ Second argument says what level to stop at."
 		       (message "shallower comment: %d" comment-depth)))
 		    ((and list-item (looking-at list-item))
 		     (when nested-blocks-debug
-		       (message "list item at %d (%s)" depth (if on-list "working on list" "not not on list"))))
+		       (message "list item at %d (%s)" depth (if on-list "working on list" "not on list"))))
 		    ((and ignore (looking-at ignore))
 		     (when nested-blocks-debug
 		       (message "ignoring: %d" depth))
