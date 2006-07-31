@@ -1,5 +1,5 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2006-07-18 20:12:02 jcgs>
+;;; Time-stamp: <2006-07-29 18:25:36 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -119,35 +119,58 @@ Generated automatically from the movement dimensions table, moves-moves.")
 
 (if (null vr-versor-dimension-command-list) (define-versor-vocal))
 
+(defun versor-surround-with-binding ()
+  "Surround the selection with a binding."
+  (interactive)
+  (versor-insert-around
+   (versor-statement-insertion-strings 'variable-declaration)))
+
+(defun versor-surround-with-and ()
+  "Surround the selection with an AND."
+  (interactive)
+  (versor-insert-around
+   (versor-statement-insertion-strings 'and)))
+
+(defun versor-surround-with-or ()
+  "Surround the selection with an OR."
+  (interactive)
+  (versor-insert-around
+   (versor-statement-insertion-strings 'or)))
+
+(defun versor-surround-with-not ()
+  "Surround the selection with a not."
+  (interactive)
+  (versor-insert-around
+   (versor-statement-insertion-strings 'not)))
+
 (defvar vr-versor-command-list
-  '(
-    ("next one" . versor-next)
+  '(("next one" . versor-next)
     ("onwards" . versor-next)
     ("backwards" . versor-prev)
     ("back one" . versor-prev)
     ("previous one" . versor-prev)
+    ("first one" . versor-start)
+    ("initial one" . versor-start)
+    ("last one" . versor-end)
+    ("final one" . versor-end)
     ("extend" . versor-extend-item-forwards)
     ("retract" . versor-extend-item-backwards)
-    ;; ("out" . versor-out)
-    ;; ("in" . versor-in)
+    ;; meta-movements
     ("dimension in" . versor-in)
     ("dimension out" . versor-out)
     ("zoom movements in" . versor-in)
     ("zoom movements out" . versor-out)
     ("meta dimension in" . versor-prev-meta-level)
     ("meta dimension out" . versor-next-meta-level)
-    ("first one" . versor-start)
-    ("initial one" . versor-start)
-    ("last one" . versor-end)
-    ("final one" . versor-end)
     ("over" . versor-out-briefly)
-    ("depth" . versor-select-in/out)
-    ("expressions" . versor-select-exprs)
-    ("characters" . versor-select-chars)
     ("end" . versor-end-of-item)
     ("reverse" . versor-reverse)
     ("beginning" . versor-start-of-item)
     ("other end" . versor-other-end-of-item)
+    ;; aliases for dimensions
+    ("expressions" . versor-select-exprs)
+    ("characters" . versor-select-chars)
+    ;; basic editing commands
     ("copy this" . versor-copy)
     ("cut this" . versor-kill)
     ("mark this" . versor-mark)
@@ -155,13 +178,34 @@ Generated automatically from the movement dimensions table, moves-moves.")
     ("valof" . wander-yank)
     ("result is" . pick-up-sexp-at-point)
     ("return" . exit-recursive-edit)
+    ;; alterations
     ("alter this" . versor-begin-altering-item)
     ("that's it" . versor-end-altering-item)
     ("bingo" . versor-end-altering-item)
     ("accept" . versor-end-altering-item)
     ("revert to original" . versor-abandon-altering-item)
+    ;; higher-level movements
     ("container" . versor-select-container-contents)
-    )
+    ;; language-guided edits
+    ("extract variable" . versor-languide-convert-selection-to-variable)
+    ("extract global variable" . versor-languide-convert-selection-to-global-variable)
+    ("extract function" . versor-languide-convert-selection-to-function)
+    ("surround with call" . versor-languide-surround-selection-with-call)
+    ("remove function call" . versor-languide-remove-function-call)
+    ("create function for call" . versor-languide-create-function-for-call)
+    ("unify statements" . versor-languide-unify-statements)
+    ("comment selection" . versor-languide-comment-selection)
+    ("enclosing scoping point" . versor-languide-enclosing-scoping-point)
+    ("enclosing decision point" . versor-languide-enclosing-decision-point)
+    ("employ variable" . versor-languide-employ-variable)
+    ("make conditional" . versor-languide-make-conditional)
+    ("make iterative" . versor-languide-make-iterative)
+    ("remove control" . versor-languide-remove-control)
+    ;; versor insertions
+    ("surround with binding" . versor-surround-with-binding)
+    ("surround with and" . versor-surround-with-and)
+    ("surround with or" . versor-surround-with-or)
+    ("surround with not" . versor-surround-with-not))
   "Individually defined versor voice commands (and friends).")
 
 ;;; end of versor-voice.el
