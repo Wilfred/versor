@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-07-18 15:30:32 jcgs>
+;;; Time-stamp: <2006-07-29 14:51:47 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -239,8 +239,13 @@ want to turn it off."
 This tries to avoid changing the semantics, for example, it uses
 \"true\" when adding \"and\" or \"if\".
 You can then change the value, using the Versor alterations system."
-  :type 'boolean
+   :type 'boolean
    :group 'versor)
+
+(defcustom versor-reindent-after-insert t
+  "*Whether Versor \"around\" insertion re-indents afterwards."
+  :type 'boolean
+  :group 'versor)
 
 (defcustom versor-per-buffer nil
   "*Whether to remember the dimensions separately for each buffer."
