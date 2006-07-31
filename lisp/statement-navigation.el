@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-05-04 12:03:35 john>
+;;; Time-stamp: <2006-07-28 22:05:59 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -84,7 +84,16 @@ Argument 1 means the current statement, 2 the next, etc."
   (establish-current-statement 'end-of-statement)
   (end-of-statement-internal))
 
-(defun previous-statement-internal (n)
+(defmodel previous-statement-internal (n)
+  "Move to the NTH previous statement.
+If calling this from a program, other than inside statement navigation,
+you should possibly use previous-statement instead.
+There an element of DWIM to this:
+  If not at the beginning of the statement, move to the beginning of it.
+  If already at the beginning, move to the beginning of the previous one.
+Then, if N is greater than 1, move back N-1 more statements.")
+
+(defmodal previous-statement-internal (fundamental-mode) (n)
   "Move to the NTH previous statement.
 If calling this from a program, other than inside statement navigation,
 you should possibly use previous-statement instead.
