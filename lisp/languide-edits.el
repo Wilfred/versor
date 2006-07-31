@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-06-12 11:47:22 john>
+;;; Time-stamp: <2006-07-28 12:53:26 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -477,11 +477,14 @@ sCondition: ")
 	;; (message "after unification, %d..%d" (marker-position from) (marker-position to))
 	(let ((head-inserter (cadar (get-statement-part 'if-then 'add-head)))
 	      (trailer-inserter (cadar (get-statement-part 'if-then 'add-trailer)))
+	      (body-adjuster (cadar (get-statement-part 'if-then 'adjust-body)))
 	      (tempo-insert-region t)
 	      (old-marker (make-marker)))
 	  ;; (message "head-inserter is %S; trailer-inserter is %S" head-inserter trailer-inserter)
 	  (goto-char from)
 	  (insert condition)
+	  (when body-adjuster
+	    (funcall body-adjuster from to))
 	  ;; we have to establish a region, for the template system to use,
 	  ;; but we don't want the user to be able to see this, so do it in
 	  ;; an underhand way
