@@ -1,5 +1,5 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <2006-04-10 10:19:46 john>
+;;; Time-stamp: <2006-07-30 22:59:31 jcgs>
 
 (provide 'flexi-choose)
 ;; if this is loaded before we are, put it into our menu
@@ -37,6 +37,7 @@ along with the hierarchical level chunks. It should be an alist."
     (when (and choices-alist (null choices-list))
       (setq choices-list (mapcar 'car choices-alist))))
   (let ((reverse-choices (reverse choices-list)))
+    ;; use two copies, so we can start either direction
     (set history-var (append reverse-choices reverse-choices)))
   ;; (message "Was given choices %S, set history var to %S" choices-list (symbol-value history-var))
   (when (null default) (setq default (car choices-list)))
@@ -97,9 +98,9 @@ along with the hierarchical level chunks. It should be an alist."
 This uses the minibuffer with a history hack like that done in the
 tmm package."
   (let ((string (completing-read-with-history-hack prompt 'choices-hack-history
-				     choices
-				     nil
-				     nil)))
+						   choices
+						   nil
+						   nil)))
     (cdr (assoc string choices))))
 
 (defun make-chunk-desc (things)
@@ -203,7 +204,7 @@ This makes most sense if SINGLE is sorted."
 	(while words
 	  (let ((word (downcase (car words))))
 	    (unless (member word result)
-	    (setq result (cons word result))))
+	      (setq result (cons word result))))
 	  (setq words (cdr words))))
       (setq strings (cdr strings)))
     result))
@@ -242,9 +243,7 @@ the choices are leaf choices."
 	 (previous-levels nil)
 	 (extras nil)
 	 (result nil)
-	 (originals-alist (mapcar 'list choices))
-	 )
-    (setq iw interesting-words)
+	 (originals-alist (mapcar 'list choices)))
     (while (null result)
       (let* ((last-step (<= n per-step))
 	     (chunks (make-chunk-list choices per-step))
@@ -269,8 +268,7 @@ the choices are leaf choices."
 					       (mapcar 'make-full-chunk-descr chunks)))
 					    extras)
 				    "\n")
-			 originals-alist
-			 ))))
+			 originals-alist))))
 	(cond
 	 ((stringp stepkey)
 	  (cond
