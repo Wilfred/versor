@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-07-05 17:24:14 john>
+;;; Time-stamp: <2006-07-30 12:02:53 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -98,6 +98,9 @@ command to be run."
 (defvar versor-post-command-hook nil
   "Hooks to run at the end of versor commands.")
 
+(defvar versor-debug-motion-framework nil
+  "*Whether to report on movements made by the motion framework.")
+
 (defmacro versor-as-motion-command (item-var &rest body)
   "Run BODY as a versor motion command.
 Necessary pre- and post-processing get done.
@@ -112,8 +115,12 @@ if there is no end-of-item."
 			(car versor-latest-items))))
        (run-hooks 'versor-pre-command-hook)
        (versor-clear-current-item-indication)
+       (when versor-debug-motion-framework
+	 (message "About to call versor-as-motion-command body, point is %d" (point)))
        (progn
 	 ,@body)
+       (when versor-debug-motion-framework
+	 (message "Called versor-as-motion-command body, point is %d" (point)))
        ;; the few commands that want to do otherwise, must re-set this
        ;; one just after using this macro
        (setq versor-extension-direction nil)
@@ -121,8 +128,10 @@ if there is no end-of-item."
        ;; body, if it did one; otherwise, try to work out the
        ;; appropriate item selection, based on point and on the
        ;; current dimension
-  (versor-indicate-current-item)
-  (run-hooks 'versor-post-command-hook))))
+       (versor-indicate-current-item)
+       (when versor-debug-motion-framework
+	 (message "versor-as-motion-command called versor-indicate-current-item, point is now %d" (point)))
+       (run-hooks 'versor-post-command-hook))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; commands begin here ;;;;
@@ -213,7 +222,7 @@ if there is no end-of-item."
   (interactive)
   (versor-as-versor-command
     (if (not versor-reversible)
-	(error "Reversing movement directions is not enabled; set versor-reversible to enable it")
+	(error "Reversing movement directions is not enabled; set versor-reversible to enable it") ;
       (setq versor-reversed (not versor-reversed))
       (versor-set-status-display))))
 
@@ -439,43 +448,41 @@ reduce the extension rather than extending backwards, and vice versa.")
   "Add another of the current unit to the end of the item.
 With optional LEVEL-OFFSET, add that to the level first."
   (interactive)
-  (versor-as-versor-command
-    ;; must go outside versor-as-motion-command as that sets
-    ;; versor-extension-direction, and we are about to preserve that
-    ;; variable to protect it from versor-as-motion-command
-    (unless versor-extension-direction
-      (setq versor-extension-direction 'forwards))
-    (let ((direction versor-extension-direction))
-      (versor-as-motion-command item
-	;; todo: handle unset items
-	(let* ((start (versor-overlay-start item))
-	       (end (versor-overlay-end item)))
-	  (versor-next level-offset)
-	  (if (eq direction 'forwards)
-	      (versor-set-current-item start (versor-end-of-item-position))
-	    (versor-set-current-item (point) end))))
-      (setq versor-extension-direction direction))))
+  ;; must go outside versor-as-motion-command as that sets
+  ;; versor-extension-direction, and we are about to preserve that
+  ;; variable to protect it from versor-as-motion-command
+  (unless versor-extension-direction
+    (setq versor-extension-direction 'forwards))
+  (let ((direction versor-extension-direction))
+    (versor-as-motion-command item
+      (let* ((start (or (versor-overlay-start item)
+			(point)))
+	     (end (versor-overlay-end item)))
+	(versor-next level-offset)
+	(if (eq direction 'forwards)
+	    (versor-set-current-item start (versor-end-of-item-position))
+	  (versor-set-current-item (point) end))))
+    (setq versor-extension-direction direction)))
 
 (defun versor-extend-item-backwards (&optional level-offset)
   "Add another of the current unit to the start of the item.
 With optional LEVEL-OFFSET, add that to the level first."
   (interactive)
-  (versor-as-versor-command
-    ;; must go outside versor-as-motion-command as that sets
-    ;; versor-extension-direction, and we are about to preserve that
-    ;; variable to protect it from versor-as-motion-command
-    (unless versor-extension-direction
-      (setq versor-extension-direction 'backwards))
-    (let ((direction versor-extension-direction))
-      (versor-as-motion-command item
-	;; todo: handle unset items
-	(let* ((start (versor-overlay-start item))
-	       (end (versor-overlay-end item)))
-	  (versor-prev level-offset)
-	  (if (eq direction 'backwards)
-	      (versor-set-current-item (point) end)
-	    (versor-set-current-item start (versor-end-of-item-position)))))
-      (setq versor-extension-direction direction))))
+  ;; must go outside versor-as-motion-command as that sets
+  ;; versor-extension-direction, and we are about to preserve that
+  ;; variable to protect it from versor-as-motion-command
+  (unless versor-extension-direction
+    (setq versor-extension-direction 'backwards))
+  (let ((direction versor-extension-direction))
+    (versor-as-motion-command item
+      (let* ((start (versor-overlay-start item))
+	     (end (or (versor-overlay-end item)
+		      (point))))
+	(versor-prev level-offset)
+	(if (eq direction 'backwards)
+	    (versor-set-current-item (point) end)
+	  (versor-set-current-item start (versor-end-of-item-position)))))
+    (setq versor-extension-direction direction)))
 
 (defun versor-extend-over-item-forwards ()
   "Add another of the unit above the current one, to the end of the item."
@@ -777,12 +784,14 @@ Various other dwim things, too -- evaluate evaluable forms, etc."
      (goto-char (cdr current-item))
      (mapcar 'insert-active new-thing))))
 
-(defun versor-insert-around ()
-  "Insert something around the current versor item."
+(defun versor-insert-around (&optional given-thing)
+  "Insert something around the current versor item.
+With optional GIVEN-THING, insert that, otherwise prompt the user."
   (interactive)
   (versor-as-motion-command current-item
-   (let ((new-thing (versor-get-insertable 2 "Type of insertion around item: ")))
-     (message "insert-around: current-item=%S new-thing=%S" current-item new-thing)
+   (let ((new-thing (or given-thing
+			(versor-get-insertable 2 "Type of insertion around item: "))))
+     ;; (message "insert-around: current-item=%S new-thing=%S" current-item new-thing)
      ;; todo: clever interface to skeletons and tempo templates
      (cond
       ((eq (car new-thing) 'template)
@@ -801,11 +810,20 @@ Various other dwim things, too -- evaluate evaluable forms, etc."
        (goto-char (versor-overlay-end current-item))
        (insert (second new-thing))
        (let ((end (make-marker))
-	     (start (versor-overlay-start current-item)))
+	     (start (make-marker)))
 	 (set-marker end (point))
+	 (set-marker start (versor-overlay-start current-item))
+	 (set-marker-insertion-type start nil)
 	 (goto-char start)
 	 (insert (first new-thing))
-	 (versor-set-current-item start end)))))))
+	 (when versor-reindent-after-insert
+	   (save-excursion
+	     (goto-char start)
+	     (while (<= (point) end)
+	       (funcall indent-line-function)
+	       (forward-line 1))))
+	 (versor-set-current-item start end)
+	 (set-marker end nil)))))))
 
 (defun versor-insert-within ()
   "Insert something within the current versor item."
