@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-07-18 15:34:49 jcgs>
+;;; Time-stamp: <2006-07-29 15:04:54 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -149,7 +149,7 @@ Returns point, if there was a bracket to go out of, else nil."
   "Return a block end.")
 
 (defmodel statement-container ()
-  "Select the container of the current statement.")
+  "Move to the end of the container of the current statement.")
 
 (defmodel language-conditional-needs-unifying ()
   "Whether the conditional statement needs its dependent statements unified for it.")
@@ -227,7 +227,7 @@ When interactive, or with optional third argument non-nil, display the result."
     description))
 
 (defvar languide-supported-modes
-  '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode)
+  '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode python-mode)
   "Modes for which Languide has support.")
 
 (defun versor-describe-selection ()
@@ -323,12 +323,23 @@ Returns the new point."
 	   (backward-out-of-comment)))
   (point))
 
-;;;; define statements for some common languages
+;;; Define statements for some common languages. It would be nice to
+;;; be able to autoload modal function definitions, but this achieves
+;;; much the same effect, and is less fiddly.
 
-(require 'languide-c-like)
-(require 'languide-sh-like)
-(require 'languide-lisp-like)
-(require 'languide-html-like)
+(add-hook 'c-mode-hook (lambda () (require 'languide-c-like)))
+(add-hook 'c++-mode-hook (lambda () (require 'languide-c-like)))
+(add-hook 'perl-mode-hook (lambda () (require 'languide-c-like)))
+(add-hook 'java-mode-hook (lambda () (require 'languide-c-like)))
+(add-hook 'sh-mode-hook (lambda () (require 'languide-sh-like)))
+(add-hook 'lisp-mode-hook (lambda () (require 'languide-lisp-like)))
+(add-hook 'emacs-lisp-mode-hook (lambda () (require 'languide-lisp-like)))
+(add-hook 'lisp-interaction-mode-hook (lambda () (require 'languide-lisp-like)))
+(add-hook 'scheme-mode-hook (lambda () (require 'languide-lisp-like)))
+(add-hook 'html-mode-hook (lambda () (require 'languide-html-like)))
+(add-hook 'html-helper-mode-hook (lambda () (require 'languide-html-like)))
+(add-hook 'python-mode-hook (lambda () (require 'languide-python)))
+(add-hook 'haskell-mode-hook (lambda () (require 'languide-functional)))
 
 (require 'languide-bindings)
 
