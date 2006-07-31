@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-05-03 14:57:25 john>
+;;; Time-stamp: <2006-07-28 21:07:31 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -111,6 +111,8 @@ package to the end of an item."
     expression
     expressions
     expression-contents
+    rest-of-line
+    block-at-this-depth
     )
   "Functions for statement navigation, that can select what they describe.
 All these functions should return a cons of the start and end
@@ -300,6 +302,20 @@ but the compound statement delimiters are not."
     (goto-char start)
     (if (interactive-p) (set-mark mark-candidate))
     (cons start mark-candidate)))
+
+(defun rest-of-line ()
+  "Select the rest of the line."
+  (cons (point) (line-end-position)))
+
+(defun block-at-this-depth ()
+  "Select the block at this depth."
+  (back-to-indentation)
+  (let ((start (point))
+	(this-indent (current-indentation)))
+    (while (>= (current-indentation) this-indent)
+      (forward-line 1))
+    (forward-line -1)
+    (cons start (line-end-position))))
 
 (defun from-start-of-statement ()
   "Move to the start of the statement."
