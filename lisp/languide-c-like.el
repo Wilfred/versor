@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-05-24 19:07:10 jcgs>
+;;; Time-stamp: <2006-07-28 17:54:30 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -494,7 +494,7 @@ this does not have to work."
   t)
 
 (defmodal statement-container (c-mode perl-mode java-mode) ()
-  "Select the container of the current statement."
+  "Move to the end of the container of the current statement."
   ;; needs to do the "not in string, not in comment" stuff, so we need 
   ;; the Beginning Of Defun to compare against
   (let* ((bod (save-excursion
@@ -1352,7 +1352,7 @@ languide-region-detail-level says how much incidental information to include."
   (begin-end "(" " || )")
   (begin-end-with-dummy "(" " || 0)"))
 
-(defstatement and (perl-mode c-mode java-mode)
+(defstatement not (perl-mode c-mode java-mode)
   "Not expression."
   (begin-end "(!" ")"))
 
