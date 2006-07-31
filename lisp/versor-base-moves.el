@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-07-18 15:18:58 jcgs>
+;;; Time-stamp: <2006-07-28 17:50:14 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -34,19 +34,21 @@
   (forward-paragraph n)
   ;; (message "forward-paragraph %d; then forward over blank lines" n)
   (if (> n 0)
-      (while (looking-at "^$")
+      (while (looking-at "^\\s-*\\(\\s<.*\\)?$")
 	;; (message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
 (defun versor-backward-paragraph (&optional n)
   "Like backward-paragraph, but don't end up on a blank line."
   (interactive "p")
+  ;; (message "versor-backward-paragraph starting at %d" (point))
   (backward-paragraph (1+ n))
-  ;; (message "backward-paragraph %d; then forward over blank lines" n)
-  (if (> n 0)
-      (while (looking-at "^$")
-	;; (message "skipping blank line at start of paragraph")
-	(forward-line 1))))
+  ;; (message "backward-paragraph %d gone to %d; then forward over blank lines" n (point))
+  (when (> n 0)
+    (while (looking-at "^\\s-*\\s<.*$")
+      (previous-line 1))		; respect goal column
+    (while (looking-at "^\\s-*$")
+      (next-line 1))))			; respect goal column
 
 (defun versor-end-of-paragraph (&optional arg)
   "Move to the end of the paragraph."
@@ -132,11 +134,11 @@
       (scan-lists from count depth)
     (error nil)))
 
-(defun safe-forward-sexp (from)
+(defun safe-forward-sexp (n)
   "Like forward-sexp, but returns point on success and nil on error."
   (condition-case error-var
       (progn
-	(forward-sexp from)
+	(forward-sexp n)
 	(point))
     (error nil)))
 
@@ -159,12 +161,13 @@ Makes a two-part selection, of opening and closing brackets."
 	(error nil))))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
-	(end (save-excursion (forward-sexp 1) (point))))
+	(end (save-excursion (safe-forward-sexp 1) (point))))
     ;; TODO: should probably be versor-set-current-item
     (make-versor-overlay start (1+ start))
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
     ;; TODO: should probably be versor-add-to-current-item when I've written one
-    (versor-extra-overlay (1- end) end)
+    (when end
+      (versor-extra-overlay (1- end) end))
     (cons start end)))
 
 (defmodal versor-backward-up-list (lisp-mode emacs-lisp-mode lisp-interaction-mode) (arg)
@@ -180,12 +183,13 @@ Makes a two-part selection, of opening and closing brackets."
       (error nil)))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
-	(end (save-excursion (forward-sexp 1) (point))))
+	(end (save-excursion (safe-forward-sexp 1) (point))))
     ;; TODO: should probably be versor-set-current-item
     (make-versor-overlay start (1+ start))
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
     ;; TODO: should probably be versor-add-to-current-item when I've written one
-    (versor-extra-overlay (1- end) end)
+    (when end
+      (versor-extra-overlay (1- end) end))
     (cons start end)))
 
 (defmodal versor-backward-up-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
@@ -202,6 +206,42 @@ Makes a two-part selection, of opening and closing brackets."
 	  (versor-extra-overlay close-start close-end)
 	  (goto-char open-start))))))
 
+(defvar py-statement-tail-parts-regexp "^\\s-*\\(else:\\|elif\\)"
+  "Regexp for things that show there is a tail to this python statement.")
+
+(defun py-end-of-statement ()
+  "Move to the end of the python statement starting at point."
+  (interactive)
+  (let ((this-indent (current-indentation)))
+    (if (save-excursion
+	  (forward-line 1)
+	  (= (current-indentation) this-indent))
+	(end-of-line)
+      (py-mark-block nil t)
+      (while (looking-at py-statement-tail-parts-regexp)
+	(py-mark-block nil t)))))
+
+(defmodal versor-backward-up-list (python-mode) (arg)
+  "Like backward-up-list, but with versor stuff around it, and for python indentation.
+This breaks the normal behaviour for versor-backward-up-list when there is no actual bracketry."
+  (if (save-excursion
+	(re-search-backward "[[({]" (line-beginning-position) t))
+      (progn
+	(safe-backward-up-list arg)
+	;; (message "main overlay at %d..%d" (point) (1+ (point)))
+	(let ((start (point))
+	      (end (save-excursion (forward-sexp 1) (point))))
+	  ;; TODO: should probably be versor-set-current-item
+	  (make-versor-overlay start (1+ start))
+	  ;; (message "extra overlay at %d..%d" (1- (point)) (point))
+	  ;; TODO: should probably be versor-add-to-current-item when I've written one
+	  (versor-extra-overlay (1- end) end)
+	  (cons start end)))
+    (py-goto-block-up)
+    (let ((start (point)))
+      (py-end-of-statement)
+      (versor-set-current-item start (point)))))
+
 (defmodel versor-down-list (arg)
   "Like down-list, but with some versor stuff around it."
   (interactive "p"))
@@ -217,15 +257,14 @@ Makes a two-part selection, of opening and closing brackets."
   (if (looking-at "\\s(")
       (save-excursion
 	(versor-set-current-item (point) (1+ (point)))
-	(forward-sexp 1)
-	;; (message "extra overlay at %d..%d" (1- (point)) (point))
-	;; TODO: should probably be versor-add-to-current-item when I've written one
-	(versor-extra-overlay (1- (point)) (point)))
+	(when (safe-forward-sexp 1)
+	  ;; (message "extra overlay at %d..%d" (1- (point)) (point))
+	  ;; TODO: should probably be versor-add-to-current-item when I've written one
+	  (versor-extra-overlay (1- (point)) (point))))
     (let ((start (point)))
-      (forward-sexp 1)
-      (versor-set-current-item start (point))
-      (goto-char start))
-    ))
+      (when (safe-forward-sexp 1)
+	(versor-set-current-item start (point))
+	(goto-char start)))))
 
 (defmodal versor-down-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
   "Like down-list, but with versor stuff around it, and for HTML block structure."
@@ -234,6 +273,39 @@ Makes a two-part selection, of opening and closing brackets."
     (next-texp 1)
     (versor-set-current-item start (point))
     (goto-char start)))
+
+(defmodal versor-down-list (python-mode) (arg)
+  "Like down-list, but with some versor stuff around it, and understanding python."
+  (interactive "p")
+  (if (save-excursion
+	(re-search-forward "[[{(]" (line-end-position) t))
+      (progn
+	(unless (safe-down-list arg)
+	  ;; if we were at the end of the last expression, try going to the start of it
+	  (previous-sexp 1)
+	  (safe-down-list args))
+	;; (message "main overlay at %d..%d" (point) (1+ (point)))
+	(if (looking-at "\\s(")
+	    (save-excursion
+	      (versor-set-current-item (point) (1+ (point)))
+	      (when (safe-forward-sexp 1)
+		;; (message "extra overlay at %d..%d" (1- (point)) (point))
+		;; TODO: should probably be versor-add-to-current-item when I've written one
+		(versor-extra-overlay (1- (point)) (point))))
+	  (let ((start (point)))
+	    (when (safe-forward-sexp 1)
+	      (versor-set-current-item start (point))
+	      (goto-char start)))))
+    (let ((initial-indent (current-indentation)))
+      (while (and (not (eobp))
+		  (= initial-indent (current-indentation)))
+	(forward-line))
+      (while (and (not (bobp))
+		  (< (current-indentation) initial-indent))
+	(forward-line -1))
+      (let ((start (point)))
+	(py-end-of-statement)
+	(versor-set-current-item start (point))))))
 
 ;; left over from trying a window selection dimension
 ;; (defun other-window-backwards (n)
@@ -310,7 +382,7 @@ Makes a two-part selection, of opening and closing brackets."
     (parse-partial-sexp prevprev prev
 			0 t)))
 
-(defmodel next-sexp  (n)
+(defmodel next-sexp (n)
   "Move forward N sexps.
   Like forward-sexp but moves to the start of the next sexp rather than the
   end of the current one, and so skips leading whitespace etc.
@@ -363,6 +435,9 @@ kinds of Lisp modes."
 	    (skip-to-actual-code))
 	(message "No more sexps")))))
 
+(defvar debug-texp nil
+  "*Whether texp movement should explain what it's doing.")
+
 (defun next-texp (n)
   "Move to the Nth next text expression.
 Treat tagged markup blocks like bracketted expressions.
@@ -370,6 +445,7 @@ Treat paragraphs (in languages where they are marked by blank lines) as though
 they had markup tags. Likewise, treat sentences as blocks."
   ;; todo: skip comments
   (while (> n 0)
+    (when debug-texp (message "next-texp(%d)" n))
     (let ((start (point)))
       (cond
        ;; tagged blocks
@@ -380,6 +456,7 @@ they had markup tags. Likewise, treat sentences as blocks."
 	    (looking-at "<[^/]"))
 	   ((eq major-mode 'latex-mode)
 	    (looking-at "\\\\[a-z]+"))))
+	(when debug-texp (message "next-texp: tagged block %s" (match-string 0)))
 	(skip-to-actual-code)
 	(nested-blocks-forward))
        ;; paragraphs
@@ -390,22 +467,26 @@ they had markup tags. Likewise, treat sentences as blocks."
 			    (point))
 			  start))
 	  (looking-at paragraph-start))
+	(when debug-texp (message "next-texp: paragraph"))
 	(forward-paragraph)
 	(skip-to-actual-code))
        ;; sentences
        ((save-excursion
 	  (skip-syntax-backward " " start)
 	  (looking-at sentence-end))
+	(when debug-texp (message "next-texp: sentence"))
 	(skip-to-actual-code)
 	(forward-sentence))
        ;; brackets
        ((save-excursion
 	  (skip-to-actual-code)
 	  (looking-at "[[({]"))
+	(when debug-texp (message "next-texp: brackets %s" (match-string 0)))
 	(skip-to-actual-code)
 	(forward-sexp 1))
        ;; if nothing else, take a word as an expression
        (t
+	(when debug-texp (message "next-texp: word"))
 	(forward-word 1))))
     (setq n (1- n))))
 
@@ -421,6 +502,30 @@ things with natural language punctuation."
     (next-texp 1)
     (versor-set-current-item start (point))
     (goto-char start)))
+
+(defmodal next-sexp (python-mode) (n)
+  "next-sexp for python blocks."
+  (if (save-excursion
+	(skip-to-actual-code)
+	(looking-at "[[({]"))
+      (progn
+	(skip-to-actual-code)
+	(forward-sexp n)
+	(let ((start (point)))
+	  (next-sexp 1)
+	  (versor-set-current-item start (point))
+	  (goto-char start)))
+    (skip-syntax-forward ".>")
+    (while (> n 0)
+      (py-end-of-statement)
+      (setq n (1- n)))
+    (skip-syntax-forward ".>")
+    (skip-to-actual-code)
+    (let ((start (point)))
+      (py-end-of-statement)
+      (skip-to-actual-code-backwards)
+      (versor-set-current-item start (point))
+      (goto-char start))))
 
 (defmodel previous-sexp (n)
   "Move backward N sexps.
@@ -448,6 +553,7 @@ Treat paragraphs (in languages where they are marked by blank lines) as though
 they had markup tags. Likewise, treat sentences as blocks."
   ;; todo: skip comments -- I think skip-to-actual-code-backwards should be doing this, but I'm not convinced that it really is
   (while (> n 0)
+    (when debug-texp (message "previous-texp(%d)" n))
     (cond
      ;; tagged blocks
      ((save-excursion
@@ -459,6 +565,7 @@ they had markup tags. Likewise, treat sentences as blocks."
 	 ((eq major-mode 'latex-mode)
 	  (skip-chars-backward "\\\\a-z{}")
 	  (looking-at "\\\\end{[a-z]+}"))))
+      (when debug-texp (message "previous-texp: tagged block %s" (match-string 0)))
       (skip-to-actual-code-backwards)
       (nested-blocks-backward))
     ;; paragraphs 
@@ -466,6 +573,7 @@ they had markup tags. Likewise, treat sentences as blocks."
 	(beginning-of-line 0)
 	(back-to-indentation) 
 	(looking-at paragraph-start))
+      (when debug-texp (message "previous-texp: paragraph"))
       (backward-paragraph 2)
       (skip-to-actual-code))
      ;; sentences
@@ -473,6 +581,7 @@ they had markup tags. Likewise, treat sentences as blocks."
 	(skip-syntax-backward " ")
 	(backward-char 1)
 	(looking-at sentence-end))
+      (when debug-texp (message "previous-texp: sentence"))
       (skip-to-actual-code-backwards)
       (backward-sentence))
      ;; brackets
@@ -480,23 +589,54 @@ they had markup tags. Likewise, treat sentences as blocks."
 	(skip-to-actual-code-backwards)
 	(backward-char 1)
 	(looking-at "[])}]"))
+      (when debug-texp (message "previous-texp: brackets %s" (match-string 0)))
       (skip-to-actual-code-backwards)
       (backward-sexp 1))
      ;; words, but if it's really a tag, go back to the start of the tag syntax
      (t
+      (when debug-texp (message "previous-texp: word"))
       (backward-word 1)
       (when (or (eq (char-before) ?\\)
 		(eq (char-before) ?<))
+	(when debug-texp (message "previous-texp: word markup adjustment"))
 	(backward-char 1))))
     (setq n (1- n))))
 
 (defmodal previous-sexp (html-mode html-helper-mode tex-mode latex-mode) (n)
   "Move backward N markup blocks."
+  (when debug-texp (message "previous-sexp starting from %d" (point)))
   (previous-texp n)
+  (when debug-texp (message "previous-texp took us to %d" (point)))
   (let ((start (point)))
     (next-texp 1)
+    (when debug-texp (message "next-texp to find other end took us to %d" (point)))
     (versor-set-current-item start (point))
     (goto-char start)))
+
+(defmodal previous-sexp (python-mode) (n)
+  "previous-sexp for python blocks."
+  (if (save-excursion
+	(skip-to-actual-code)
+	(looking-at "[]})]"))
+      (progn
+	(skip-to-actual-code-backwards)
+	(backward-sexp n)
+	(let ((start (point)))
+	  (next-sexp 1)
+	  (versor-set-current-item start (point))
+	  (goto-char start)))
+    (let ((initial-indent (current-indentation)))
+      (while (> n 0)
+	(py-previous-statement 1)
+	(while (or (> (current-indentation) initial-indent)
+		   (looking-at py-statement-tail-parts-regexp))
+	  (py-previous-statement 1))
+	(setq n (1- n))))
+    (skip-to-actual-code)
+    (let ((start (point)))
+      (py-end-of-statement)
+      (versor-set-current-item start (point))
+      (goto-char start))))
 
 (defmodel innermost-list ()
   "Move in by sexps until you can go in no more."
