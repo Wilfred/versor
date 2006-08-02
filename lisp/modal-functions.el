@@ -1,5 +1,5 @@
 ;;;; modal-functions.el -- make a function which despatches on current major mode
-;;; Time-stamp: <2006-03-14 15:18:27 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -19,7 +19,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'modal-functions)
+
 
 (defun safe-funcall (fn &rest args)
   "Call FN with remaining ARGS if not nil, else return first of ARGS"
@@ -129,5 +129,7 @@ MODE may be a symbol naming a mode, or a list of such symbols."
 		 (defmodalalias0 fun this-mode def))
 	       mode))
     (defmodalalias0 fun mode def)))
+
+(provide 'modal-functions)
 
 ;;; end of modal-functions.el

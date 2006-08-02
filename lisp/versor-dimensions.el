@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-07-11 11:17:32 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-dimensions)
+
 (require 'versor-names)
 
 (mapcar 'makunbound '(versor-current-level-name moves-moves versor-meta-level versor-level))
@@ -334,7 +334,8 @@ See the definition of versor-make-movemap for details of move maps."
 		       (end-of-item versor-end-of-paragraph)
 		       (last end-of-buffer)
 		       (transpose transpose-paragraphs)
-		       (dwim versor-dwim-textually)))
+		       (dwim versor-other-end-of-item ;; versor-dwim-textually
+			     )))
 
 ;; (versor-define-moves movemap-blocks
 ;; 		     '((color "green")
@@ -734,5 +735,7 @@ With optional second arg non-nil, look in the next level up instead."
 		  (copy . versor-copy)
 		  (transpose . versor-transpose)
 		  (mark . versor-mark))))))
+
+(provide 'versor-dimensions)
 
 ;;;; end of versor-dimensions.el

@@ -1,5 +1,5 @@
 ;;;; versor-help.el -- help for versor
-;;; Time-stamp: <2006-07-18 09:39:27 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'versor-help)
+
 
 (defadvice describe-key (after versor (key) activate)
   "Further help for versor functions."
@@ -111,5 +111,7 @@
 			   versor-current-meta-level-name versor-current-level-name))
 	    (princ "\n  it is implemented by ")
 	    (describe-sub-function base)))))))
+
+(provide 'versor-help)
 
 ;;; end of versor-help.el

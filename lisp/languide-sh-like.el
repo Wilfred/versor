@@ -1,5 +1,5 @@
 ;;;; languide-sh-like.el -- shell etc definitions for language-guided editing
-;;; Time-stamp: <2006-03-29 20:51:01 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -19,7 +19,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'languide-sh-like)
+
 
 (defmodal move-into-previous-statement (sh-mode) ()
   "Move into the previous statement.
@@ -228,5 +228,7 @@ If the statement cannot be identified, return DEFAULT."
   (body "=" (upto ";"))
   (framework (remember "=") (remember ";"))
   (create (template & > (p "Variable: ") " = " r ";")))
+
+(provide 'languide-sh-like)
 
 ;;; end of languide-sh-like.el

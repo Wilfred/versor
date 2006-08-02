@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-07-30 12:02:53 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-commands)
+
 (require 'versor-menu)
 (require 'versor-trim-whitespace)
 
@@ -844,5 +844,7 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
 (defun versor-languide-command-p (command)
   "Return whether COMMAND is part of the versor wrapper for languide."
   (string-match "^versor-languide-" (symbol-name command)))
+
+(provide 'versor-commands) 
 
 ;;;; end of versor-commands.el

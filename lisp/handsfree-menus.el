@@ -1,7 +1,7 @@
 ;;;; handsfree-menus.el
-;;; Time-stamp: <2004-01-26 14:32:42 john>
+;;; Time-stamp: <2006-08-02 12:19:09 john>
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -19,7 +19,6 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'handsfree-menus)
 (require 'tmm)				; this is based on tmm, at least for now
 (require 'handsfree-menu-additions)
 
@@ -56,3 +55,7 @@ handsfree-menu-count
 )))
 
 (add-hook 'type-break-statistics-hook 'handsfree-type-break-stats-hook)
+
+(provide 'handsfree-menus)
+
+;;; end of handsfree-menus.el

@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-07-28 17:54:30 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:55 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -20,7 +20,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (require 'cl)
-(provide 'languide-c-like)
+
 
 (defun languide-c-back-to-possible-ender (bod)
   "Move point back to be at something that might end a C statement,
@@ -1366,5 +1366,7 @@ languide-region-detail-level says how much incidental information to include."
 				      (cdr statement)))))
 		    statements)))
 	'(perl-mode c-mode java-mode))
+
+(provide 'languide-c-like)
 
 ;;; end of languide-c-like.el

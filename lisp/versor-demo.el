@@ -1,5 +1,5 @@
 ;;;; versor-demo.el -- demo for versor and languide
-;;; Time-stamp: <2006-06-13 18:32:16 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -16,7 +16,7 @@
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 (require 'versor)
-(provide 'versor-demo)
+
 
 (defun versor-find-demo-files ()
   (let ((dirs load-path))
@@ -626,5 +626,7 @@ are in scope at that point." 10
 	    ;; (funcall demo-lookat-function)
 	    )
 	(sit-for demo-slowdown)))))
+
+(provide 'versor-demo)
 
 ;;; end of versor-demo.el

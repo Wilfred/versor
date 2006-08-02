@@ -1,5 +1,5 @@
 ;;;; languide-html-like.el -- HTML definitions for language-guided editing
-;;; Time-stamp: <2006-03-28 21:06:20 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:55 john>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -19,7 +19,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'languide-html-like)
+
 
 (defstatement comment (html-helper-mode html-mode)
   "Comment"
@@ -70,5 +70,7 @@
   (create
    (precondition (not-within "<a[^>]*>" "</a>"))
    (template "<a href=\"" p "\">" r "</a>")))
+
+(provide 'languide-html-like)
 
 ;; end of languide-html-like.el

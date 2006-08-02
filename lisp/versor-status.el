@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-07-11 11:49:34 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-status)
+
 (require 'versor-dimensions)
 
 ;; Display the current meta-dimension and dimension etc
@@ -198,5 +198,7 @@ The message goes away as soon as you enter any input."
 	    (decf meta)))
 	result)
       "\n"))))
+
+(provide 'versor-status)
 
 ;;;; end of versor-status.el

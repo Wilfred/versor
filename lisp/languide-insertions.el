@@ -1,5 +1,5 @@
 ;;;; languide-insertions.el
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-08-02 12:18:05 john>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -19,7 +19,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'languide-insertions)
+
 (require 'cl)
 (require 'languide)
 
@@ -71,5 +71,7 @@ Designed to be called from versor-insert-around etc."
 	 (statement-description (assoc (intern statement-type) (statement-types)))
 	 (creator (assoc 'create statement-description)))
     creator))
+
+(provide 'languide-insertions)
 
 ;;; end of languide-insertions.el

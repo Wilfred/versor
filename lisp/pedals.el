@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2006-07-19 12:23:23 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -19,7 +19,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'pedals)
+
 
 (require 'versor)
 (require 'versor-menu)
@@ -743,7 +743,8 @@ See handsfree-menus.el for menus."
       (princ edge-format)
       (princ outer-format)
       (princ outer-edge-format)
-
       )))
+
+(provide 'pedals)
 
 ;;; end of pedals.el

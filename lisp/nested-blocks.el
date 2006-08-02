@@ -1,5 +1,5 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2006-07-30 22:46:43 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -24,7 +24,7 @@
 ;; very pleasing -- lots of this worked first time
 ;; less pleasing -- the rest was really fiddly
 
-(provide 'nested-blocks)
+
 
 ;; We define each part of the syntax for each major mode by an alist
 ;; of major mode name to regular expression. An alternative would be
@@ -365,5 +365,7 @@ This is a list of strings."
 		      (nested-blocks-forward)
 		      (nested-blocks-template start (point))))))
     (apply 'insert template)))
+
+(provide 'nested-blocks)
 
 ;; end of nested-blocks.el

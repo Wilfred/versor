@@ -1,5 +1,5 @@
 ;;;; versor-tracking.el -- tracking ordinary cursor, or using mouse, for versor
-;;; Time-stamp: <2006-07-07 14:53:16 john>
+;;; Time-stamp: <2006-08-02 12:18:06 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'versor-tracking)
+
 
 (defun versor-select-around-point (where)
   "Move the selection to surround WHERE (point, interactively)."
@@ -67,5 +67,7 @@
   "Make Versor use the mouse."
   (interactive)
   (global-set-key [mouse-1] 'versor-mouse-action))
+
+(provide 'versor-tracking)
 
 ;;; end of versor-tracking.el

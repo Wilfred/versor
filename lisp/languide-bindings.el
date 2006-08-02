@@ -1,5 +1,5 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2006-05-24 11:17:38 jcgs>
+;;; Time-stamp: <2006-08-02 12:19:35 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'languide-bindings)
+
 (require 'cl)
 (require 'modal-functions)
 
@@ -122,6 +122,9 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required.")
 
 (defmodel insert-global-variable-declaration (name type initial-value)
   "Insert a definition for a global variable called NAME, of TYPE, with INITIAL-VALUE.
+
 TYPE and INITIAL-VALUE may be null, but the NAME is required.")
+
+(provide 'languide-bindings)
 
 ;;; end of languide-bindings.el

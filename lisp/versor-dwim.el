@@ -1,5 +1,5 @@
 ;;;; versor-dwim.el -- move between code, comments, and strings, etc
-;;; Time-stamp: <2006-05-04 12:06:47 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'versor-dwim)
+
 
 (defun versor-type-of-place (&optional place)
   "Return what type of place PLACE (default is point) is."
@@ -206,5 +206,7 @@ factored out of the calculations."
 			   'latex-mode
 			   'texinfo-mode
 			   'mail-mode)
+
+(provide 'versor-dwim)
 
 ;;; end of versor-dwim.el

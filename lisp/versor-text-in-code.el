@@ -1,5 +1,5 @@
 ;;; versor-text-in-code.el -- versatile cursor handling of strings and comments
-;;; Time-stamp: <2006-06-26 19:02:48 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-text-in-code)
+
 (require 'versor-names)
 (require 'versor-dimensions)
 
@@ -89,3 +89,5 @@ Meant to go on post-command-hook."
 (add-hook 'post-command-hook 'versor-text-in-code-function)
 
 (provide 'versor-text-in-code)
+
+;;; end of versor-text-in-code.el

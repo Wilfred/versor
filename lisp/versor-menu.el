@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2006-03-09 14:52:32 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -27,7 +27,6 @@
 ;;; example, reversing motion if you only have a "move" key rather
 ;;; than a "next" and "previous" pair
 
-(provide 'versor-menu)
 (require 'versor)
 (require 'versor-names)
 (require 'versor-language-edits)
@@ -136,3 +135,7 @@ This will try the help system, tag files etc."
       "no information about %s" string))))
     (message "%s" information)
     information))
+
+(provide 'versor-menu)
+
+;;; end of versor-menu.el

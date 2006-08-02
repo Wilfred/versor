@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2006-03-26 15:18:05 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -24,7 +24,7 @@
 ;;; This is not needed for using versor just through the cursor keys
 ;;; or pedals, but is used by versor-voice and versor-menu
 
-(provide 'versor-names)
+
 (require 'versor)
 
 (defvar versor-level-names-cache nil
@@ -206,5 +206,7 @@ With non-nil arg, include meta-level names."
     (setq versor-all-names-grid-formats
 	  (mapcar (lambda (w) (format "%% %ds" (- 0 w 1)))
 		  (versor-all-names-grid-widths)))))
+
+(provide 'versor-names)
 
 ;;; end of versor-names.el

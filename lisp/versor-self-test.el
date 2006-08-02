@@ -1,5 +1,5 @@
 ;;;; versor-self-test.el -- check what is defined and what is not
-;;; Time-stamp: <2006-03-28 17:19:27 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'versor-self-test)
+
 
 (defun map-statement-parts (mode-fn statement-fn statement-part-fn)
   (mapatoms
@@ -98,5 +98,7 @@
 (defun versor-show-omissions ()
   (interactive)
   (versor-self-test t ""))
+
+(provide 'versor-self-test)
 
 ;;; end of versor-self-test.el

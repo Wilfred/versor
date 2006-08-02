@@ -1,5 +1,5 @@
 ;;;; word-isearch.el -- isearch-like facility working in whole words
-;;; Time-stamp: <2006-01-25 14:03:51 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:06 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'word-isearch)
+
 
 ;;; This is aimed primarily for use by voice, but could also be used
 ;;; with a menu-like selection system, and so could be suitable as the
@@ -107,7 +107,9 @@ This is a list of:
     (with-output-to-temp-buffer "*MMessages*"
       (dolist (line (nreverse mmessages))
 	(princ line)
-	(princ "\n")))
-    ))
+	(princ "\n")))))
+
+
+(provide 'word-isearch)
 
 ;;; end of word-isearch.el

@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-07-18 13:01:22 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:06 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor)
+
 (require 'tempo)
 (require 'cl)
 (require 'versor-custom)
@@ -451,6 +451,9 @@ The following arguments suppress some of the default behaviours:
 
 ;;  a little convenience for when editing the source code of versor
 (put 'versor-as-motion-command 'lisp-indent-function 1)
+
 (put 'versor-as-versor-command 'lisp-indent-function 0)
+
+(provide 'versor)
 
 ;;;; end of versor.el

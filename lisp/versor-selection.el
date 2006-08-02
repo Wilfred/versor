@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-06-27 12:02:29 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-selection)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; highlighting current selection ;;;;
@@ -333,5 +333,7 @@ of conses of start . end, in versor-latest-items."
 	     versor-items)))
     ;; (versor-display-item-list (format "starting command %S" this-command) versor-latest-items)
     (delete-versor-overlay)))
+
+(provide 'versor-selection)
 
 ;;;; end of versor-selection.el

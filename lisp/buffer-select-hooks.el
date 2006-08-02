@@ -1,9 +1,9 @@
 ;;;; buffer-select-hooks.el -- do things when noticing that buffer or mode has changed
-;;; Time-stamp: <2005-02-10 15:49:48 jcgs>
+;;; Time-stamp: <2006-08-02 12:19:35 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'buffer-select-hooks)
+
 
 (defvar buffer-before-command nil
   "The buffer which was current before the last command.")
@@ -117,6 +117,8 @@ from major-mode.")
 (defun mode-selection-in-title-bar (&rest ignore)
   "Indicate the mode in the title bar."
   (set-frame-name (concat "emacs@" (system-name) ":" mode-name)))
+
+(provide 'buffer-select-hooks)
 
 ;; (add-hook 'mode-selection-hook 'mode-selection-in-title-bar)
 

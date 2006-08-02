@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-07-29 14:51:47 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-custom)
+
 
 (defgroup versor nil
   "Switch cursor keys between different sorts of movement, and do some high-level editing."
@@ -317,5 +317,7 @@ If set to a number, waits that number of seconds after telling you."
   "The label to indicate going straight back up to the top of the tree."
   :type 'string
   :group 'versor)
+
+(provide 'versor-custom)
 
 ;;;; end of versor-custom.el

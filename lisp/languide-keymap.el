@@ -1,5 +1,5 @@
 ;;;; languide-keymap.el -- keymap and menu setup for languide
-;;; Time-stamp: <2006-05-19 11:54:48 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'languide-keymap)
+
 (require 'versor-language-edits)
 
 (defvar versor-languide-menu-items
@@ -64,7 +64,6 @@
 (define-key languide-map "^" 'versor-languide-remove-control)
 (define-key languide-map ";" 'versor-languide-comment-selection)
 (define-key languide-map "\C-h" 'versor-describe-selection)
-
 (define-key global-map "\M-#" 'languide-map)
 
 ;; todo: make languide toolbar -- see example from info:
@@ -75,5 +74,7 @@
 ;; 	(tool-bar-add-item-from-menu 'Info-prev "left_arrow" Info-mode-map)
 ;; ...
 
+
+(provide 'languide-keymap)
 
 ;;; end of languide-keymap.el

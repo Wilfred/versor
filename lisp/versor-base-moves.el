@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-07-28 17:50:14 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -23,7 +23,7 @@
 
 (require 'cl)
 (require 'modal-functions)
-(provide 'versor-base-moves)
+
 
 ;; some internal functions for operations that aren't typically there already,
 ;; or that normal emacs does slightly differently from what we want
@@ -1212,5 +1212,7 @@ If so, it is called on the other two arguments."
   "Go to the last property change."
   (interactive "p")
   (goto-char (previous-property-change (point-max) (current-buffer))))
+
+(provide 'versor-base-moves)
 
 ;;;; end of versor-base-moves.el

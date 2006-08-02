@@ -1,5 +1,5 @@
 ;;;; versor-modal.el -- part of versatile cursor
-;;; Time-stamp: <2006-03-09 14:52:32 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-modal)
+
 (require 'versor-names)
 
 (defun versor-bind-modal (mode meta-level level action fn)
@@ -60,4 +60,9 @@
 (versor-bind-modal 'html-helper-mode "text" "paragraphs" 'insert 'tempo-template-html-paragraph)
 
 (versor-bind-modal 'html-helper-mode "tables" "cells" 'insert 'tempo-template-html-table-data)
+
 (versor-bind-modal 'html-helper-mode "tables" "rows" 'insert 'tempo-template-html-table-row)
+
+(provide 'versor-modal)
+
+;;; end of versor-modal.el

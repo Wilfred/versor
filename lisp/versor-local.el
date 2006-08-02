@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2006-07-04 16:26:33 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-local)
+
 (require 'versor)
 (require 'buffer-select-hooks)
 (require 'cl)
@@ -112,7 +112,10 @@
 ;;;; setup
 
 (add-hook 'mode-selection-hook 'versor-mode-change-function)
+
 (add-hook 'buffer-selection-hook 'versor-buffer-change-function)
+
+(provide 'versor-local)
 
 ;;;; end of versor-local.el
 

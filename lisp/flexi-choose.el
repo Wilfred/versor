@@ -1,7 +1,6 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <2006-07-30 22:59:31 jcgs>
+;;; Time-stamp: <2006-08-02 12:07:43 john>
 
-(provide 'flexi-choose)
 ;; if this is loaded before we are, put it into our menu
 (require 'languide)
 (require 'cl)
@@ -537,5 +536,7 @@ With optional LIMIT argument, only looking recently used buffers."
 ;; I don't find this one useful, although it seemed like a good idea at first
 ;;(define-key flexi-choose-menu [switch-to-recent-buffer]
 ;;  '("Switch to recent buffer" . flexi-switch-to-recent-buffer))
+
+(provide 'flexi-choose)
 
 ;;;; end of flexi-choose.el

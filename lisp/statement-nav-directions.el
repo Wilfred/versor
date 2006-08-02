@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-07-28 21:07:31 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 ;; the directions as selecting what it moves over, by wrapping it in a
 ;; call to ``remember''.
 
-(provide 'statement-nav-directions)
+
 
 (defconst languide-parts '("container" "framework" "whole" "head" "body" "tail")
   "The parts we can navigate to.")
@@ -338,5 +338,7 @@ but the compound statement delimiters are not."
 If not, stop scanning the navigation directions here."
   (unless (looking-at pattern)
     (throw 'navigation-end nil)))
+
+(provide 'statement-nav-directions)
 
 ;;; end of statement-nav-directions.el

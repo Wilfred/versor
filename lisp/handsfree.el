@@ -1,7 +1,7 @@
 ;;;; handsfree.el -- operate emacs (almost) entirely through some footswitches
-;;; Time-stamp: <2004-05-07 17:30:54 john>
+;;; Time-stamp: <2006-08-02 12:18:56 john>
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -19,8 +19,6 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'handsfree)
-
 (require 'pedals)
 (require 'flexi-choose)
 (require 'handsfree-menus)
@@ -29,5 +27,9 @@
 (when (null yes-or-no-p-history)
   (setq yes-or-no-p-history '("yes" "no")))
 
+(provide 'handsfree)
+
 ;;; end of handsfree.el
+
+
 

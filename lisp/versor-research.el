@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-05-18 15:24:07 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'versor-research)
+
 
 (defvar versor-research-buffer-before-command nil
   "The buffer we were in before the current command.")
@@ -298,5 +298,7 @@ directly to a non-versor edit.")
       (princ "\n"))
     (basic-save-buffer)
     (versor-research-reset t)))
+
+(provide 'versor-research)
 
 ;;; end of versor-research.el

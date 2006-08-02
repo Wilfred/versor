@@ -1,5 +1,5 @@
 ;;;; versor-alter-item.el -- choose possible value for the current item
-;;; Time-stamp: <2006-05-04 12:11:23 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -21,7 +21,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'versor-alter-item)
+
 (require 'modal-functions)
 (require 'languide)			; for variables-in-scope
 
@@ -345,5 +345,7 @@ have at the time."
    (versor-set-status-display)
    (setq buffer-undo-list (cdr versor-alterations-old-undo))
    (use-local-map versor-alterations-old-keymap)))
+
+(provide 'versor-alter-item)
 
 ;;; end of versor-alter-item.el

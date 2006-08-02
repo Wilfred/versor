@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-07-29 15:04:54 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -73,7 +73,7 @@
 ;; This is designed to work with versor, so you may want to have that loaded too.
 ;; It is also designed with vr-mode in mind.
 
-(provide 'languide)
+
 (require 'cl)
 (require 'modal-functions)
 (require 'languide-custom)
@@ -356,5 +356,7 @@ Returns the new point."
 (define-key languide-keymap "d" 'languide-convert-region-to-function)
 (define-key languide-keymap "(" 'surround-region-with-call)
 (define-key languide-keymap "x" 'remove-surrounding-call)
+
+(provide 'languide)
 
 ;;; end of languide.el

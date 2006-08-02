@@ -1,7 +1,7 @@
 ;;;; handsfree-read-number.el
-;;; Time-stamp: <2004-01-26 14:47:06 john>
+;;; Time-stamp: <2006-08-02 12:18:54 john>
 ;;
-;; Copyright (C) 2004  John C. G. Sturdy
+;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -18,8 +18,6 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-(provide 'handsfree-read-number)
 
 (defvar read-number-history nil
   "History variable for reading numbers")
@@ -45,5 +43,7 @@
 (defun handsfree-read-percentage (prompt initial)
   "Read a percentage, with PROMPT and INITIAL."
   (handsfree-read-number prompt 0 100 initial))
+
+(provide 'handsfree-read-number)
 
 ;;; end of handsfree-read-number.el

@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-07-28 22:05:59 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'statement-navigation)
+
 (require 'cl)
 (require 'modal-functions)
 (require 'versor-commands) ; for versor-as-motion-command
@@ -221,5 +221,7 @@ This also updates the mode line display of it."
   (save-excursion
     (beginning-of-statement 1)
     (identify-statement nil)))
+
+(provide 'statement-navigation)
 
 ;;; end of statement-navigation.el

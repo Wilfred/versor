@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-05-31 17:13:58 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -19,7 +19,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'languide-lisp-like)
+
 
 (defmodal beginning-of-statement-internal (lisp-mode
 					   emacs-lisp-mode
@@ -1069,5 +1069,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
 				      (cdr statement)))))
 		    statements)))
 	'(lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode))
+
+(provide 'languide-lisp-like)
 
 ;;; end of languide-lisp-like.el

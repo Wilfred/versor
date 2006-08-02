@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2006-05-04 12:03:35 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'statement-parts)
+
 (require 'statement-nav-directions)
 
 (defun navigate-this-whole ()
@@ -137,5 +137,7 @@
       (memq last-command languide-safe-commands)
       (and (memq last-command versor-commands)
 	   (memq versor-last-vicarious-command languide-safe-commands))))
+
+(provide 'statement-parts)
 
 ;;; end of statement-parts.el

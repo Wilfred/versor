@@ -1,5 +1,5 @@
 ;;;; versor-keymap.el -- set up a keymap for versor
-;;; Time-stamp: <2006-04-25 18:55:48 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'versor-keymap)
+
 
 (defvar versor-general-keymap (make-keymap "Versor"))
 
@@ -64,5 +64,7 @@
   (use-local-map versor-general-keymap)
   (add-hook 'post-command-hook 'versor-command-mode-prompter)
   (message "q to return to normal editing"))
+
+(provide 'versor-keymap)
 
 ;;; end of versor-keymap.el

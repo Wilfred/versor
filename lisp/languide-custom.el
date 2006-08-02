@@ -1,5 +1,5 @@
 ;;;; languide-custom.el -- customization definitions for languide
-;;; Time-stamp: <2006-07-29 15:09:05 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:55 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'languide-custom)
+
 
 (defgroup languide nil
   "Languide-guided editing.
@@ -95,5 +95,7 @@ You should need to set this only if working on the internals of languide."
 	      (const previous-statement)
 	      (const skip-to-actual-code)
 	      (const statement-container)))
+
+(provide 'languide-custom)
 
 ;;; end of languide-custom.el

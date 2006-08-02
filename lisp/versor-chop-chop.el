@@ -1,5 +1,5 @@
 ;;;; versor-chop-chop.el -- move quickly using binary chop
-;;; Time-stamp: <2006-03-09 14:52:35 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'versor-chop-chop)
+
 (require 'versor-containers)
 
 (defvar chop-colours [ "red" "green" "blue" ])
@@ -78,5 +78,7 @@
     ))
 
 (global-set-key [ f4 ] 'versor-chop)
+
+(provide 'versor-chop-chop)
 
 ;;; end of versor-chop-chop.el

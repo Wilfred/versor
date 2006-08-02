@@ -1,5 +1,5 @@
 ;;;; statement-cache.el -- cache statement data for statement-navigation.el
-;;; Time-stamp: <2006-06-29 19:07:52 john>
+;;; Time-stamp: <2006-08-02 12:18:07 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(provide 'statement-cache)
+
 
 (defvar statements-known nil
   "List of known statement positions (buffer-local).
@@ -206,5 +206,7 @@ Turn this off for debugging statement navigation.")
 					   (body . "green")
 					   (tail . "blue"))))))
 	  (push o2 statement-cache-display-overlays))))))
+
+(provide 'statement-cache)
 
 ;;; end of statement-cache.el

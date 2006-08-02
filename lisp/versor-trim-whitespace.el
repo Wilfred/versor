@@ -1,5 +1,5 @@
 ;;;; versor-trim-whitespace.el -- trim whitespace after a versor command
-;;; Time-stamp: <2006-03-09 14:52:36 john>
+;;; Time-stamp: <2006-08-02 12:18:06 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -22,8 +22,6 @@
 ;;; time to adjust whitespace, hence doing it this way. I doubt it
 ;;; would make a good general post-command-hook!
 
-(provide 'versor-trim-whitespace)
-
 (defvar versor-trim-whitespace t
   "*Whether to adjust the whitespace around the place affected by each versor editing action.")
 
@@ -40,5 +38,7 @@
 			    (char-syntax (char-after)))))
 	(message "%c %c" syntax-before syntax-after)
 	(languide-trim-whitespace syntax-before syntax-after)))))
+
+(provide 'versor-trim-whitespace)
 
 ;;; end of versor-trim-whitespace.el

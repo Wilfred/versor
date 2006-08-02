@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-07-28 12:53:26 jcgs>
+;;; Time-stamp: <2006-08-02 12:18:55 john>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -19,7 +19,7 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(provide 'languide-edits)
+
 (require 'cl)
 (require 'languide)
 
@@ -507,5 +507,7 @@ sCondition: ")
 (defun languide-remove-control ()
   ;; todo: write languide-remove-control
   )
+
+(provide 'languide-edits)
 
 ;;; end of languide-edits.el
