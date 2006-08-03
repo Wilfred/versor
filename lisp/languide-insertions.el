@@ -1,5 +1,5 @@
 ;;;; languide-insertions.el
-;;; Time-stamp: <2006-08-02 12:18:05 john>
+;;; Time-stamp: <2006-08-03 20:23:39 john>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -19,9 +19,8 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
 (require 'cl)
-(require 'languide)
+
 
 (defvar languide-insertion-sources
   '(languide-local-variables)

@@ -1,5 +1,5 @@
 ;;;; versor-voice.el
-;;; Time-stamp: <2006-08-02 12:18:06 john>
+;;; Time-stamp: <2006-08-03 20:23:39 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -23,9 +23,6 @@
 
 ;; This module provides spoken command definitions for versor; see
 ;; versor.el itself for spoken output
-
-
-(require 'versor)
 
 (defvar vr-versor-dimension-command-list nil
   "Vocal movement commands for versor.
