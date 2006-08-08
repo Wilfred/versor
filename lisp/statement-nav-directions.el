@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-08-06 12:39:28 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -113,6 +113,7 @@ package to the end of an item."
     expression-contents
     rest-of-line
     block-at-this-depth
+    python-docstring
     )
   "Functions for statement navigation, that can select what they describe.
 All these functions should return a cons of the start and end
@@ -332,6 +333,14 @@ but the compound statement delimiters are not."
   "Select the preceding expression (for statement navigation)."
   (backward-sexp 1)
   (expression))
+
+(defun python-docstring ()
+  "Select a python docstring."
+  (if (looking-at "\"\"\"")
+      (let ((start (point)))
+	(goto-char (match-end 0))
+	(search-forward "\"\"\"")
+	(cons start (point)))))
 
 (defun continue-if (pattern)
   "Check that we are looking at PATTERN.
