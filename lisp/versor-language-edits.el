@@ -1,5 +1,5 @@
 ;;;; versor-language-edits.el -- versor commands to access commands in language-edits.el
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-08-03 21:33:09 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -150,8 +150,8 @@ The function name is left at the top of the kill ring."
 (defun versor-languide-remove-control ()
   "Remove the control around the current selection."
   (interactive)
+  (languide-remove-control))
 
 (provide 'versor-language-edits)
-  (languide-remove-control))
 
 ;;; end of versor-language-edits.el
