@@ -1,5 +1,5 @@
 ;;;; languide-python.el -- languide definitions for python
-;;; Time-stamp: <2006-07-30 22:57:04 jcgs>
+;;; Time-stamp: <2006-08-06 12:39:38 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -95,6 +95,8 @@ this does not have to work."
       (and (safe-forward-sexp 1)
 	   (looking-at " *(")))
     'function-call)
+   ((looking-at "\"\"\"")
+    'docstring)
    ;; todo: recognize variable declarations with and without initial values
    (t default)))
 
@@ -307,9 +309,7 @@ languide-region-detail-level says how much incidental information to include."
 
 (defstatement comment (python-mode)
   "Comment"
-  (head)
-  (body)
-  (tail)
+  (head (python-docstring))
   (create))
 
 (defstatement progn (python-mode)
