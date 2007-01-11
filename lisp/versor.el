@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-08-02 12:18:06 john>
+;;; Time-stamp: <2006-09-30 20:36:30 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -366,6 +366,7 @@ The following arguments suppress some of the default behaviours:
 
       (versor-global-set-key [ delete ]   'versor-kill)
       (versor-global-set-key [ M-delete ] 'versor-copy)
+      (versor-global-set-key [ C-delete ] 'versor-kill-surrounding)
       (define-key versor-altering-map [ delete ] 'versor-abandon-altering-item)
 
       (define-key versor-insertion-placement-keymap [ left ]  'versor-insert-before)
