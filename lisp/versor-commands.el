@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-12-17 21:33:21 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -102,7 +102,7 @@ command to be run."
   "*Whether to report on movements made by the motion framework.")
 
 (defmacro versor-as-motion-command (item-var &rest body)
-  "Run BODY as a versor motion command.
+  "With ITEM-VAR bound to the selection, run BODY as a versor motion command.
 Necessary pre- and post-processing get done.
 
 The BODY may call versor-set-current-item to show us where
@@ -588,23 +588,41 @@ Does yank, then adjusts whitespace, versor-style."
     (versor-trim-whitespace (region-end))
     (versor-trim-whitespace (region-beginning))))
 
+(defun versor-kill-surrounding ()
+  "Kill the sexp surrounding the selection, leaving the selection in its place."
+  (interactive)
+  (versor-as-motion-command current-item
+    (let* ((item-start (versor-overlay-start current-item))
+	   (item-end (versor-overlay-end current-item))
+	   (item-text (buffer-substring item-start item-end))
+	   (surrounding-item (versor-backward-up-list 1))
+	   (surrounding-end (versor-overlay-end surrounding-item))
+	   (surrounding-start (versor-overlay-start surrounding-item)))
+      (kill-region surrounding-start
+		   surrounding-end)
+      (goto-char surrounding-start)
+      (insert item-text)
+      (versor-set-current-item surrounding-start
+			       (+ surrounding-start
+				  (- item-end item-start))))))
+
 (defun versor-transpose ()
   "Transpose this item with the following one."
   (interactive)
   (versor-as-motion-command current-item
-   (let ((ready-made (versor-get-action 'transpose)))
-     (if ready-made
-	 (versor-call-interactively ready-made)
-       (error "using undertested general implementation of versor-transpose")
-       (let ((starting (point)))
-	 (versor-end-of-item)
-	 (let ((latter (buffer-substring starting (point))))
-	   (delete-region starting (point))
-	   (goto-char starting)
-	   (versor-start-of-item)
-	   (insert latter)))
-       )
-     )))
+    (let ((ready-made (versor-get-action 'transpose)))
+      (if ready-made
+	  (versor-call-interactively ready-made)
+	(error "using undertested general implementation of versor-transpose")
+	(let ((starting (point)))
+	  (versor-end-of-item)
+	  (let ((latter (buffer-substring starting (point))))
+	    (delete-region starting (point))
+	    (goto-char starting)
+	    (versor-start-of-item)
+	    (insert latter)))
+	)
+      )))
 
 (defvar versor-isearch-string nil
   "A string that we pass to isearch, via versor-isearch-mode-hook-function")
@@ -791,15 +809,18 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
   (versor-as-motion-command current-item
    (let ((new-thing (or given-thing
 			(versor-get-insertable 2 "Type of insertion around item: "))))
-     ;; (message "insert-around: current-item=%S new-thing=%S" current-item new-thing)
+     (message "insert-around: current-item=%S new-thing=%S" current-item new-thing)
      ;; todo: clever interface to skeletons and tempo templates
      (cond
       ((eq (car new-thing) 'template)
-       ;; insert a tempo template
        ;; prepare region from versor data
-       ;; (tempo-insert-template (cdr new-thing) t)
-       (error "insert-around from template not yet implemented")
-       )
+       (let ((old-mark (mark t)))
+	 ;; unfortunately, the tempo code expects the mark to be used
+	 (set-mark (versor-overlay-end current-item))
+	 (goto-char (versor-overlay-start current-item))
+	 ;; do the insertion
+	 (tempo-insert-template (cadr new-thing) t)
+	 (set-mark old-mark)))
       ((eq (car new-thing) 'skeleton)
        ;; insert a skeleton
        ;; prepare interregions from versor data
