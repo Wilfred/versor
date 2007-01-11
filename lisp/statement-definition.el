@@ -1,5 +1,5 @@
 ;;;; statement-definition.el -- description mechanism for statement syntax in various languages
-;;; Time-stamp: <2006-08-06 12:39:28 jcgs>
+;;; Time-stamp: <2006-09-30 18:29:13 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -81,8 +81,10 @@ of that kind of statement when wrapping the statement around a block of code."
      ((memq type '(head body tail framework))
       (cons type `(statement-navigate ,@(cdr part))))
      ((memq type '(create add-head add-trailer))
-      (mapcar 'make-statement-create-part
-	      part))
+      (message "make-statement-part %S %S --> %S" type (cadr part) (make-statement-create-part (cadr part)))
+      (cons type
+	    (make-statement-create-part
+	     (cadr part))))
      (t
       part))))
 
