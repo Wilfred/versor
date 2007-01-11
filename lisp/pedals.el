@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-11-28 11:09:50 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -19,15 +19,12 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
-
 (require 'versor)
 (require 'versor-menu)
-
 (require 'structure-edit)
 
 (defvar pedals-hosts-preferring-num-lock
-  '("hosea")
+  nil
   "Hosts on which the pedals appear to work better with the keypad in num lock mode.")
 
 (defun handsfree-use-num-lock ()
@@ -455,6 +452,27 @@ which are most suitable for duplicating onto pedals."
   (define-key sidebrain-browse-tasks-mode-keymap pedal-S-menu 'sidebrain-browse-tasks-delete)
   (define-key sidebrain-browse-tasks-mode-keymap pedal-menu 'sidebrain-browse-tasks-select))
 
+(defun planner-pedal-follow-or-menu ()
+  "Visit the link at point, or bring up the main menu if no link is found."
+  (interactive)
+  (let ((link (muse-link-at-point)))
+    (if link
+        (muse-visit-link link)
+      (handsfree-main-menu))))
+
+(defun planner-mode-define-pedals ()
+  "Set up pedals for planner mode."
+  (define-key planner-mode-map pedal-onward 'next-line)
+  (define-key planner-mode-map pedal-S-onward 'previous-line)
+  (define-key planner-mode-map pedal-aux 'muse-next-reference)
+  (define-key planner-mode-map pedal-S-aux 'muse-previous-reference)
+  (define-key planner-mode-map pedal-C-onward 'planner-lower-task)
+  (define-key planner-mode-map pedal-C-S-onward 'planner-raise-task)
+  (define-key planner-mode-map pedal-C-aux 'planner-lower-task-priority)
+  (define-key planner-mode-map pedal-C-S-aux 'planner-raise-task-priority)
+  (define-key planner-mode-map pedal-menu 'planner-pedal-follow-or-menu)
+  (remove-hook 'planner-mode-hook 'planner-mode-define-pedals))
+
 (defvar pedal:versor-change-dimension-ctrl nil
   "*Whether the control pedal should make versor movements switch dimension.
 This is the function normally assigned to meta and a versor movement, but
@@ -644,12 +662,16 @@ See handsfree-menus.el for menus."
 	   (keymapp view-mode-map))
       (view-mode-define-pedals)
     (add-hook 'view-mode-hook 'view-mode-define-pedals))
-  
 
   (if (and (boundp 'sidebrain-browse-tasks-mode-keymap)
 	   (keymapp sidebrain-browse-tasks-mode-keymap))
       (sidebrain-browse-tasks-mode-define-pedals)
-    (add-hook 'sidebrain-browse-mode-hook 'sidebrain-browse-tasks-mode-define-pedals)))
+    (add-hook 'sidebrain-browse-mode-hook 'sidebrain-browse-tasks-mode-define-pedals))
+
+  (if (and (boundp 'planner-mode-map)
+	   (keymapp planner-mode-map))
+      (planner-mode-define-pedals)
+    (add-hook 'planner-mode-hook 'planner-mode-define-pedals)))
 
 (defun pedals-draw-bindings (&optional keymap)
   "Draw the pedal bindings, in the main keymap or (from a program) the one given."
