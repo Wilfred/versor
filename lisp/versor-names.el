@@ -1,5 +1,5 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2006-08-03 20:20:42 john>
+;;; Time-stamp: <2006-12-17 21:33:21 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -137,14 +137,15 @@ in the current one."
      'versor-history-hack-var
      versor-current-level-name
      (mapcar 'car (versor-level-names)))))
-  (let ((level-pair (versor-find-level-by-single-name name)))
-    (if level-pair
-	(progn
-	  (setq versor-old-level versor-level
-		versor-meta-level (car level-pair)
-		versor-level (cdr level-pair))
-	  (versor-set-status-display))
-      (error "Could not find versor level named %s" name))))
+  (versor-as-motion-command item
+      (let ((level-pair (versor-find-level-by-single-name name)))
+	(if level-pair
+	    (progn
+	      (setq versor-old-level versor-level
+		    versor-meta-level (car level-pair)
+		    versor-level (cdr level-pair))
+	      (versor-set-status-display))
+	  (error "Could not find versor level named %s" name)))))
 
 (defun versor-all-level-names (&optional include-meta)
   "Return the list of level names.
