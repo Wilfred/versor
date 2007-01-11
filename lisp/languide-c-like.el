@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-08-02 12:18:55 john>
+;;; Time-stamp: <2006-12-09 18:08:04 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -1261,6 +1261,10 @@ languide-region-detail-level says how much incidental information to include."
   "Do-While statement."
   (head "do" (statement) "while" (expression))
   (body "do" (statement-contents))
+  (framework (remember "do")
+	     (remember "(") (expression) (remember ")")
+	     (skip-to-actual-code) (continue-if "{")
+	     (remember "{") (expressions) (remember "}"))
   (create (template & > "do {" r "} while (" p ")" n>)))
 
 (defstatement for (c-mode java-mode perl-mode)
@@ -1283,7 +1287,7 @@ languide-region-detail-level says how much incidental information to include."
 
 (defstatement defun (c-mode java-mode)
   "Function definition"
-  (head (upto ")"))
+  (head (upto "{"))
   (body "{" (statements))
   (framework)
   (create (template & >  (p "Function result type: ") (p "Function name: ")
