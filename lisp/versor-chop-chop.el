@@ -1,5 +1,5 @@
 ;;;; versor-chop-chop.el -- move quickly using binary chop
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-10-29 23:24:43 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -77,7 +77,7 @@
 
     ))
 
-(global-set-key [ f4 ] 'versor-chop)
+;; (global-set-key [ f4 ] 'versor-chop)
 
 (provide 'versor-chop-chop)
 
