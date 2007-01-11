@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-08-03 20:22:38 john>
+;;; Time-stamp: <2006-12-10 14:15:20 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -167,6 +167,7 @@ The user interface loosely mimics that of isearch."
     (overlay-put current-choice 'face isearch)
     (overlay-put current-choice 'priority 4)
     (goto-char (overlay-start current-choice))
+    (message "Use up, down, return to select a position")
     (let ((char (read-event))
 	  (n 0))
       (while (not (memq char '(return 13)))
@@ -191,6 +192,69 @@ The user interface loosely mimics that of isearch."
 	(setq char (read-event))))
     (mapcar 'delete-overlay overlays)
     (delete-overlay current-choice)))
+
+(defun languide-create-variable-binding (name type value-text &optional variables-needed nearest allow-conversions)
+  "Create a binding for NAME, of TYPE, giving it the VALUE-TEXT.
+Optional extra arguments are VARIABLES-NEEDED, NEAREST and ALLOW-CONVERSIONS.
+If languide-make-variables-interactively is non-nil, let the user choose the scope;
+otherwise, use the following rules:
+With optional NEAREST, use the narrowest binding point; otherwise use the widest scope
+in which all the variables used in the expression are defined.
+If NEAREST is a (positive) integer, use it as a count for how many
+possible binding points to go out by to make the binding. If NEAREST
+is the symbol 'interactive, or a negative number, get the user to
+choose a scoping point.
+With second optional argument ALLOW-CONVERSIONS, allow conversion of
+potential scoping points to real ones (such as converting lisp's
+\"progn\" to \"let ()\")."
+  (let* ((binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions))
+	 (binding-points (list (point))))
+    ;; see whether we can improve on the first binding point we find
+    (when (and binding-point
+	       (or (null nearest)
+		   (eq nearest 'interactive)
+		   (integerp nearest)))
+      (let ((best-so-far (point)))
+	;; (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
+	(while (and (progn
+		      (goto-char binding-point)
+		      (setq binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions)))
+		    (all-variables-in-scope-p (point) variables-needed)
+		    (or (not (integerp nearest))
+			(not (zerop (setq nearest (1- nearest))))))
+	  (setq best-so-far (point)
+		binding-points (cons best-so-far binding-points))
+	  ;; (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
+	  )
+	(when (null binding-point)
+	  ;; if there's no binding point,
+	  ;; move-to-enclosing-scope-last-variable-definition will
+	  ;; have left point in the right place
+	  (goto-char best-so-far))))
+    (when (null (car binding-points))
+      (setq binding-points (cdr binding-points)))
+    (unless (eq (point) (car binding-points))
+      (setq binding-points (cons (point) binding-points)))
+    (setq binding-points (mapcar (lambda (binding-point)
+				   (save-excursion
+				     (goto-char binding-point)
+				     (adjust-binding-point variables-needed)
+				     (point))) 
+				 binding-points))
+    (when (and (eq nearest 'interactive)
+	       ;; no point in interacting if there's only one
+	       (cdr binding-points))
+      (choose-place-interactively binding-points
+				  (lambda (variables-needed name type value-text)
+				    (adjust-binding-point variables-needed)
+				    (variable-declaration-texts name type value-text))
+				  (list variables-needed name type value-text))))
+  (adapt-binding-point)
+  (adjust-binding-point variables-needed)
+  (push (insert-variable-declaration name
+				     type
+				     value-text)
+	languide-auto-edit-overlays))
 
 (defun languide-convert-region-to-variable (from to name &optional nearest allow-conversions)
   "Take the expression between FROM and TO, and make it into a local variable called NAME.
@@ -222,58 +286,10 @@ P")
       (delete-region from to)
       (goto-char from)
       (insert name)
-      
-      (let* ((binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions))
-	     ;; (p 0) (os (list (make-overlay (point) (point))))
-	     (binding-points (list (point))))
-	;; see whether we can improve on the first binding point we find
-	;; (overlay-put (car os) 'before-string (propertize (int-to-string p) 'face (cons 'background-color "red")))
-	(when (and binding-point
-		   (or (null nearest)
-		       (eq nearest 'interactive)
-		       (integerp nearest)))
-	  (let ((best-so-far (point)))
-	    ;; (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
-	    (while (and (progn
-			  (goto-char binding-point)
-			  (setq binding-point (move-to-enclosing-scope-last-variable-definition allow-conversions)))
-			(all-variables-in-scope-p (point) variables-needed)
-			(or (not (integerp nearest))
-			    (not (zerop (setq nearest (1- nearest))))))
-	      ;; (setq os (cons (make-overlay (point) (point)) os) p (1+ p))
-	      ;; (overlay-put (car os) 'before-string (propertize (int-to-string p) 'face (cons 'background-color "red")))
-	      (setq best-so-far (point)
-		    binding-points (cons best-so-far binding-points))
-	      ;; (message "best so far is now %d; binding-point is %S" best-so-far binding-point)
-	      )
-	    (when (null binding-point)
-	      ;; if there's no binding point,
-	      ;; move-to-enclosing-scope-last-variable-definition will
-	      ;; have left point in the right place
-	      (goto-char best-so-far))))
-	(when (null (car binding-points))
-	  (setq binding-points (cdr binding-points)))
-	(unless (eq (point) (car binding-points))
-	  ;; (setq os (cons (make-overlay (point) (point)) os) p (1+ p))
-	  ;; (overlay-put (car os) 'after-string (propertize "final" 'face (cons 'background-color "red")))
-	  (setq binding-points (cons (point) binding-points)))
-	(setq binding-points (nreverse binding-points))
-	(when (and (eq nearest 'interactive)
-		   ;; no point in interacting if there's only one
-		   (cdr binding-points))
-	  (choose-place-interactively binding-points
-				      (lambda (variables-needed name type value-text)
-					(adjust-binding-point variables-needed)
-					(variable-declaration-texts name type value-text))
-				      (list variables-needed name type value-text)))
-	;; (mapcar 'delete-overlay os)
-	)
-      (adapt-binding-point)
-      (adjust-binding-point variables-needed)
-      (push (insert-variable-declaration name
-					 type
-					 value-text)
-	    languide-auto-edit-overlays)
+      (languide-create-variable-binding name type value-text
+					variables-needed
+					nearest
+					allow-conversions)
       (kill-new name))))
 
 (defun languide-convert-region-to-global (from to name)
@@ -473,9 +489,9 @@ sCondition: ")
 	(when (language-conditional-needs-unifying)
 	  (languide-unify-statements-region from to))
 	;; (message "after unification, %d..%d" (marker-position from) (marker-position to))
-	(let ((head-inserter (cadar (get-statement-part 'if-then 'add-head)))
-	      (trailer-inserter (cadar (get-statement-part 'if-then 'add-trailer)))
-	      (body-adjuster (cadar (get-statement-part 'if-then 'adjust-body)))
+	(let ((head-inserter (cadr (get-statement-part 'if-then 'add-head)))
+	      (trailer-inserter (cadr (get-statement-part 'if-then 'add-trailer)))
+	      (body-adjuster (cadr (get-statement-part 'if-then 'adjust-body)))
 	      (tempo-insert-region t)
 	      (old-marker (make-marker)))
 	  ;; (message "head-inserter is %S; trailer-inserter is %S" head-inserter trailer-inserter)
