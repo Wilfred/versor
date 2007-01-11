@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-12-01 20:41:49 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -34,7 +34,8 @@
   (forward-paragraph n)
   ;; (message "forward-paragraph %d; then forward over blank lines" n)
   (if (> n 0)
-      (while (looking-at "^\\s-*\\(\\s<.*\\)?$")
+      (while (and (looking-at "^\\s-*\\(\\s<.*\\)?$")
+		  (not (eobp)))
 	;; (message "skipping blank line at start of paragraph")
 	(forward-line 1))))
 
@@ -45,7 +46,8 @@
   (backward-paragraph (1+ n))
   ;; (message "backward-paragraph %d gone to %d; then forward over blank lines" n (point))
   (when (> n 0)
-    (while (looking-at "^\\s-*\\s<.*$")
+    (while (and (looking-at "^\\s-*\\s<.*$")
+		(not (bobp)))
       (previous-line 1))		; respect goal column
     (while (looking-at "^\\s-*$")
       (next-line 1))))			; respect goal column
@@ -206,7 +208,23 @@ Makes a two-part selection, of opening and closing brackets."
 	  (versor-extra-overlay close-start close-end)
 	  (goto-char open-start))))))
 
-(defvar py-statement-tail-parts-regexp "^\\s-*\\(else:\\|elif\\)"
+(defmodal versor-backward-up-list (sgml-mode xml-mode) (arg)
+  "Like backward-up-list, but with versor stuff around it, and for SGML/XML blocks."
+  (while (> arg 0)
+    (sgml-backward-up-element)
+    (setq arg (1- arg)))
+  (let* ((start-start (point))
+	 (start-end (search-forward ">" (point-max) t))
+	 (end-end (progn
+		    (goto-char start-start)
+		    (sgml-forward-element)
+		    (point)))
+	 (end-start (search-backward "<" (point-min) t)))
+    (make-versor-overlay start-start start-end)
+    (versor-extra-overlay end-start end-end)
+    (goto-char start-start)))
+
+ (defvar py-statement-tail-parts-regexp "^\\s-*\\(else:\\|elif\\)"
   "Regexp for things that show there is a tail to this python statement.")
 
 (defun py-end-of-statement ()
@@ -274,7 +292,14 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
     (versor-set-current-item start (point))
     (goto-char start)))
 
-(defmodal versor-down-list (python-mode) (arg)
+(defmodal versor-down-list (sgml-mode xml-mode) (arg)
+  "Like down-list, but with versor stuff around it, and for SGML/XML block structure."
+  (while (> arg 0)
+    (sgml-down-element)
+    (setq arg (1- arg)))
+  (versor-sgml-select-element))
+
+ (defmodal versor-down-list (python-mode) (arg)
   "Like down-list, but with some versor stuff around it, and understanding python."
   (interactive "p")
   (if (save-excursion
@@ -503,6 +528,28 @@ things with natural language punctuation."
     (versor-set-current-item start (point))
     (goto-char start)))
 
+(defun versor-sgml-select-element ()
+  "Set the versor selection to the element starting at point"
+  (skip-syntax-forward "-")
+  (condition-case evar
+      (let* ((start (point))
+	     (end (progn
+		    (sgml-forward-element)
+		    (skip-syntax-backward "-")
+		    (point))))
+	(versor-set-current-item start end)
+	(goto-char start))
+    (error nil)))
+
+(defmodal next-sexp (sgml-mode xml-mode) (n)
+  "next-sexp for the SGML group of languages."
+  (while (> n 0)
+    (condition-case evar
+	(sgml-forward-element)
+      (error nil))
+    (setq n (1- n)))
+  (versor-sgml-select-element))
+
 (defmodal next-sexp (python-mode) (n)
   "next-sexp for python blocks."
   (if (save-excursion
@@ -526,6 +573,28 @@ things with natural language punctuation."
       (skip-to-actual-code-backwards)
       (versor-set-current-item start (point))
       (goto-char start))))
+
+(defmodal next-sexp (prolog-mode) (n)
+  "next-sexp for prolog."
+  (skip-to-actual-code)
+  (let ((last (point)))
+    (cond
+     ((eq (point) (prolog-pred-start))
+      (while (> n 0)
+	(setq last (point))
+	(prolog-end-of-predicate)
+	(setq n (1- n))))
+     ((eq (point) (prolog-clause-start))
+      (while (> n 0)
+	(setq last (point))
+	(prolog-end-of-clause)
+	(setq n (1- n))))
+     (t
+      (while (> n 0)
+	(setq last (point))
+	(prolog-forward-list)
+	(setq n (1- n)))))
+    (versor-set-current-item last (point))))
 
 (defmodel previous-sexp (n)
   "Move backward N sexps.
@@ -613,6 +682,14 @@ they had markup tags. Likewise, treat sentences as blocks."
     (versor-set-current-item start (point))
     (goto-char start)))
 
+(defmodal previous-sexp (sgml-mode xml-mode) (n)
+  "previous-sexp for the SGML group of languages."
+  (while (> n 0)
+    (sgml-backward-element)
+    (setq n (1- n)))
+  (versor-sgml-select-element)
+  )
+
 (defmodal previous-sexp (python-mode) (n)
   "previous-sexp for python blocks."
   (if (save-excursion
@@ -637,6 +714,32 @@ they had markup tags. Likewise, treat sentences as blocks."
       (py-end-of-statement)
       (versor-set-current-item start (point))
       (goto-char start))))
+
+(defmodal previous-sexp (prolog-mode) (n)
+  "previous-sexp for prolog."
+  (let ((last (point)))
+    (cond
+     ((or (eq (point) (prolog-pred-start))
+	  (eq (point) (prolog-pred-end)))
+      (while (> n 0)
+	(setq last (point))
+	(prolog-beginning-of-predicate)
+	(setq n (1- n))))
+     ((or (eq (point) (prolog-clause-start))
+	  (eq (point) (prolog-clause-end)))
+      (while (> n 0)
+	(setq last (point))
+	(prolog-beginning-of-clause)
+	(setq n (1- n))))
+     (t
+      (while (> n 0)
+	(setq last (point))
+	(prolog-backward-list)
+	(setq n (1- n)))))
+    (versor-set-current-item (point) 
+			     (save-excursion
+			       (goto-char last)
+			       (skip-to-actual-code-backwards)))))
 
 (defmodel innermost-list ()
   "Move in by sexps until you can go in no more."
