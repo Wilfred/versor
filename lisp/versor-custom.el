@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-08-03 20:19:51 john>
+;;; Time-stamp: <2006-12-03 20:10:28 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -96,6 +96,12 @@ You might want to turn this off if your mode line is already has a lot in it."
   :type 'boolean
   :group 'versor-status)
 
+(defcustom versor-color-dimension-indicators t
+  "Whether to color the names of dimensions.
+The colors are used for this are the same as those used for the cursor and selection."
+  :type 'boolean
+  :group 'versor-status)
+
 (defcustom versor-multi-line-level-display (and (boundp 'emacs-major-version)
 					     (>= emacs-major-version 21))
   "*Whether to use multi-line indication of the current meta-level and level."
@@ -155,6 +161,13 @@ code that it may have a specific way of handling."
 (defcustom region-type-description-always nil
   "Whether to show the region type even if it is banal."
   :type 'boolean
+  :group 'versor-status)
+
+(defcustom versor-describe-selection-hook nil
+  "Functions to try to output a selection description.
+If any of them returns non-nil, the description is taken
+to have been output."
+  :type 'hook
   :group 'versor-status)
 
 (defcustom languide-text-word-counters
