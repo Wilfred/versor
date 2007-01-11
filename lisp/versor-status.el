@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-08-03 20:19:51 john>
+;;; Time-stamp: <2006-11-28 22:41:35 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -42,10 +42,22 @@ The result is in the form of a property list."
 
 (defun versor-set-status-display (&optional one of-these explicit)
   "Indicate the state of the versor system."
-  (setq versor-current-over-level-name (versor-level-name
-					(min (1+ versor-level)
-					     (1- (length (versor-current-meta-level)))))
-	versor-current-level-name (versor-level-name versor-level)
+  (setq versor-current-over-level-name (if versor-color-dimension-indicators
+					   (propertize (versor-level-name
+							(min (1+ versor-level)
+							     (1- (length (versor-current-meta-level)))))
+						       'face
+						       (cons 'foreground-color
+							     (cdr (assoc 'color (versor-current-level 1)))))
+					 (versor-level-name
+					  (min (1+ versor-level)
+					       (1- (length (versor-current-meta-level))))))
+	versor-current-level-name (if versor-color-dimension-indicators
+				      (propertize (versor-level-name versor-level)
+						  'face
+						  (cons 'foreground-color
+							(cdr (assoc 'color (versor-current-level)))))
+				    (versor-level-name versor-level))
 	versor-current-meta-level-name (versor-meta-level-name versor-meta-level))
   (if (and versor-multi-line-level-display explicit)
       (versor-display-current-dimensions)
