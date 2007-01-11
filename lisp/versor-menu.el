@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2006-08-03 20:21:31 john>
+;;; Time-stamp: <2006-11-21 12:32:52 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -60,10 +60,19 @@
 	   (list (intern name) 'menu-item name command)
 	   (cdr (cdr menu)))))
 
+(defvar versor-dynamic-menu-add-items-at-bottom-hook nil
+  "Functions to run to add menu items at the bottom of the dynamic menu.
+The menu keymap is passed as the only argument to each function.")
+
+(defvar versor-dynamic-menu-add-items-at-top-hook nil
+  "Functions to run to add menu items at the top of the dynamic menu.
+The menu keymap is passed as the only argument to each function.")
+
 (defun versor-generate-dynamic-menu ()
   "Generate dynamic menu for versor.
 Allows various actions that depend on the current fine movement dimension."
   (let ((dynamic-menu (make-sparse-keymap "Versor dynamic menu")))
+    (run-hook-with-args 'versor-dynamic-menu-add-items-at-bottom-hook dynamic-menu)
     (mapcar (function
 	     (lambda (name-command)
 	       (let* ((raw-name (car name-command))
@@ -86,6 +95,7 @@ Allows various actions that depend on the current fine movement dimension."
 	      ("mark %s" . versor-mark)
 	      ("copy %s" . versor-copy)
 	      ))
+    (run-hook-with-args 'versor-dynamic-menu-add-items-at-top-hook dynamic-menu)
     dynamic-menu))
 
 (defun versor-do-dynamic-menu ()
