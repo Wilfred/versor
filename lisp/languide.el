@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-12-11 12:09:29 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -248,7 +248,9 @@ When interactive, or with optional third argument non-nil, display the result."
 			   (versor-overlay-start item)
 			   (versor-overlay-end item))))
 	(when description
-	  (message "%s" description)
+	  (unless (run-hook-with-args-until-success 'versor-describe-selection-hook description)
+	      (message "%s" description))
+	  ;; todo: remove versor-speak? emacspeak prefers to advise functions
 	  (versor-speak "%s" description))
 	(when (interactive-p)
 	  (versor-set-current-items items)))))))
@@ -258,14 +260,16 @@ When interactive, or with optional third argument non-nil, display the result."
   (if font-lock-mode
       (eq (get-text-property (point) 'face)
 	  'font-lock-comment-face)
-    (if (equal comment-end "")
-	(save-excursion
-	  (re-search-backward comment-start-skip (point-at-bol) t))
-	(let ((ce (save-excursion
-		    (re-search-backward comment-end-skip (point-min) t)))
-	      (cs (save-excursion
-		    (re-search-backward comment-start-skip (point-min) t))))
-	  (> cs ce)))))
+    (if (stringp comment-start-skip)
+	(if (equal comment-end "")
+	    (save-excursion
+	      (re-search-backward comment-start-skip (point-at-bol) t))
+	  (let ((ce (save-excursion
+		      (re-search-backward comment-end-skip (point-min) t)))
+		(cs (save-excursion
+		      (re-search-backward comment-start-skip (point-min) t))))
+	    (> cs ce))))
+    nil))
 
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing.
