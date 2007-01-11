@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-12-10 22:01:39 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -274,29 +274,38 @@ of the defun."
 TYPE and INITIAL-VALUE may be null, but the NAME is required.
 The result is a list of three strings: any preceding whitespace,
 the actual declaration, and any following whitespace."
-  (list
-   (concat
-    (if (= (char-before) close-bracket) 
-	"\n" "")
-    (let ((indent (calculate-lisp-indent)))
-      (make-string (+ 6 (cond
-			 ((integerp indent) indent)
-			 ((consp indent) (car indent))
-			 4))
-		   ? )))
-   (concat "(" name " " initial-value ")")
-   ""))
+  (let* ((preceded-by-bracket (= (char-before) close-bracket))
+	 (followed-by-bracket (= (char-after) open-bracket)))
+    (message "%d is %s %s" (point) (if preceded-by-bracket "preceded-by-bracket" "") (if followed-by-bracket "followed-by-bracket" ""))    
+    (list
+     (concat
+      (if preceded-by-bracket 
+	  "\n" "")
+      (let ((indent (calculate-lisp-indent)))
+	(make-string (+ 6 (cond
+			   ((integerp indent) indent)
+			   ((consp indent) (car indent))
+			   4))
+		     ? )))
+     (concat "(" name " " initial-value ")")
+     (if followed-by-bracket 
+	 "\n" ""))))
 
 (defmodal insert-variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
 Assumes we are at the obvious point to add a new variable.
 TYPE and INITIAL-VALUE may be null, but the NAME is required."
-  (when (= (char-before) close-bracket) 
-    (insert "\n"))
-  (lisp-indent-line)
-  (save-excursion
-    (languide-insert "(" name " " initial-value ")"))
-  (indent-sexp))
+  (let* ((preceded-by-bracket (= (char-before) open-bracket))
+	 (followed-by-bracket (= (char-after) close-bracket)))
+    (unless preceded-by-bracket 
+      (insert "\n"))
+    (lisp-indent-line)
+    (save-excursion
+      (languide-insert "(" name " " initial-value ")")
+      (unless followed-by-bracket
+	(insert "\n")
+	(lisp-indent-line)))
+    (indent-sexp)))
 
 (defmodal insert-global-variable-declaration
   (lisp-mode emacs-lisp-mode lisp-interaction-mode)
@@ -885,20 +894,28 @@ languide-region-detail-level says how much incidental information to include."
 (defmodal adjust-binding-point (lisp-mode emacs-lisp-mode lisp-interaction-mode) (variables-needed)
   "If appropriate, move to the first point at which all of VARIABLES-NEEDED are defined.
 Assumes being at the end of a group of bindings, ready to insert a binding."
-  (while (and (safe-backward-sexp)
+  ;; iterating back over the variables of this binding group
+  (message "adjust-binding-point from %d" (point))
+  (while (and (safe-backward-sexp)	
 	      (let ((this (save-excursion
+			    ;; go into the binding to see what variable is there
+			    ;; todo: make this conditional on the binding being a list rather than just a symbol
 			    (down-list)
 			    (let ((start (point)))
-			      (forward-sexp)
+			      (forward-sexp) ; get the other end of the variable name
 			      ;; (message "considering %s" (buffer-substring-no-properties start (point)))
+			      ;; if the variable is one of the once we need, hand back its location
 			      (if (not (member (buffer-substring-no-properties start (point))
 					       variables-needed))
 				  nil
 				(point))))))
 		(if (null this)
-		    t
-		  (goto-char this)
-		  (up-list))))))
+		    t ; this was not one of the variables we were looking for, so carry on
+		  ;; it was one of the ones we are interested in
+		  (goto-char this) ; go to the end of the variable name
+		  (up-list)		; then out of that binding
+		  nil))))
+  (message "adjust-binding-point to %d" (point)))
 
 (defstatement comment (lisp-mode
 		       emacs-lisp-mode
