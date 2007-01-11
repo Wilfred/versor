@@ -1,5 +1,5 @@
 ;;;; languide-insertions.el
-;;; Time-stamp: <2006-08-03 20:23:39 john>
+;;; Time-stamp: <2006-09-30 17:44:30 jcgs>
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
@@ -38,7 +38,7 @@
 	(pushnew string possibilities)))
     (nreverse possibilities)))
 
-(defun languide-insert ()
+(defun languide-do-insert ()
   "Do a language-guided insertion.
 A bit like hippie-expand, but not using text already in the buffer at that point;
 It offers completion on possibilities drawn from a variety of sources."
@@ -69,7 +69,7 @@ Designed to be called from versor-insert-around etc."
   (let* ((statement-type (languide-select-statement-type "Insert statement: "))
 	 (statement-description (assoc (intern statement-type) (statement-types)))
 	 (creator (assoc 'create statement-description)))
-    creator))
+    (cdr creator)))
 
 (provide 'languide-insertions)
 
