@@ -1,5 +1,5 @@
 ;;;; versor-demo.el -- demo for versor and languide
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-12-09 18:50:43 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -17,8 +17,10 @@
 
 (require 'versor)
 
-
 (defun versor-find-demo-files ()
+  "Find the versor demo data files.
+This assumes they are in a subdirectory of the directory containing versor itself,
+the latter being on the load-path."
   (let ((dirs load-path))
     (catch 'found
       (while dirs
@@ -30,7 +32,7 @@
       nil)))
 
 (defun demo-find-file (file)
-  "Find file. Get rid of an old buffer visiting it first, to prevent interaction about it."
+  "Find FILE. Get rid of an old buffer visiting it first, to prevent interaction about it."
   (let ((buf (find-buffer-visiting file))
 	(find-file-hooks nil))
     (when buf
@@ -95,6 +97,11 @@ Meant for use with preparing a series of screenshots."
      (get-buffer-create "*Commentary*"))
     (erase-buffer)))
 
+(defvar versor-demo-mastering nil
+  "*Whether we are producing a master copy.
+This outputs into the message buffer information from which should-be statements
+in the demo script language can be derived.")
+
 (defvar versor-demo-step-number 0
   "The step number for the demo.")
 
@@ -105,15 +112,29 @@ Meant for use with preparing a series of screenshots."
 (defvar demo-script-first-step nil)
 (defvar demo-script-last-step nil)
 
+(defun versor-demo-describer (description)
+  "Output DESCRIPTION, and give the user time to see it."
+  (message "%s" description)
+  (sit-for demo-slowdown))
+
 (defun run-demo-script (script)
-  "Run demo SCRIPT."
+  "Run demo SCRIPT.
+Lists are lisp forms to evaluate, except:
+   if beginning with an integer, repeat the rest of the list that many times
+   if beginning with 'recording and t or nil, switch recording on or off.
+   if beginning with 'should-be, contains a regexp to check that we are looking-at
+Strings are commentary.
+Numbers are pauses in seconds (scaled by demo-slowdown), or cause a screenshot if recording.
+Nil clears the commentary and removes any extra windows."
   ;; (message "Running script %S" script)
   (save-window-excursion
     (delete-other-windows)
     (let ((steps script)
 	  (temp-buffer-setup-hook nil)
 	  (versor-display-highlighted-choice-time demo-slowdown)
-	  (demo-step-name-prefix ""))
+	  (demo-step-name-prefix "")
+	  (versor-describe-selection-hook versor-describe-selection-hook))
+      (add-hook 'versor-describe-selection-hook 'versor-demo-describer)
       (setq demo-script-first-step t
 	    demo-script-last-step (cdr steps))
       (while steps
@@ -132,7 +153,21 @@ Meant for use with preparing a series of screenshots."
 		  (setq count (1- count)))))
 	     ((eq (car step) 'recording)
 	      (setq demo-screenshots-active (cadr step)))
+	     ((eq (car step) 'should-be)
+	      (if (looking-at (cadr step))
+		  (when versor-demo-mastering
+		    (message "Confirmed should-be %S" (cadr step)))
+		(error "Expected text %S not found" (cadr step))))
 	     (t
+	      (when versor-demo-mastering
+		(message "Step: %S; (should-be %S)"
+			 step
+			 (regexp-quote
+			  (buffer-substring-no-properties
+			   (point)
+			   (save-excursion
+			     (forward-word 1)
+			     (point))))))
 	      (setq this-command (car step)
 		    demo-latest-command (symbol-name (car step))
 		    demo-latest-keys (substitute-command-keys (format "\\[%s]" demo-latest-command)))
@@ -142,6 +177,7 @@ Meant for use with preparing a series of screenshots."
 		(sit-for demo-slowdown))
 	      (delete-other-windows)
 	      (eval step)
+	      (setq last-command this-command)
 	      (sit-for 0))))
 	   ((stringp step)
 	    (if demo-show-commentary
@@ -163,7 +199,9 @@ Meant for use with preparing a series of screenshots."
 		    (sit-for 0)
 		    (force-mode-line-update)
 		    (funcall demo-lookat-function))
-		(read-event))))))
+		(read-event)	   ; is this necessary????????????????
+		)))))
+	 ;; (message "that was %S; type a key" (car steps)) (read-event)
 	(setq steps (cdr steps)
 	      demo-script-first-step nil
 	      demo-script-last-step (null (cdr steps)))))))
@@ -171,6 +209,11 @@ Meant for use with preparing a series of screenshots."
 (defun versor-lisp-demo-1 ()
   "Helper function for versor-demo."
   (interactive)
+  (let ((emacs-lisp-mode-hook nil))
+    (demo-find-file (expand-file-name "demo-text.el" demo-dir)))
+  (setq lisp-buffer (current-buffer)
+	demo-first-script t
+	demo-last-script nil)
   (versor-select-named-meta-level "cartesian")
   (versor-select-named-level "chars")
   (run-demo-script
@@ -181,17 +224,18 @@ commands.
 
 We begin with editing an emacs-lisp file.
 
-Watch the echo area (minibuffer) for commentary on what is going on.
+Watch the echo area (minibuffer), or this pop-up buffer, for
+commentary on what is going on.
 
 If you are running this demo on Emacs, it will step from stage to
 stage automatically, with delays for reading the explanations. If you
 are reading the web version, use the \"Next\" links \(or the screen
 picture itself is also a link to the next stage\) to step through it."
-     4
+     12
      (versor-over-next)
      "When you are not doing Versor commands, an Emacs with Versor
 loaded looks pretty much like any other Emacs. Note, however, that
-there is the text <cartesian:chars> in the mode line, indicating that
+there is the text <cartesian:lines/chars> in the mode line, indicating that
 the cursor is currently set to move in cartesian coordinates (just
 like a normal cursor) and is zoomed in to the \"chars\" scale of
 movement.
@@ -204,7 +248,10 @@ keys moving by characters and lines."
      (recording t)
      "Now we have pressed the \"Down arrow\" key a few times. The
 cursor has moved down, almost as normal (except that, if in the
-margin, which it is in this case, it follows the indentation).
+margin, which it is in this case, it follows the indentation; it does
+this because you're more likely to want to edit in the non-blank text
+than in the margin, and Versor tries to get the cursor to useful
+places as much as possible).
 
 Note that Languide (the part of versor that handles language-related
 things) has spotted what kind of piece of code the cursor is on, and
@@ -217,12 +264,14 @@ conditional statement or whether it just needs to add a condition to
 an existing conditional.
 
 You can turn this feature off, if it is slowing your system, or is
-annoying you." 8
+annoying you." 12
+     (should-be "\"\\\\\\\\((let")
      (versor-over-prev)
      "Now we go up a bit..." 1
      (recording nil)
      (4 (versor-over-prev) .5)
      (recording t)
+     (should-be "(defun")
      (versor-next)
      "We carry on moving right a few times, to show that Versor can be
 unobtrusively similar to ordinary Emacs when you want it to..." 2
@@ -230,7 +279,6 @@ unobtrusively similar to ordinary Emacs when you want it to..." 2
      (8 (versor-next) .5)
      (recording t)
      (versor-next) 
-     (versor-demo-step-to-meta-level "structural")
      "Now we get into what Versor is built for... Pressing Ctrl-X then the
 Down Arrow (or Meta (ALT) with the Down Arrow if you prefer) changes
 what coordinate system we are moving in, and brings up a little
@@ -245,7 +293,9 @@ We'll also press C-x Right Arrow (or M-right) to zoom out, and skip to
 what it displays...
 
 Here, we step to the \"structural\" co-ordinates, selecting \"expressions\"
-and \"depth\" as our pair of co-ordinates." 10
+and \"depth\" as our pair of co-ordinates."
+     10
+     (versor-demo-step-to-meta-level "structural")
      (versor-demo-step-to-level "exprs") 
      "We can move by s-expressions...
 
@@ -258,6 +308,7 @@ the highlight where we started; but now it will keep moving to
 expression starts, so from now on whole expressions will be
 highlighted). This highlighted region, which Versor calls the
 Selection, is what Versor editing commands will act on." 8
+     (should-be "-next")
      (versor-next)
      "Pressing Right again selects the next expression." 2
      (versor-next)
@@ -273,7 +324,7 @@ This may seem a little inconsistent, but Versor's aim is to make it as
 convenient as possible to get the cursor/selection to the places where
 you're likely to want to do things, and this is definitely one of
 those places; in this case, it's one where you're likely to want to
-use some non-Versor commands, such as typing in an extra argument." 4
+use some non-Versor commands, such as typing in an extra argument." 6
      (versor-over-next) 
      "We can also move by depth.
 
@@ -285,11 +336,15 @@ selected. Pressing delete at this point would delete them both
 \(haven't you ever wished for a command to do that, that would hit the
 right bracket at the other end first time? ... and you don't even have
 to go back manually to where you were before\), and would put them
-into adjacent elements on the kill-ring. (Versor has a corresponding
+into adjacent elements on the kill-ring. Versor has a corresponding
 ``insert around'' command, that will surround the selection with a
-pair of things from the kill-ring.)" 8
+pair of things from the kill-ring.
+
+It also does this for matching tags in XML, HTML etc." 12
+     (should-be "(let")
      (versor-over-next)
      "In again..." 1
+     (should-be "let")
      (versor-over-next)
      "...and again..." 1
      (versor-over-next)
@@ -297,18 +352,24 @@ pair of things from the kill-ring.)" 8
 although the selection is still a single character (which is because
 moving by levels always leaves a single character or two separate
 single characters), there is only one part to the selection." 4
+     (should-be "binding")
      (versor-over-prev)
-     "Pressing Up takes us out a level of brackets." 1
+     "Pressing Up takes us out a level of brackets." 2
      (versor-over-prev)
-     "Now we navigate to a piece of code we want to change."
+     "Now we navigate to a piece of code we want to change." 2
+     (should-be "((binding")
      (versor-next) .5
+     (should-be "(while")
      (versor-next) .5
+     (should-be "(if")
      (versor-next) .5
      (3 (versor-over-next) 1)
+     (should-be "looking")
      (versor-next)
      "Pressing DEL will delete the current selection, and tidy up
 whitespace around it. If the selection were a multi-part one, the
 parts would go onto successive elements of the kill-ring." 4
+     (should-be "binding")
      (versor-kill) 2
      "Typing ordinary text, and non-versor commands, still works as usual:" 1
      (demo-insert " (concat \"^\" ")
@@ -319,35 +380,42 @@ parts would go onto successive elements of the kill-ring." 4
 (defun versor-c-demo-1 ()
   "Helper function for versor-demo."
   (interactive)
+  (demo-find-file (expand-file-name "demo-text.c" demo-dir))
   (run-demo-script
    '("Now we look at the statement-based co-ordinates, using C as an example.
 
 The co-ordinates used are called \"statements\" and \"statement-parts\".
 
-Their definitions are language-specific. This release of versor supports
-the Lisp and C families of languages, but more are planned."
-     4
+Their definitions are language-specific. This release of versor
+supports the Lisp and C families of languages, with limited support
+for haskell and python, but more are planned." 4
      (versor-demo-step-to-meta-level "program")
      (versor-demo-step-to-level "statement-parts")
      "First, we step down a couple of whole statements at the top level;
 these are function definitions."
      2
      (2 (versor-over-next) 1)
-     (versor-next)
+     (should-be "static void output_graphic")
+     (versor-next) (message "selection is %S" (buffer-substring-no-properties (car (versor-get-current-item)) (cdr (versor-get-current-item))))
+     (should-be "static void output_graphic")
      "Then we select the head of the function..." 
      2
-     (versor-next)
+     (message "About to do the troublesome one, point is %d and the selection is %S" (point) (versor-get-current-item))
+     (versor-next)			; this is the one that gets to the wrong place
+     (message "done the troublesome one, point is %d and the selection is %S" (point) (versor-get-current-item))     "Now we should have got to the body of it" (message "text at point begins %S" (buffer-substring-no-properties (point) (+ 24 (point))))
+     (should-be "char graphics_buf")
      "And now the body of it"
      2
      "If we now go down some more statements, we will be moving inside the function."
      2
-     (versor-over-next)
+     (versor-over-next) (should-be "char graphics_buf")
      "We select a statement within the function..."
      2
-     (versor-over-next)
+     (versor-over-next) (should-be "char \\*graphic")
      "and the next statement"
      2
-     (2 (versor-over-next) 1)
+     (versor-over-next) (should-be "struct entry \\*more_entries")
+     (versor-over-next) (should-be "if (fread)")
      "Now we can select the head or body of the statement."
      2
      (versor-next) 1 (versor-next) 1
@@ -435,6 +503,9 @@ are in scope at that point." 10
 (defvar demo-first-script nil)
 (defvar demo-last-script nil)
 
+(defvar demo-dir (versor-find-demo-files)
+  "The directory containing the demo.")
+
 (defun versor-demo ()
   "Demonstrate versor."
   (interactive)
@@ -443,8 +514,7 @@ are in scope at that point." 10
   (demo-reset-commentary)
   (setq versor-demo-step-number 0)
   (save-window-excursion
-    (let* ((demo-dir (versor-find-demo-files))
-	   (versor-display-underlying-commands nil)
+    (let* ((versor-display-underlying-commands nil)
 	   (versor-quiet-commands (append '(versor-demo-step-to-level
 					    versor-demo-step-to-meta-level)
 					  versor-quiet-commands))
@@ -459,17 +529,9 @@ are in scope at that point." 10
 			   t))
 	      '("el" "c"))
       (visit-tags-table demo-dir)
-      (let ((emacs-lisp-mode-hook nil))
-	(demo-find-file (expand-file-name "demo-text.el" demo-dir)))
-      (setq lisp-buffer (current-buffer)
-	    demo-first-script t
-	    demo-last-script nil)
       (versor-lisp-demo-1)
-
       (setq demo-first-script nil)
-      (demo-find-file (expand-file-name "demo-text.c" demo-dir))
       (versor-c-demo-1)
-
       (setq demo-last-script t)
       (let ((emacs-lisp-mode-hook nil))
 	(demo-find-file (expand-file-name "demo-text.el" demo-dir)))
@@ -480,6 +542,16 @@ are in scope at that point." 10
 
 (defvar demo-file-name-format "demo-step-%d.html"
   "File name format for demo steps.")
+
+(defvar sourceforge-logo
+  "<a href=\"http://sourceforge.net/\"><img
+  src=\"http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2\"
+  align=\"right\"
+  width=\"125\"
+  height=\"37\"
+  border=\"0\"
+  alt=\"SourceForge.net Logo\" /></a>"
+  "HTML text for the SourceForge.net logo.")
 
 (defun versor-take-screenshot ()
   "Helper function for versor-record-screenshots."
@@ -504,8 +576,9 @@ are in scope at that point." 10
 	    (when (file-exists-p screenshot-full-name)
 	      (delete-file screenshot-full-name))
 	    (rename-file raw-screenshot-file-name screenshot-full-name)
-	    (find-file (expand-file-name (format demo-file-name-format versor-demo-step-number)
-					 recorded-demo-html-directory))
+	    (find-file (expand-file-name
+			(format demo-file-name-format versor-demo-step-number)
+			recorded-demo-html-directory))
 	    (erase-buffer)
 	    (insert "<html>\n<head>\n<title>Versor demo step "
 		    (int-to-string versor-demo-step-number)
@@ -521,7 +594,7 @@ are in scope at that point." 10
 	      (insert "</a>"))
 	    (insert "<table width=\"100%\" border=\"0\">\n<tr>\n<td align=\"left\">\n")
 	    (when (or (not demo-script-first-step)
-		       (not demo-first-script))
+		      (not demo-first-script))
 	      (insert "<a href=\""
 		      (format demo-file-name-format (1- versor-demo-step-number))
 		      "\">Previous</a>\n"))
@@ -555,14 +628,7 @@ are in scope at that point." 10
 		(setq replacements (cdr replacements)))
 	      (goto-char (point-max)))
 	    (insert "</p>\n")
-	    (insert "<hr>\n
-<a href=\"http://sourceforge.net/\"><img
-  src=\"http://sourceforge.net/sflogo.php?group_id=97002&amp;type=2\"
-  align=\"right\"
-  width=\"125\"
-  height=\"37\"
-  border=\"0\"
-  alt=\"SourceForge.net Logo\" /></a>")
+	    (insert "<hr>\n" sourceforge-logo)
 	    (insert "\n"
 		    "</body>\n</html>\n")
 	    (setq demo-latest-commentary "")
