@@ -1,5 +1,5 @@
 ;;;; versor-alter-item.el -- choose possible value for the current item
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-11-12 21:55:33 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -279,7 +279,7 @@ selection.")
   "The value of versor-current-level-name before we started alterations.")
 
 (defun versor-begin-altering-item ()
-  "Start selecting amonst possible values for the selected item.
+  "Start selecting amongst possible values for the selected item.
 Sets up mapping for the arrow keys, such that they now change the
 value of the item, and the menu/select key to keep the value you
 have at the time."
