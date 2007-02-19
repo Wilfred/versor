@@ -1,9 +1,9 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2006-12-17 21:33:21 jcgs>
+;;; Time-stamp: <2007-02-11 11:54:05 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -45,6 +45,9 @@ It is enabled by the variable versor-reversible, which see.")
   "Whether we were last in text embedded in code, i.e. comment or string.
 Local to each buffer.")
 
+(defvar versor-debug-command-movement nil
+  "Whether to show the movements made by commands.")
+
 (defmacro versor-as-versor-command (&rest versor-body)
   "Run BODY as a versor command, if versor-mode is enabled,
 or if not called interactively.
@@ -78,14 +81,18 @@ command to be run."
 	     (setq versor-meta-level versor-this-buffer-meta-level
 		   versor-level versor-this-buffer-level)
 	     (versor-set-status-display t)))
+	 (when versor-debug-command-movement
+	   (message "Moving from %d" (point)))
 	 (progn
 	   ,@versor-body)
+	 (when versor-debug-command-movement
+	   (message "Moved to %d" (point)))
 	 ;; We remember the per-buffer dimensions here, in case the
 	 ;; command body has changed them; but we don't update
 	 ;; versor-mode-current-levels, because that is handled in the
 	 ;; code that changes the dimension
 	 (setq versor-this-buffer-meta-level versor-meta-level
-	    versor-this-buffer-level versor-level)
+	       versor-this-buffer-level versor-level)
 	 )
      (let ((old-def (lookup-key versor-original-bindings-map
 				(this-command-keys-vector))))
