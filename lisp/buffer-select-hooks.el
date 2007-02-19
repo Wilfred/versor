@@ -1,9 +1,9 @@
 ;;;; buffer-select-hooks.el -- do things when noticing that buffer or mode has changed
-;;; Time-stamp: <2006-08-02 12:19:35 john>
+;;; Time-stamp: <2007-02-19 19:06:24 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -36,14 +36,17 @@
       (condition-case error-var
 	  ;; (lessage "Running mode selection hook")
 	  (run-hook-with-args 'mode-selection-hook mode-before-command)
-	(error (message "error in mode-selection-hook")
+	(error (message "error %S in mode-selection-hook" error-var)
 	       (with-output-to-temp-buffer "*mode selection hook error*"
 		 (backtrace)))))
   (if (not (eq (current-buffer) buffer-before-command))
       (condition-case error-var
 	  ;; (lessage "Running buffer selection hook")
 	  (run-hook-with-args 'buffer-selection-hook buffer-before-command)
-	(error (message "error in buffer-selection-hook"))))
+	(error (message "error %S in buffer-selection-hook switching from %S to %S"
+			error-var
+			buffer-before-command
+			(current-buffer)))))
   (setq buffer-before-command (current-buffer)
 	mode-before-command major-mode))
 
