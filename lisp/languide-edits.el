@@ -1,7 +1,7 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2006-12-10 14:15:20 jcgs>
+;;; Time-stamp: <2007-01-17 18:09:32 jcgs>
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -26,7 +26,8 @@
 Cleared at the start of each command.")
 
 (defun languide-insertion (fn insertions)
-  "Handler for things like insert, but remembering that the insertions were done by languide."
+  "Handler for things like insert, but remembering that the insertions were done by languide.
+This allows languide to highlight things to show the user what it has done."
   (let ((start (point)))
     (apply fn insertions)
     (let* ((end (point))
