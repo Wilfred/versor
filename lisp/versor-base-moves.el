@@ -1,9 +1,9 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2006-12-01 20:41:49 jcgs>
+;;; Time-stamp: <2007-02-22 11:33:56 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -543,11 +543,14 @@ things with natural language punctuation."
 
 (defmodal next-sexp (sgml-mode xml-mode) (n)
   "next-sexp for the SGML group of languages."
-  (while (> n 0)
-    (condition-case evar
-	(sgml-forward-element)
-      (error nil))
-    (setq n (1- n)))
+  (if (catch 'hit-end
+	(condition-case evar
+	    (while (> n 0)
+	      (sgml-forward-element)
+	      (setq n (1- n)))
+	  (error (throw 'hit-end t)))
+	nil)
+      (sgml-up-element))
   (versor-sgml-select-element))
 
 (defmodal next-sexp (python-mode) (n)
@@ -684,11 +687,15 @@ they had markup tags. Likewise, treat sentences as blocks."
 
 (defmodal previous-sexp (sgml-mode xml-mode) (n)
   "previous-sexp for the SGML group of languages."
-  (while (> n 0)
-    (sgml-backward-element)
-    (setq n (1- n)))
-  (versor-sgml-select-element)
-  )
+  (if (catch 'hit-start 
+	(condition-case evar 
+	    (while (> n 0)
+	      (sgml-backward-element)
+	      (setq n (1- n)))
+	  (error (throw 'hit-start t)))
+	nil)
+      (sgml-backward-up-element))
+  (versor-sgml-select-element))
 
 (defmodal previous-sexp (python-mode) (n)
   "previous-sexp for python blocks."
