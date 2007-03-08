@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2007-02-11 11:54:05 jcgs>
+;;; Time-stamp: <2007-03-04 16:25:55 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -427,7 +427,6 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 (defun versor-other-end-of-item (&rest junk)
   "Move to the other end of the current item."
   (interactive)
-  (message "versor-other-end-of-item %S" junk)
   (versor-as-motion-command item		; todo: this is leaving the wrong item highlighted, I think... when it moves to the end of the item, the following item is highlighted; not sure whether this affects the selection as well as the highlighting, but I presume it does
      (cond
       ((= (point) (car item))
@@ -438,7 +437,8 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
        (let ((halfway (/ (+ (car item) (cdr item)) 2)))
 	 (if (< (point) halfway)
 	     (goto-char (cdr item))
-	   (goto-char (car item))))))))
+	   (goto-char (car item))))))
+     (versor-set-current-item (car item) (cdr item))))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;;; extend item ;;;;
@@ -511,18 +511,15 @@ With optional LEVEL-OFFSET, add that to the level first."
   "Copy the current item."
   (interactive)
   (versor-as-motion-command current-item
-   ;; (versor-display-item-list "versor-copy" (versor-get-current-items))
-   (mapcar
-    (lambda (item)
-      (let* ((start (versor-overlay-start item))
-	     (end (versor-overlay-end item))
-	     (copy-string (buffer-substring start end)))
-	(when (boundp 'label-with-adjacent-whitespace)
-	  (label-with-adjacent-whitespace start end copy-string))
-	(kill-new copy-string)))
-    (reverse (versor-get-current-items)))
-   (when (fboundp 'update-shown-stacks)	; from rpn-edit.el
-     (update-shown-stacks))))
+    (mapcar
+     (lambda (item)
+       (let* ((start (versor-overlay-start item))
+	      (end (versor-overlay-end item)))
+	 (versor-copy-region start end)))
+     (reverse (versor-get-current-items)))
+    (when (fboundp 'update-shown-stacks) ; from rpn-edit.el
+      (update-shown-stacks))
+    (versor-set-current-item (car current-item) (cdr current-item))))
 
 (defun versor-mark ()
   "Mark the current item.
@@ -571,14 +568,8 @@ this."
 	(mapcar
 	 (lambda (item)
 	   (let* ((start (versor-overlay-start item))
-		  (end (versor-overlay-end item))
-		  (cut-string (buffer-substring start end)))
-	     (when (boundp 'label-with-adjacent-whitespace)
-	       (label-with-adjacent-whitespace start end cut-string))
-	     (message "Killing %s" (abbreviate-cut-string cut-string))
-	     (kill-new cut-string)
-	     (delete-region start end)
-	     (versor-trim-whitespace start)
+		  (end (versor-overlay-end item)))
+	     (versor-kill-region start end)
 	     (when (and (not (eq item (car versor-items)))
 			(overlayp item))
 	       (delete-overlay item))))
@@ -591,9 +582,11 @@ this."
 Does yank, then adjusts whitespace, versor-style."
   (interactive)
   (versor-as-versor-command
-    (yank arg)
-    (versor-trim-whitespace (region-end))
-    (versor-trim-whitespace (region-beginning))))
+    (let ((text (current-kill 0)))
+      (versor-adjusting-insert text))
+    ;; (versor-trim-whitespace (region-end))
+    ;; (versor-trim-whitespace (region-beginning))
+    ))
 
 (defun versor-kill-surrounding ()
   "Kill the sexp surrounding the selection, leaving the selection in its place."
@@ -605,10 +598,17 @@ Does yank, then adjusts whitespace, versor-style."
 	   (surrounding-item (versor-backward-up-list 1))
 	   (surrounding-end (versor-overlay-end surrounding-item))
 	   (surrounding-start (versor-overlay-start surrounding-item)))
-      (kill-region surrounding-start
-		   surrounding-end)
-      (goto-char surrounding-start)
-      (insert item-text)
+      ;; do the end one first, because if we did them the other way
+      ;; round, the buffer offsets would be wrong when we came to the
+      ;; second deletion; not only am I lazily avoiding converting to
+      ;; markers, but this is also the order in which versor-kill does
+      ;; a multi-part kill (for much the same reason); it's also nice
+      ;; that they're then on the kill ring in the right order for
+      ;; inserting them as you work through the kill-ring
+      (versor-kill-region item-end surrounding-end)
+      (versor-trim-whitespace item-end)
+      (kill-region surrounding-start item-start)
+      (versor-trim-whitespace surrounding-start)
       (versor-set-current-item surrounding-start
 			       (+ surrounding-start
 				  (- item-end item-start))))))
@@ -782,7 +782,7 @@ This lets us do commands such as insert-around using a common framework."
   "If INSERTION is a string, insert it; if a function, call it.
 Various other dwim things, too -- evaluate evaluable forms, etc."
   (cond
-   ((stringp insertion) (insert insertion))
+   ((stringp insertion) (versor-adjusting-insert insertion))
    ((functionp insertion) (funcall insertion))
    ((symbolp insertion)			; but not a function
     (insert (symbol-name insertion)))
@@ -836,14 +836,14 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
        )
       (t
        (goto-char (versor-overlay-end current-item))
-       (insert (second new-thing))
+       (versor-adjusting-insert (second new-thing))
        (let ((end (make-marker))
 	     (start (make-marker)))
 	 (set-marker end (point))
 	 (set-marker start (versor-overlay-start current-item))
 	 (set-marker-insertion-type start nil)
 	 (goto-char start)
-	 (insert (first new-thing))
+	 (versor-adjusting-insert (first new-thing))
 	 (when versor-reindent-after-insert
 	   (save-excursion
 	     (goto-char start)
