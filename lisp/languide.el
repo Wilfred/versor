@@ -1,7 +1,7 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2006-12-11 12:09:29 jcgs>
+;;; Time-stamp: <2007-03-03 17:23:04 jcgs>
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -187,6 +187,11 @@ as SYNTAX-BEFORE and SYNTAX-AFTER.")
   "Any extra information that languide-region-type finds.
 Returned as a string that can be displayed to the user.")
 
+(defvar languide-region-description nil
+  "The most recent description returned by languide-region-type.")
+
+(make-variable-buffer-local 'languide-region-description)
+
 (defmodel languide-region-type (from to)
   "Try to work out what type of thing the code between from and to is.
 results can be things like if-then-body, if-then-else-tail, progn-whole,
@@ -221,6 +226,10 @@ When interactive, or with optional third argument non-nil, display the result."
 			  nil))
 		       (t
 			(format "region type %S" type)))))
+    (setq languide-region-description (or description ""))
+    (if (and (null header-line-format)
+	     (not (null languide-header-line-format)))
+	(setq header-line-format languide-header-line-format))
     (when (or display
 	      (interactive-p))
       (message "%s" description))
@@ -229,6 +238,9 @@ When interactive, or with optional third argument non-nil, display the result."
 (defvar languide-supported-modes
   '(c-mode java-mode perl-mode lisp-mode emacs-lisp-mode python-mode)
   "Modes for which Languide has support.")
+
+(defvar versor-latest-selection-description nil
+  "The most recent description of the selection.")
 
 (defun versor-describe-selection ()
   "Show the type of the Versor selection."
@@ -247,9 +259,11 @@ When interactive, or with optional third argument non-nil, display the result."
 	     (description (region-type-description
 			   (versor-overlay-start item)
 			   (versor-overlay-end item))))
+	(setq versor-latest-selection-description description)
 	(when description
 	  (unless (run-hook-with-args-until-success 'versor-describe-selection-hook description)
-	      (message "%s" description))
+	    (when versor-describe-selection-with-messages
+		(message "%s" description)))
 	  ;; todo: remove versor-speak? emacspeak prefers to advise functions
 	  (versor-speak "%s" description))
 	(when (interactive-p)
