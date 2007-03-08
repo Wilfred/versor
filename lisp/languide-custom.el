@@ -1,5 +1,5 @@
 ;;;; languide-custom.el -- customization definitions for languide
-;;; Time-stamp: <2006-08-02 12:18:55 john>
+;;; Time-stamp: <2007-03-03 14:36:56 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -63,6 +63,11 @@ whole if statement, rather than just the block body."
 (defcustom languide-region-detail-level 5
   "*The level of extra detail to be included in languide-region-detail-string by languide-region-type."
   :type 'integer
+  :group 'languide)
+
+(defcustom languide-header-line-format '("Languide: {" languide-region-description "}")
+  "How to display Languide's observations across the top of the buffer."
+  ;; :type ?
   :group 'languide)
 
 (defcustom languide-debug-messages nil
