@@ -1,9 +1,9 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2007-03-04 13:58:46 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -98,8 +98,9 @@ If there are multiple items, return only the first one."
 
 (defun versor-last-item-first ()
   "Return the current versor items, sorted so the last comes first.
-This is the sensible order in which to edit them, to avoid upsetting
-the buffer positions in the items you have yet to edit."
+This is the sensible order in which to edit them (e.g. to delete
+them), to avoid upsetting the buffer positions in the items you have
+yet to edit."
   (setq versor-items
 	(sort (versor-get-current-items)
 	      (function
@@ -299,8 +300,8 @@ We assume point to be at the start of the item."
 	;; re-do this because it somehow gets taken off from time to time
 	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
 	;; Put up a textual description of the selection in the
-	;; mini-buffer; this is probably the most sensible point to
-	;; attach a spoken description in emacspeak.
+	;; mini-buffer or the header line; this is probably the most
+	;; sensible point to attach a spoken description in emacspeak.
 	(when (and versor-describe-selection
 		   (not (memq this-command versor-quiet-commands)))
 	  (versor-describe-selection)))
@@ -313,7 +314,7 @@ We assume point to be at the start of the item."
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
 Intended to go on pre-command-hook, to make sure that versor gets out
-of the way of ordinarily Emacs commands. in case, however, the new
+of the way of ordinarily Emacs commands. In case, however, the new
 command is itself a versor command, we save the item marking as a list
 of conses of start . end, in versor-latest-items."
   (unless (eq (car versor-items) 'not-yet-set)
@@ -332,6 +333,7 @@ of conses of start . end, in versor-latest-items."
 		   (cons (region-beginning) (region-end)))))
 	     versor-items)))
     ;; (versor-display-item-list (format "starting command %S" this-command) versor-latest-items)
+    (setq languide-region-description "")
     (delete-versor-overlay)))
 
 (provide 'versor-selection)
