@@ -1,9 +1,9 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2006-12-03 20:10:28 jcgs>
+;;; Time-stamp: <2007-03-04 16:05:35 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -82,6 +82,19 @@ and going forward from the last meta-level takes you to the first one."
   :group 'versor-motion
   :type 'regexp)
 
+;;;;;;;;;;;;;;;;;
+;;;; editing ;;;;
+;;;;;;;;;;;;;;;;;
+
+(defgroup versor-editing nil
+  "Control of Versor editing behaviour."
+  :group 'versor)
+
+(defcustom versor-adjust-whitespace t
+  "Whether Versor should adjust whitespace on insertions and deletions."
+  :group 'versor-editing
+  :type 'boolean)
+
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; versor status ;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,6 +168,14 @@ You can only use this from Emacs 21 onwards."
   "Whether Versor should comment much on what it is doing.
 If non-nil, Versor will tell you when you have selected a piece of
 code that it may have a specific way of handling."
+  :type 'boolean
+  :group 'versor-status)
+
+(defcustom versor-describe-selection-with-messages nil
+  "Whether Versor should use the echo area to describe the selection.
+If this is nil, but versor-describe-selection is non-nil, some other
+means must be used, such as the header line (which is enabled by
+default, using the variable languide-header-line-format.)"
   :type 'boolean
   :group 'versor-status)
 
