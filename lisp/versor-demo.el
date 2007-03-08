@@ -1,5 +1,5 @@
 ;;;; versor-demo.el -- demo for versor and languide
-;;; Time-stamp: <2006-12-09 18:50:43 jcgs>
+;;; Time-stamp: <2007-03-04 19:36:43 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -117,6 +117,37 @@ in the demo script language can be derived.")
   (message "%s" description)
   (sit-for demo-slowdown))
 
+(defvar versor-demo-auto-correct t
+  "*Whether to try to correct for slippage.")
+
+(defun versor-demo-auto-correct (regexp)
+  "Move to the nearest occurrence of REGEXP."
+  (let* ((before (save-excursion
+		   (re-search-backward regexp (point-min) t)))
+	 (back (if (numberp before) 
+		   (- (point) before)
+		 nil))
+	 (after (save-excursion
+		  (re-search-forward regexp (point-max) t)
+		  (match-end 0)))
+	 (forward (if (numberp after) 
+		      (- after (point))
+		    nil))
+	 (correction (if before
+			 (if after
+			     (if (> back forward)
+				 after
+			       before)
+			   before)
+		       (if after
+			   after
+			 nil))))
+    (if (null correction)
+	(error "Could not correct from %d for %S" (point) regexp)
+      (message "Correcting from %d to %d for %S" (point) correction regexp)
+      (goto-char correction))))
+	    
+
 (defun run-demo-script (script)
   "Run demo SCRIPT.
 Lists are lisp forms to evaluate, except:
@@ -157,7 +188,9 @@ Nil clears the commentary and removes any extra windows."
 	      (if (looking-at (cadr step))
 		  (when versor-demo-mastering
 		    (message "Confirmed should-be %S" (cadr step)))
-		(error "Expected text %S not found" (cadr step))))
+		(if versor-demo-auto-correct
+		    (versor-demo-auto-correct (cadr step))
+		  (error "Expected text %S not found" (cadr step)))))
 	     (t
 	      (when versor-demo-mastering
 		(message "Step: %S; (should-be %S)"
@@ -217,7 +250,8 @@ Nil clears the commentary and removes any extra windows."
   (versor-select-named-meta-level "cartesian")
   (versor-select-named-level "chars")
   (run-demo-script
-   '("Welcome to the versor demo.
+   '((should-be ";;;; demo-text.el -- elisp demo text for versor")
+     "Welcome to the versor demo.
 
 This is an animated demonstration, with commentary, of the main versor
 commands.
@@ -255,7 +289,7 @@ places as much as possible).
 
 Note that Languide (the part of versor that handles language-related
 things) has spotted what kind of piece of code the cursor is on, and
-has mentioned it briefly in the echo area.
+has put the description into the header line.
 
 Some of the more advanced commands use this information, to decide,
 for example, whether the current selection is suitable to have a
@@ -373,16 +407,48 @@ parts would go onto successive elements of the kill-ring." 4
      (versor-kill) 2
      "Typing ordinary text, and non-versor commands, still works as usual:" 1
      (demo-insert " (concat \"^\" ")
-     (yank) 1
+     (versor-yank) 1
      (demo-insert ")") 3
-     )))
+     "Now we move into the next function.
+Moving forward past the last sub-expression moves us past the brackets.
+We keep doing it until we are on the next function." 3
+     (6 (versor-next))
+     (should-be "(defmodal")
+     "We navigate into the function..." 2
+     (versor-over-next) .5
+     (5 (versor-next) .5)
+     (versor-over-next) .5
+     (3 (versor-next)) .5
+     (2 (versor-over-next)) .5
+     (versor-next) .5
+     (should-be "next")
+     "We now wrap the selection in brackets, using the \"insert around\" command" 3
+     (versor-insert-around '("(" ")")) .5
+     (versor-next) .5
+     (demo-insert " nil") .5
+     (2 (versor-over-prev) .5)
+     (2 (versor-next) .5)
+     (versor-over-next) .5
+     (2 (versor-next)) .5
+     "Next, we use the \"kill surrounding\" command to make something unconditional.
+It removes the expression surrounding the selection, leaving just the selection in
+its place." 5
+     (versor-kill-surrounding) 4
+     "This has put two items onto the kill ring. We can now use the \"insert around\" command
+to wrap them around another selection." 5
+     (versor-next) (versor-over-next) (versor-next)
+     (3 (versor-next) (versor-over-next))
+     (2 (versor-next))
+     (versor-insert-around (current-kill 0) (current-kill 1 t)))))
 
 (defun versor-c-demo-1 ()
   "Helper function for versor-demo."
   (interactive)
   (demo-find-file (expand-file-name "demo-text.c" demo-dir))
   (run-demo-script
-   '("Now we look at the statement-based co-ordinates, using C as an example.
+   '((goto-char (point-min))
+     (skip-to-actual-code)
+     "Now we look at the statement-based co-ordinates, using C as an example.
 
 The co-ordinates used are called \"statements\" and \"statement-parts\".
 
@@ -468,6 +534,96 @@ existing if-then statement." 4
      (versor-languide-make-conditional "disallow_null") 4
      (languide-remove-auto-edit-overlays) 2)))
 
+(defun versor-test-c-demo-1 ()
+  "Test version of demo function"
+  (interactive)
+  (versor-demo-setup)
+  (demo-find-file (expand-file-name "demo-text.c" demo-dir))
+  (statement-forget-cache)
+  (goto-char (point-min))
+  (skip-to-actual-code)
+  (versor-demo-step-to-meta-level "program")
+  (versor-demo-step-to-level "statement-parts")
+  (versor-over-next)
+  (versor-over-next)
+  (if (looking-at "static void output_graphic") (message "Confirmed \"static void output_graphic\"") (message "Did not get \"static void output_graphic\""))
+  (versor-next)
+  (message "selection is %S" (buffer-substring-no-properties (car (versor-get-current-item)) (cdr (versor-get-current-item))))
+  (if (looking-at "static void output_graphic") (message "Confirmed \"static void output_graphic\" again") (message "Did not get \"static void output_graphic\" again"))
+  (message "About to do the troublesome one, point is %d and the selection is %S" (point) (versor-get-current-item))
+  (versor-next)		; this is the one that gets to the wrong place
+  (message "done the troublesome one, point is %d and the selection is %S" (point) (versor-get-current-item))     "Now we should have got to the body of it"
+  (message "text at point begins %S" (buffer-substring-no-properties (point) (+ 24 (point))))
+  (if (looking-at "char graphics_buf") (message "Confirmed \"char graphics_buf\"") (message "Did not get \"char graphics_buf\""))
+  (versor-over-next)
+  (if (looking-at "char graphics_buf") (message "Confirmed \"char graphics_buf\"") (message "Did not get \"char graphics_buf\""))
+  (versor-over-next)
+  (if (looking-at "char *graphic") (message "Confirmed \"char *graphic\"") (message "Did not get \"char *graphic\""))
+  (versor-over-next)
+  (if (looking-at "struct entry *more_entries") (message "Confirmed \"struct entry *more_entries\"") (message "Did not get \"struct entry *more_entries\""))
+  (versor-over-next)
+  (if (looking-at "if (fread)") (message "Confirmed \"if (fread)\"") (message "Did not get \"if (fread)\""))
+  (versor-next)
+  (versor-next)
+  (versor-over-next)
+  (versor-over-next)
+  (versor-prev)
+  (versor-prev)
+  (message "selection is %S" (versor-get-current-item))
+  (versor-languide-convert-selection-to-function "get_graphic")
+  (beginning-of-defun)
+  (versor-over-prev)
+  (versor-over-prev)
+  (languide-remove-auto-edit-overlays)
+  (versor-next)
+  (versor-next)
+  (versor-over-next) 			; step into the function body
+  (versor-next)
+  (versor-next)
+  (versor-demo-step-to-level "statements")
+  (versor-next)
+  (versor-extend-item-forwards)
+  (versor-extend-item-forwards)
+  (versor-languide-make-conditional "disallow_null")
+  (languide-remove-auto-edit-overlays) )
+
+(defun foo ()
+  "Run this in demo-text.c and it will do the wrong thing"
+  (interactive)
+  (find-file (substitute-in-file-name "$COMMON/open-projects/emacs-versor/demo/demo-text.c"))
+  (statement-forget-cache)
+  (message "Beginning foo")
+  (goto-line 2)
+  (message "current item valid: %S; items: %S" (versor-current-item-valid) versor-items)
+  ;; This is not idempotent -- sometimes it hits the first defun,
+  ;; sometimes the second. I'd like it to go for the first, always.
+  (message "First versor-over-next:")
+  (versor-over-next)
+  (message "Second versor-over-next:")
+  (versor-over-next)
+  (message "First versor-next:")
+  (versor-next)
+  ;; this is the dodgy one -- it selects the body apart from the first
+  ;; statement. Doing this sequence of things interactively correctly
+  ;; selects the whole body.
+  ;; Bizarrely, it's not even idempotent!
+  (message "Second versor-next:")
+  (versor-next)
+  (message "done foo"))
+
+(defun fu ()
+  (interactive)
+  (statement-forget-cache)
+  (goto-line 2)
+  (versor-over-next)
+  (versor-over-next)
+  (versor-next))
+
+(defun bar ()
+  (interactive)
+  (statement-forget-cache)
+  (versor-next))
+
 (defun versor-lisp-demo-2 ()
   "Helper function for versor-demo."
   (interactive)
@@ -506,6 +662,20 @@ are in scope at that point." 10
 (defvar demo-dir (versor-find-demo-files)
   "The directory containing the demo.")
 
+(defun versor-demo-setup ()
+  "Helper function for versor-demo."
+  (interactive)
+  (unless (file-directory-p demo-dir)
+    (setq demo-dir (read-file-name "Could not find demo dir, please choose: ")))
+  (mapcar (lambda (extension)
+	    (copy-file (expand-file-name (format "demo-text-orig.%s" extension)
+					 demo-dir)
+		       (expand-file-name (format "demo-text.%s" extension)
+					 demo-dir)
+		       t))
+	  '("el" "c"))
+  (visit-tags-table demo-dir))
+
 (defun versor-demo ()
   "Demonstrate versor."
   (interactive)
@@ -519,16 +689,7 @@ are in scope at that point." 10
 					    versor-demo-step-to-meta-level)
 					  versor-quiet-commands))
 	   (lisp-buffer nil))
-      (unless (file-directory-p demo-dir)
-	(setq demo-dir (read-file-name "Could not find demo dir, please choose: ")))
-      (mapcar (lambda (extension)
-		(copy-file (expand-file-name (format "demo-text-orig.%s" extension)
-					     demo-dir)
-			   (expand-file-name (format "demo-text.%s" extension)
-					     demo-dir)
-			   t))
-	      '("el" "c"))
-      (visit-tags-table demo-dir)
+      (versor-demo-setup)
       (versor-lisp-demo-1)
       (setq demo-first-script nil)
       (versor-c-demo-1)
@@ -692,6 +853,24 @@ are in scope at that point." 10
 	    ;; (funcall demo-lookat-function)
 	    )
 	(sit-for demo-slowdown)))))
+
+;;;;;;;;;;;;;;;; some test functions ;;;;;;;;;;;;;;;;
+(defun should-be (pattern) (if (looking-at pattern) (message "%s confirmed" pattern) (message "%s missing" pattern)))
+(defun demo-test ()
+  (interactive)
+  (versor-demo-setup)
+  (demo-find-file (expand-file-name "demo-text.c" demo-dir))
+  (goto-char (point-min))
+  (versor-demo-step-to-meta-level "program")
+  (versor-demo-step-to-level "statement-parts")
+  (versor-over-next)
+  (should-be "static void output_graphic")
+  (versor-next) 
+  (should-be "static void output_graphic")
+  (versor-next)		; this is the one that gets to the wrong place
+  (message "done the troublesome one, point is %d and the selection is %S" (point) (versor-get-current-item)) 
+  (should-be "char graphics_buf"))
+;;;;;;;;;;;;;;;; end of test functions ;;;;;;;;;;;;;;;;
 
 (provide 'versor-demo)
 
