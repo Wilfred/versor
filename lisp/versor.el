@@ -1,9 +1,9 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2006-09-30 20:36:30 jcgs>
+;;; Time-stamp: <2007-02-20 20:21:09 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -301,7 +301,9 @@ The following arguments suppress some of the default behaviours:
 
   (when (memq 'quiet-underlying keysets)
     (setq versor-display-underlying-commands nil))
-
+  
+  (when (memq 'tlc keysets)
+    (require 'versor-tlc))
 
   (let ((tracking (memq 'tracking keysets)))
 
