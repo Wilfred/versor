@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2007-03-04 16:25:55 jcgs>
+;;; Time-stamp: <2007-03-08 20:41:47 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -561,6 +561,7 @@ successive elements of the kill ring, for maximum compatibility with
 normal Emacs commands. Our corresponding insertion commands understand
 this."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
     (let ((ready-made (versor-get-action 'delete)))
       (if ready-made
@@ -581,6 +582,7 @@ this."
   "Versor wrapper for yank.
 Does yank, then adjusts whitespace, versor-style."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-versor-command
     (let ((text (current-kill 0)))
       (versor-adjusting-insert text))
@@ -591,6 +593,7 @@ Does yank, then adjusts whitespace, versor-style."
 (defun versor-kill-surrounding ()
   "Kill the sexp surrounding the selection, leaving the selection in its place."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
     (let* ((item-start (versor-overlay-start current-item))
 	   (item-end (versor-overlay-end current-item))
@@ -616,6 +619,7 @@ Does yank, then adjusts whitespace, versor-style."
 (defun versor-transpose ()
   "Transpose this item with the following one."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
     (let ((ready-made (versor-get-action 'transpose)))
       (if ready-made
@@ -796,66 +800,70 @@ Various other dwim things, too -- evaluate evaluable forms, etc."
 (defun versor-insert-before ()
   "Insert something before the current versor item."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
-   (let* ((new-thing (versor-get-insertable 1)))
-     (goto-char (car current-item))
-     (mapcar 'insert-active new-thing))))
+    (let* ((new-thing (versor-get-insertable 1)))
+      (goto-char (car current-item))
+      (mapcar 'insert-active new-thing))))
 
 (defun versor-insert-after ()
   "Insert something after the current versor item."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
-   (let* ((new-thing (versor-get-insertable 1)))
-     (goto-char (cdr current-item))
-     (mapcar 'insert-active new-thing))))
+    (let* ((new-thing (versor-get-insertable 1)))
+      (goto-char (cdr current-item))
+      (mapcar 'insert-active new-thing))))
 
 (defun versor-insert-around (&optional given-thing)
   "Insert something around the current versor item.
 With optional GIVEN-THING, insert that, otherwise prompt the user."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
-   (let ((new-thing (or given-thing
-			(versor-get-insertable 2 "Type of insertion around item: "))))
-     (message "insert-around: current-item=%S new-thing=%S" current-item new-thing)
-     ;; todo: clever interface to skeletons and tempo templates
-     (cond
-      ((eq (car new-thing) 'template)
-       ;; prepare region from versor data
-       (let ((old-mark (mark t)))
-	 ;; unfortunately, the tempo code expects the mark to be used
-	 (set-mark (versor-overlay-end current-item))
-	 (goto-char (versor-overlay-start current-item))
-	 ;; do the insertion
-	 (tempo-insert-template (cadr new-thing) t)
-	 (set-mark old-mark)))
-      ((eq (car new-thing) 'skeleton)
-       ;; insert a skeleton
-       ;; prepare interregions from versor data
-       ;; (skeleton-insert (cdr new-thing) regions str)
-       (error "insert-around from skeleton not yet implemented")
-       )
-      (t
-       (goto-char (versor-overlay-end current-item))
-       (versor-adjusting-insert (second new-thing))
-       (let ((end (make-marker))
-	     (start (make-marker)))
-	 (set-marker end (point))
-	 (set-marker start (versor-overlay-start current-item))
-	 (set-marker-insertion-type start nil)
-	 (goto-char start)
-	 (versor-adjusting-insert (first new-thing))
-	 (when versor-reindent-after-insert
-	   (save-excursion
-	     (goto-char start)
-	     (while (<= (point) end)
-	       (funcall indent-line-function)
-	       (forward-line 1))))
-	 (versor-set-current-item start end)
-	 (set-marker end nil)))))))
+    (let ((new-thing (or given-thing
+			 (versor-get-insertable 2 "Type of insertion around item: "))))
+      (message "insert-around: current-item=%S new-thing=%S" current-item new-thing)
+      ;; todo: clever interface to skeletons and tempo templates
+      (cond
+       ((eq (car new-thing) 'template)
+	;; prepare region from versor data
+	(let ((old-mark (mark t)))
+	  ;; unfortunately, the tempo code expects the mark to be used
+	  (set-mark (versor-overlay-end current-item))
+	  (goto-char (versor-overlay-start current-item))
+	  ;; do the insertion
+	  (tempo-insert-template (cadr new-thing) t)
+	  (set-mark old-mark)))
+       ((eq (car new-thing) 'skeleton)
+	;; insert a skeleton
+	;; prepare interregions from versor data
+	;; (skeleton-insert (cdr new-thing) regions str)
+	(error "insert-around from skeleton not yet implemented")
+	)
+       (t
+	(goto-char (versor-overlay-end current-item))
+	(versor-adjusting-insert (second new-thing))
+	(let ((end (make-marker))
+	      (start (make-marker)))
+	  (set-marker end (point))
+	  (set-marker start (versor-overlay-start current-item))
+	  (set-marker-insertion-type start nil)
+	  (goto-char start)
+	  (versor-adjusting-insert (first new-thing))
+	  (when versor-reindent-after-insert
+	    (save-excursion
+	      (goto-char start)
+	      (while (<= (point) end)
+		(funcall indent-line-function)
+		(forward-line 1))))
+	  (versor-set-current-item start end)
+	  (set-marker end nil)))))))
 
 (defun versor-insert-within ()
   "Insert something within the current versor item."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
    (let* ((new-thing (versor-get-insertable 1)))
      ;; not yet sure what this really means
