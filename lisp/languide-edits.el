@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2007-01-17 18:09:32 jcgs>
+;;; Time-stamp: <2007-03-08 20:45:25 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -54,6 +54,7 @@ This allows languide to highlight things to show the user what it has done."
 (defun languide-unify-statements (n)
   "Make the next N statements into a single statement."
   (interactive "NNumber of statements to combine: ")
+  (barf-if-buffer-read-only)
   (save-excursion
     (beginning-of-statement 1)
     (let ((start (point)))
@@ -65,6 +66,7 @@ This allows languide to highlight things to show the user what it has done."
 (defun languide-unify-statements-region (a b)
   "Make the statements from A to B into a single statement."
   (interactive "r")
+  (barf-if-buffer-read-only)
   (save-excursion
     (let ((end-marker (make-marker)))
       (goto-char b)
@@ -105,6 +107,7 @@ counts as a potential scoping point, and gets converted to
 (defun languide-employ-variable (whereat)
   "Take the text around point as a variable definition, and put it into use."
   (interactive "d")
+  (barf-if-buffer-read-only)
   (destructuring-bind (name value
 			    name-start name-end
 			    value-start value-end)
@@ -297,6 +300,7 @@ P")
   "Take the region between FROM and TO, and make it into a global variable called NAME."
   (interactive "r
 sVariable name: ")
+  (barf-if-buffer-read-only)
   (save-excursion
     (let ((value-text (buffer-substring-no-properties from to))
 	  (variables-needed (free-variables-in-region from to)))
@@ -319,6 +323,7 @@ An optional DOCSTRING may also be given."
 			  (format "Helper function for %s."
 				  (ambient-defun-name (region-beginning))))))
      (list (region-beginning) (region-end) name documentation)))
+  (barf-if-buffer-read-only)
   (let* ((body-text (buffer-substring-no-properties begin end))
 	 (argnames (free-variables-in-region begin end))
 	 (arglist (mapcar (function
@@ -349,6 +354,7 @@ An optional DOCSTRING may also be given."
   "Surround the region between FROM and TO with a call to NAME."
   (interactive "r
 sFunction name: ")
+  (barf-if-buffer-read-only)
   (let ((arglist (list (buffer-substring-no-properties from to))))
     (delete-region from to)
     (languide-insert (function-call-string name arglist from)))) 
@@ -375,6 +381,7 @@ them in descending order of character position.")
   "Create a new function definition, in the current buffer, for the function call around point.
 Return value is where the new function was placed."
   (interactive)
+  (barf-if-buffer-read-only)
   (let* ((call-syntax (languide-find-surrounding-call))
 	 (function-name (let ((xs call-syntax))
 			  (catch 'found
@@ -419,15 +426,16 @@ Return value is where the new function was placed."
 (defun languide-remove-surrounding-call (&optional where)
   "Remove the function call around WHERE, leaving just the argument(s) to the function."
   (interactive "r")
+  (barf-if-buffer-read-only)
   (save-excursion
     (when where (goto-char where))
     (let* ((call-syntax (sort (languide-find-surrounding-call)
-			     ;; remove in descending order of
-			     ;; position, as these are likely to be
-			     ;; numbers rather than markers
-			     (function
-			      (lambda (a b)
-				(> (car a) (car b))))))
+			      ;; remove in descending order of
+			      ;; position, as these are likely to be
+			      ;; numbers rather than markers
+			      (function
+			       (lambda (a b)
+				 (> (car a) (car b))))))
 	   (begins (mapcar 'car call-syntax))
 	   (last-before (apply 'max (those<=limit begins where)))
 	   (last-before-marker (make-marker))
@@ -469,6 +477,7 @@ This is only valid if languide-region-type-potential-code-block-p is true for it
   "Make the region between FROM and TO conditional upon CONDITION."
   (interactive "r
 sCondition: ")
+  (barf-if-buffer-read-only)
   (save-excursion
     (let ((body-type (languide-region-type from to))
 	  (fm (make-marker))
