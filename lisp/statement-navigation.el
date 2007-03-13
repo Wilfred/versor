@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2007-03-11 20:53:58 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -91,7 +91,8 @@ you should possibly use previous-statement instead.
 There an element of DWIM to this:
   If not at the beginning of the statement, move to the beginning of it.
   If already at the beginning, move to the beginning of the previous one.
-Then, if N is greater than 1, move back N-1 more statements.")
+Then, if N is greater than 1, move back N-1 more statements.
+Return the buffer offset of the end of the statement.")
 
 (defmodal previous-statement-internal (fundamental-mode) (n)
   "Move to the NTH previous statement.
@@ -100,7 +101,8 @@ you should possibly use previous-statement instead.
 There an element of DWIM to this:
   If not at the beginning of the statement, move to the beginning of it.
   If already at the beginning, move to the beginning of the previous one.
-Then, if N is greater than 1, move back N-1 more statements."
+Then, if N is greater than 1, move back N-1 more statements.
+Return the buffer offset of the end of the statement."
   (let ((starting-point (point))
 	(previous-end nil))
     ;; first, try going back to the start of a statement, to see
@@ -174,13 +176,20 @@ you should possibly use next-statement instead."
   "Move to the NTH next statement, and set up the statement variables."
   (interactive "p")
   (versor-as-motion-command current-item
-   (unless (eq navigated-latest-part 'body)
-     (next-statement-internal n)
-     (setq navigated-latest-part 'whole))
-   (let* ((start (point))
-	  (end (save-excursion (end-of-statement-internal) (point))))
-     (versor-set-current-item start end)
-     (establish-current-statement 'next-statement end))))
+    (message "next-statement starting from %d, navigated-latest-part=%S" (point) navigated-latest-part)
+    (unless (and (eq navigated-latest-part 'body)
+		 (eq (point) navigated-latest-place))
+      ;; move on to the next statement, unless we have just selected a
+      ;; grouping body construct, in which case we want to select the
+      ;; first statement within the group
+      (next-statement-internal n)
+      (setq navigated-latest-part 'whole))
+    (skip-to-actual-code)
+    (let* ((start (point))
+	   (end (save-excursion (end-of-statement-internal) (point))))
+      (message "next-statement start=%d end=%d" start end)
+      (versor-set-current-item start end)
+      (establish-current-statement 'next-statement end))))
 
 (defvar statement-navigation-type 'comment
   "The current type of statement to navigate to parts of.
@@ -203,6 +212,8 @@ This also updates the mode line display of it."
 			 (symbol-name (car statement))))
 		      (get major-mode 'statements)))))
   (message "%S statement" type)
+  ;; (message "%S statement at %d" type (point))
+;;   (backtrace)
   (if type
       (progn
 	(setq statement-navigation-type (if (symbolp type) type (intern type))
