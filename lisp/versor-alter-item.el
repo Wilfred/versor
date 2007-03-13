@@ -1,22 +1,22 @@
 ;;;; versor-alter-item.el -- choose possible value for the current item
-;;; Time-stamp: <2006-11-12 21:55:33 jcgs>
+;;; Time-stamp: <2007-03-13 14:04:32 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
-;; 
+;;
 ;; emacs-versor is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2 of the License, or
 ;; (at your option) any later version.
-;; 
+;;
 ;; emacs-versor is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -136,6 +136,7 @@ The optional last parts of the elements of versor-alterations-types are used as 
 (defun versor-alter-item-next ()
   "Replace the current item with the next possible value."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
    (incf versor-alterations-index)
    (versor-alterations:set-current)))
@@ -143,29 +144,32 @@ The optional last parts of the elements of versor-alterations-types are used as 
 (defun versor-alter-item-prev ()
   "Replace the current item with the previous possible value."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
-   (decf versor-alterations-index)
-   (versor-alterations:set-current)))
+    (decf versor-alterations-index)
+    (versor-alterations:set-current)))
 
 (defun versor-alter-item-over-next ()
   "Replace the current item with the corresponding value from the next range."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
-   (incf versor-alterations-type-index)
-   (versor-alterations:set-current)
-   (versor-display-highlighted-choice
-    (car (aref versor-alterations-types versor-alterations-type-index))
-    (map 'list 'car versor-alterations-types))))
+    (incf versor-alterations-type-index)
+    (versor-alterations:set-current)
+    (versor-display-highlighted-choice
+     (car (aref versor-alterations-types versor-alterations-type-index))
+     (map 'list 'car versor-alterations-types))))
 
 (defun versor-alter-item-over-prev ()
   "Replace the current item with the corresponding value from the previous range."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
-   (decf versor-alterations-type-index)
-   (versor-alterations:set-current)
-   (versor-display-highlighted-choice
-    (car (aref versor-alterations-types versor-alterations-type-index))
-    (map 'list 'car versor-alterations-types))))
+    (decf versor-alterations-type-index)
+    (versor-alterations:set-current)
+    (versor-display-highlighted-choice
+     (car (aref versor-alterations-types versor-alterations-type-index))
+     (map 'list 'car versor-alterations-types))))
 
 (defmodel versor-get-alterations-possibility-types ()
   "Return an list of relevant alteration possibility types, relevant around point.
@@ -284,55 +288,56 @@ Sets up mapping for the arrow keys, such that they now change the
 value of the item, and the menu/select key to keep the value you
 have at the time."
   (interactive)
+  (barf-if-buffer-read-only)
   (versor-as-motion-command versor-alterations-old-item
-   ;; todo: change this to use a special level in the versor dimensions, or perhaps substitute the whole array temporarily; then voice will go through to the right thing automatically; will also need to keep the "select/abandon" key functions, which are not part of the versor array
-   (setq versor-alterations-old-keymap (if (eq (current-local-map) versor-altering-map)
-					   versor-alterations-old-keymap
-					 (current-local-map))
-	 versor-alterations-old-value (buffer-substring-no-properties
-				       (car versor-alterations-old-item)
-				       (cdr versor-alterations-old-item))
-	 versor-alterations-old-undo t
-	 versor-alterations-old-meta-level-name versor-current-meta-level-name
-	 versor-alterations-old-level-name versor-current-level-name
-	 versor-current-meta-level-name (propertize "altering" 'face (cons 'foreground-color "red"))
-	 versor-alterations-types (apply 'vector (versor-get-alterations-possibility-types))
-	 versor-alterations-type-index 0)
-   (versor-alterations-trim-index)
-   (use-local-map versor-altering-map)
-   ;; look among the possible values we can alter the selection to, to
-   ;; find the first one that is the same as the initial value of the
-   ;; selection
-   ;; (message "Possible types are %S" versor-alterations-types)
-   (catch 'done
-     (while (< versor-alterations-type-index (length versor-alterations-types))
-       (setq versor-alterations-index 0
-	     versor-alterations-values (versor-alterations:get-type-values t))
-       ;; (message "For type %d, values are %S" versor-alterations-type-index versor-alterations-values)
-       (let ((n (length versor-alterations-values)))
-	 (while (< versor-alterations-index n)
-	   (when (string= versor-alterations-old-value
-			  (car (aref versor-alterations-values versor-alterations-index)))
-	     ;; (message "Got one in type %d" versor-alterations-type-index)
-	     (throw 'done nil))
-	   (incf versor-alterations-index)))
-       (incf versor-alterations-type-index))
-     (message "Could not find an alteration possibility matching the initial selection"))
-   (versor-alterations:show-current)
-   (versor-set-current-item (car versor-alterations-old-item)
-			    (cdr versor-alterations-old-item))
-   (versor-alterations-show-status)))
+    ;; todo: change this to use a special level in the versor dimensions, or perhaps substitute the whole array temporarily; then voice will go through to the right thing automatically; will also need to keep the "select/abandon" key functions, which are not part of the versor array
+    (setq versor-alterations-old-keymap (if (eq (current-local-map) versor-altering-map)
+					    versor-alterations-old-keymap
+					  (current-local-map))
+	  versor-alterations-old-value (buffer-substring-no-properties
+					(car versor-alterations-old-item)
+					(cdr versor-alterations-old-item))
+	  versor-alterations-old-undo t
+	  versor-alterations-old-meta-level-name versor-current-meta-level-name
+	  versor-alterations-old-level-name versor-current-level-name
+	  versor-current-meta-level-name (propertize "altering" 'face (cons 'foreground-color "red"))
+	  versor-alterations-types (apply 'vector (versor-get-alterations-possibility-types))
+	  versor-alterations-type-index 0)
+    (versor-alterations-trim-index)
+    (use-local-map versor-altering-map)
+    ;; look among the possible values we can alter the selection to, to
+    ;; find the first one that is the same as the initial value of the
+    ;; selection
+    ;; (message "Possible types are %S" versor-alterations-types)
+    (catch 'done
+      (while (< versor-alterations-type-index (length versor-alterations-types))
+	(setq versor-alterations-index 0
+	      versor-alterations-values (versor-alterations:get-type-values t))
+	;; (message "For type %d, values are %S" versor-alterations-type-index versor-alterations-values)
+	(let ((n (length versor-alterations-values)))
+	  (while (< versor-alterations-index n)
+	    (when (string= versor-alterations-old-value
+			   (car (aref versor-alterations-values versor-alterations-index)))
+	      ;; (message "Got one in type %d" versor-alterations-type-index)
+	      (throw 'done nil))
+	    (incf versor-alterations-index)))
+	(incf versor-alterations-type-index))
+      (message "Could not find an alteration possibility matching the initial selection"))
+    (versor-alterations:show-current)
+    (versor-set-current-item (car versor-alterations-old-item)
+			     (cdr versor-alterations-old-item))
+    (versor-alterations-show-status)))
 
 (defun versor-end-altering-item ()
   "Take the currently selected value of the item, and quit alteration mode."
   (interactive)
   (versor-as-motion-command current-item
-   (setq versor-alterations-types nil)
-   (versor-set-status-display)
-   ;; fix up the undo list, to have just the removal of our last
-   ;; insertion, and the reinstatement of the original selection
-   (setq buffer-undo-list (cons nil (cons (second buffer-undo-list) versor-alterations-old-undo)))
-   (use-local-map versor-alterations-old-keymap)))
+    (setq versor-alterations-types nil)
+    (versor-set-status-display)
+    ;; fix up the undo list, to have just the removal of our last
+    ;; insertion, and the reinstatement of the original selection
+    (setq buffer-undo-list (cons nil (cons (second buffer-undo-list) versor-alterations-old-undo)))
+    (use-local-map versor-alterations-old-keymap)))
 
 (defun versor-abandon-altering-item ()
   "Take the original value of the item, and quit alteration mode."
