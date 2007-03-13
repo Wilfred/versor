@@ -1,7 +1,7 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2006-12-10 22:01:39 jcgs>
+;;; Time-stamp: <2007-03-11 17:14:41 jcgs>
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -176,7 +176,7 @@ Returns the position if it found one, or nil otherwise."
   "Make a binding point suitable to receive another binding."
   (let ((binding-place (point)))
     (save-excursion
-      (outward-once) 
+      (outward-once)
       (if (looking-at "(defun")
 	  (progn
 	    (goto-char binding-place)
@@ -276,10 +276,10 @@ The result is a list of three strings: any preceding whitespace,
 the actual declaration, and any following whitespace."
   (let* ((preceded-by-bracket (= (char-before) close-bracket))
 	 (followed-by-bracket (= (char-after) open-bracket)))
-    (message "%d is %s %s" (point) (if preceded-by-bracket "preceded-by-bracket" "") (if followed-by-bracket "followed-by-bracket" ""))    
+    (message "%d is %s %s" (point) (if preceded-by-bracket "preceded-by-bracket" "") (if followed-by-bracket "followed-by-bracket" ""))
     (list
      (concat
-      (if preceded-by-bracket 
+      (if preceded-by-bracket
 	  "\n" "")
       (let ((indent (calculate-lisp-indent)))
 	(make-string (+ 6 (cond
@@ -288,7 +288,7 @@ the actual declaration, and any following whitespace."
 			   4))
 		     ? )))
      (concat "(" name " " initial-value ")")
-     (if followed-by-bracket 
+     (if followed-by-bracket
 	 "\n" ""))))
 
 (defmodal insert-variable-declaration (lisp-mode emacs-lisp-mode lisp-interaction-mode) (name type initial-value)
@@ -297,7 +297,7 @@ Assumes we are at the obvious point to add a new variable.
 TYPE and INITIAL-VALUE may be null, but the NAME is required."
   (let* ((preceded-by-bracket (= (char-before) open-bracket))
 	 (followed-by-bracket (= (char-after) close-bracket)))
-    (unless preceded-by-bracket 
+    (unless preceded-by-bracket
       (insert "\n"))
     (lisp-indent-line)
     (save-excursion
@@ -395,28 +395,38 @@ as SYNTAX-BEFORE and SYNTAX-AFTER."
   (cond
    ((save-excursion
       (beginning-of-line)
+      ;; look for closing brackets with only whitespace before them on the line
       (looking-at "^\\(\\s-*\\))"))
     (delete-region (1- (match-beginning 1)) (match-end 1))))
   (cond
    ((save-excursion
       (beginning-of-line)
+      ;; if on a blank line...
       (looking-at "^\\s-*$"))
     (delete-blank-lines)
     (delete-blank-lines)
     (when (looking-at "^(")
+      ;; todo: make this use defun-prompt-regexp
+      ;; if at beginning of defun, put blank line before it
       (open-line 1)))
    ((and (eq syntax-before close-bracket)
 	 (eq syntax-after open-bracket))
+    ;; only one space between two bracketted expressions
+    ;; todo: make this more general about spaces between expressions
+    ;; todo: make it leave two spaces until point moves away? and even make that a dummy expression until then?
     (just-one-space))
    ((or (and (eq syntax-before open-bracket)
+	     ;; remove space after open bracket
 	     (memq syntax-after
 		   '(open-bracket ?w ?_)))
 	(and (eq syntax-after close-bracket)
+	     ;; remove space before close bracket
 	     (memq syntax-before
 		   '(close-bracket ?w ?_))))
     (delete-horizontal-space))
    ((and (eq syntax-before open-bracket)
 	 (eolp))
+    ;; for open bracket at end of line, bring next line up
     (delete-char 1)
     (delete-horizontal-space))))
 
@@ -527,6 +537,7 @@ Each element is a list of:
 Each element is a list of:
   name
   location"
+  ;; todo: exclude quoted constants (including those inside lists)
   (save-excursion
     (beginning-of-defun)
     (let ((result nil)
@@ -556,7 +567,7 @@ Each element is a list of:
 	i
       (1- i))))
 
-(defmodal languide-region-type (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+(defmodal languide-region-type-old (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   (from to)
   "Try to work out what type of thing the code between FROM and TO is.
 Results can be things like if-then-body, if-then-else-tail, progn-whole,
@@ -566,13 +577,14 @@ whitespace).
 If it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
-expression, return t. 
+expression, return t.
 Otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil."
   (setq languide-region-detail-string nil)
   (cond
    ((save-excursion (goto-char from)
+		    ;; this tests whether the selection is a single expression
 		    (skip-to-actual-code to)
 		    (and (not (looking-at "("))
 			 (save-excursion
@@ -689,7 +701,7 @@ information; otherwise should clear it to nil."
 		  t)))
 	     ((and (eq surrounding-functor 'if)
 		   (numberp which-s-member))
-	      (cond 
+	      (cond
 	       ((= which-s-member 2)
 		(if (= n-parts 1)
 		    'if-condition
@@ -707,11 +719,10 @@ information; otherwise should clear it to nil."
 	     (t t))))
 	 (t nil))))))
 
-;;; I've reverted this from the following fancy version for now, as
-;;; it's causing strings not to be highlighted -- will reinstate the
-;;; clever version later
+;;; I did have some problems with this, but can't reproduce them. If
+;;; this doesn't work, try the version above.
 
-(defmodal languide-region-type-new (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+(defmodal languide-region-type (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   (from to)
   "Try to work out what type of thing the code between FROM and TO is.
 Results can be things like if-then-body, if-then-else-tail, progn-whole,
@@ -721,7 +732,7 @@ whitespace).
 If it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
-expression, return t. 
+expression, return t.
 Otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil.
@@ -744,7 +755,16 @@ languide-region-detail-level says how much incidental information to include."
 			     (skip-to-actual-code-backwards from)
 			     (eq (point) expr-1-end)))))
     (let* ((start-char (char-after from))
-	   (start-syntax (char-syntax start-char)))
+	   (start-syntax (char-syntax start-char))
+	   (surround-start (safe-scan-lists from -1 1))
+	   (f-start (and surround-start
+			 (safe-scan-lists surround-start 1 -1)))
+	   (f-end (and f-start
+		       (safe-scan-sexps f-start 1)))
+	   (functor (and f-end
+			 (intern
+			  (buffer-substring-no-properties f-start f-end))))
+	   (which-member (and f-start (count-sexps f-start from))))
       (cond
        ((eq start-char 34)
 	(when (> languide-region-detail-level 1)
@@ -752,7 +772,12 @@ languide-region-detail-level says how much incidental information to include."
 						      (buffer-substring-no-properties
 						       (1+ from)
 						       (1- (safe-scan-sexps from 1))))))
-	'string-literal)
+	(if (or (and (memq functor '(defun defmacro defvar defconst defcustom))
+		     (eq which-member 4))
+		(and (eq functor 'defmodal)
+		     (eq which-member 5)))
+	    'documentation
+	  'string-literal))
        ((eq start-char ??)
 	(when (> languide-region-detail-level 1)
 	  (let ((charval))
@@ -763,7 +788,10 @@ languide-region-detail-level says how much incidental information to include."
 	'numeric-constant)
        ((or (eq start-syntax ?w)
 	    (eq start-syntax ?_))
-	'symbol))))
+	(if (and (memq functor '(defun defmacro defvar defconst defcustom defmodel defmodal))
+		 (eq which-member 2))
+	    'defun-name
+	  'symbol)))))
    (t (let* ((pps (save-excursion (parse-partial-sexp from to))))
 	(cond
 	 ((and (zerop (nth 0 pps))	; same level at both ends
@@ -773,6 +801,7 @@ languide-region-detail-level says how much incidental information to include."
 		 (f-end (and f-start
 			     (safe-scan-sexps f-start 1)))
 		 (functor (and f-end
+			       (not (= (char-after f-start) open-bracket))
 			       (intern
 				(buffer-substring-no-properties f-start f-end))))
 		 (surrounding-start (safe-scan-lists from -1 1))
@@ -826,6 +855,9 @@ languide-region-detail-level says how much incidental information to include."
 	     ((eq surrounding-functor 'cond)
 	      'cond-clause)
 	     ((eq functor 'defun) defun-body)
+	     ((and (eq surrounding-functor 'defun)
+		   (eq which-s-member 3))
+	      'defun-arglist)
 	     ((memq surrounding-functor '(let let*))
 	      (cond
 	       ((eq which-s-member 2)
@@ -864,7 +896,7 @@ languide-region-detail-level says how much incidental information to include."
 		  t)))
 	     ((and (eq surrounding-functor 'if)
 		   (numberp which-s-member))
-	      (cond 
+	      (cond
 	       ((= which-s-member 2)
 		(if (= n-parts 1)
 		    'if-condition
@@ -883,7 +915,7 @@ languide-region-detail-level says how much incidental information to include."
 	     (t t))))
 	 (t
 	  (when (> languide-region-detail-level 1)
-	    (cond 
+	    (cond
 	     ((zerop (nth 0 pps))
 	      (setq languide-region-detail-string "Not the same level at both ends"))
 	     ((>= (nth 6 pps) 0)
@@ -896,7 +928,7 @@ languide-region-detail-level says how much incidental information to include."
 Assumes being at the end of a group of bindings, ready to insert a binding."
   ;; iterating back over the variables of this binding group
   (message "adjust-binding-point from %d" (point))
-  (while (and (safe-backward-sexp)	
+  (while (and (safe-backward-sexp)
 	      (let ((this (save-excursion
 			    ;; go into the binding to see what variable is there
 			    ;; todo: make this conditional on the binding being a list rather than just a symbol
