@@ -1,7 +1,7 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2006-12-09 18:08:04 jcgs>
+;;; Time-stamp: <2007-03-11 20:59:08 jcgs>
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -175,7 +175,7 @@ Need only work if already at or just beyond the end of a statement."
 		 (looking-at c-like-function-type-modifiers))
 	  (setq type-possible-start-start (point)))
 	(goto-char type-possible-start-start)))
-      
+
 
      ;; if it wasn't an else, try going back another sexp
      ((progn
@@ -203,7 +203,7 @@ Need only work if already at or just beyond the end of a statement."
 (defvar debug-overlays nil)
 
 (defun debug-overlay (from to text colour)
-  (when nil t 
+  (when nil t
     (let ((o (make-overlay from to)))
       (overlay-put o 'face (cons 'background-color colour))
       (overlay-put o 'before-string (format "[%s:" text))
@@ -245,7 +245,7 @@ Need only work if already at or just beyond the end of a statement."
 	;; closing brace within a statement, so for example we should
 	;; go back if at "do { ... }  * while (...)", but not if at
 	;; "while (...) do { ... } *"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	
+
 	(continue-back-past-curly-ket
 	 starting-point
 	 ;; (point)
@@ -449,6 +449,8 @@ this does not have to work."
       (and (safe-forward-sexp 1)
 	   (looking-at "\\(++\\)\\|\\(--\\)")))
     'assignment)
+   ((looking-at "DEFUN")
+    'defun)
    ((save-excursion
       (and (safe-forward-sexp 1)
 	   (looking-at " *(")))
@@ -495,7 +497,7 @@ this does not have to work."
 
 (defmodal statement-container (c-mode perl-mode java-mode) ()
   "Move to the end of the container of the current statement."
-  ;; needs to do the "not in string, not in comment" stuff, so we need 
+  ;; needs to do the "not in string, not in comment" stuff, so we need
   ;; the Beginning Of Defun to compare against
   (let* ((bod (save-excursion
 		(c-beginning-of-defun 1)
@@ -506,7 +508,7 @@ this does not have to work."
     (while in-comment-or-string
       ;; todo: this is wrong, it can find a preceding and closed container
       ;; (search-backward "{" (point-min) t) ; leaves point at end of match
-      (if (backward-up-list)
+      (if (safe-backward-up-list)
 	  (let ((result (save-excursion (parse-partial-sexp bod (point)
 							    0 ; target-depth
 							    nil	; stop-before
@@ -599,7 +601,7 @@ Return the position at the end of the initializer."
 		  (let ((e (move-over-initializer extra 0)))
 		    (while (string-match ", *\\([a-z][a-z0-9_]*\\)" extra e)
 		      ;; (message "    Got extra var of same type: %s" (match-string-no-properties 1 extra))
-		      (push (cons (match-string-no-properties 1 extra) vartype) variables)		  
+		      (push (cons (match-string-no-properties 1 extra) vartype) variables)
 		      (setq e (move-over-initializer extra (match-end 1))))))))
 	    (goto-char (match-end 0))
 	    ;; (message "end of that binding was %d" (point))
@@ -671,7 +673,7 @@ Each element is a list of:
 		      (push (list (match-string-no-properties 1 extra) vartype
 				  (point) scope-ends
 				  ""	; todo: get this initial value
-				  ) variables)		  
+				  ) variables)
 		      (setq e (match-end 1))))))
 	      (goto-char (match-end 0))
 	      (skip-to-actual-code))))
@@ -748,7 +750,7 @@ the actual declaration, and any following whitespace."
 	  (concat "\n" (make-string (- (save-excursion (back-to-indentation) (point))
 				       (save-excursion (beginning-of-line 1) (point)))
 				    ? )))
-	(concat 
+	(concat
 	 (if type
 	     (concat type " ")
 	   "void ")
@@ -757,7 +759,7 @@ the actual declaration, and any following whitespace."
 	     (concat " = " initial-value ";")
 	   ""))
 	""))
-  
+
 (defmodal insert-variable-declaration (c-mode java-mode) (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
 Assumes we are at the obvious point to add a new variable.
@@ -1086,7 +1088,7 @@ whitespace).
 If it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
-expression, return t. 
+expression, return t.
 Otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil.
