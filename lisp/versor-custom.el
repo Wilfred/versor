@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2007-03-04 16:05:35 jcgs>
+;;; Time-stamp: <2007-03-18 18:43:14 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -76,6 +76,11 @@ If this is non-nil, going back from the first meta-level takes you to the last o
 and going forward from the last meta-level takes you to the first one."
   :group 'versor-motion
   :type 'boolean)
+
+(defcustom versor-dwim-other-end-count 3
+  "*How many times versor-dwim should do versor-other-end-of-item before trying other strategies."
+  :group 'versor-motion
+  :type 'integer)
 
 (defcustom phrase-end "[,;:] *"
   "*Regular expression to recognize the end of a phrase."
