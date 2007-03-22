@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2007-02-22 11:33:56 jcgs>
+;;; Time-stamp: <2007-03-19 16:05:06 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -159,7 +159,11 @@ Makes a two-part selection, of opening and closing brackets."
       (condition-case evar
 	  (let ((start (point)))
 	    (forward-sexp 1)
-	    (indent-region start (point) nil))
+	    (let ((end (point-marker)))
+	      (indent-region start end nil)
+	      (save-restriction
+		(narrow-to-region start end)
+		(delete-trailing-whitespace))))
 	(error nil))))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
@@ -177,22 +181,28 @@ Makes a two-part selection, of opening and closing brackets."
 Makes a two-part selection, of opening and closing brackets."
   (interactive "p")
   (safe-backward-up-list arg)
-  (when (and versor-reformat-automatically
-	     (buffer-modified-p))
-    (condition-case evar
-	(indent-sexp)
-      ;; todo: use (indent-region start end nil) instead
-      (error nil)))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
-	(end (save-excursion (safe-forward-sexp 1) (point))))
+	(end (save-excursion (safe-forward-sexp 1) (point-marker))))
+    (when (and versor-reformat-automatically
+	       (buffer-modified-p))
+      (condition-case evar
+	  (progn
+	    ;; todo: use (indent-region start end nil) instead
+	    (indent-sexp)
+	    (save-restriction
+	      (narrow-to-region start end)
+	      (delete-trailing-whitespace)))
+	(error nil)))
     ;; TODO: should probably be versor-set-current-item
     (make-versor-overlay start (1+ start))
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
     ;; TODO: should probably be versor-add-to-current-item when I've written one
     (when end
       (versor-extra-overlay (1- end) end))
-    (cons start end)))
+    (prog1
+	(cons start (marker-position end))
+      (move-marker end nil))))
 
 (defmodal versor-backward-up-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
   "Like backward-up-list, but with versor stuff around it, and for HTML blocks."
