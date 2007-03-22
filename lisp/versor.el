@@ -1,22 +1,22 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2007-02-20 20:21:09 jcgs>
+;;; Time-stamp: <2007-03-18 19:07:35 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
-;; 
+;;
 ;; emacs-versor is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2 of the License, or
 ;; (at your option) any later version.
-;; 
+;;
 ;; emacs-versor is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -259,7 +259,7 @@ amongst the arguments:
 
 The following arguments suppress some of the default behaviours:
   'use-region-face  -- suppress the selection colour changes
-  'quiet-underlying -- do not indicate the underlying commands being used 
+  'quiet-underlying -- do not indicate the underlying commands being used
 "
   (interactive)
 
@@ -301,7 +301,7 @@ The following arguments suppress some of the default behaviours:
 
   (when (memq 'quiet-underlying keysets)
     (setq versor-display-underlying-commands nil))
-  
+
   (when (memq 'tlc keysets)
     (require 'versor-tlc))
 
@@ -357,7 +357,7 @@ The following arguments suppress some of the default behaviours:
       (versor-global-set-key [ C-home ]  'versor-start-of-item)
       (versor-global-set-key [ C-end ]   'versor-end-of-item)
 
-      (versor-global-set-key [ M-home ] 'versor-dwim)    
+      (versor-global-set-key [ M-home ] 'versor-dwim)
 
       ;; todo: why isn't this a normal global-set-key?
       (define-key (current-global-map) [ insert ]   'versor-insertion-placement-keymap)
@@ -374,7 +374,7 @@ The following arguments suppress some of the default behaviours:
       (define-key versor-insertion-placement-keymap [ left ]  'versor-insert-before)
       (define-key versor-insertion-placement-keymap [ right ] 'versor-insert-after)
       (define-key versor-insertion-placement-keymap [ up ]    'versor-insert-around)
-      (define-key versor-insertion-placement-keymap [ down ]  'versor-insert-within)
+      (define-key versor-insertion-placement-keymap [ down ]  'versor-replace)
       )
 
     (when (memq 'keypad keysets)
@@ -397,7 +397,7 @@ The following arguments suppress some of the default behaviours:
 
       (define-key versor-altering-map [ kp-left ] 'versor-alter-item-prev)
       (define-key versor-altering-map [ kp-right ] 'versor-alter-item-next)
-  
+
       (unless tracking
 	(versor-global-set-key [ kp-up ]      'versor-over-prev)
 	(versor-global-set-key [ kp-down ]    'versor-over-next))
@@ -431,13 +431,13 @@ The following arguments suppress some of the default behaviours:
       (define-key versor-insertion-placement-keymap [ kp-left ]  'versor-insert-before)
       (define-key versor-insertion-placement-keymap [ kp-right ] 'versor-insert-after)
       (define-key versor-insertion-placement-keymap [ kp-up ]    'versor-insert-around)
-      (define-key versor-insertion-placement-keymap [ kp-down ]  'versor-insert-within)
+      (define-key versor-insertion-placement-keymap [ kp-down ]  'versor-replace)
       ))
 
   (setq versor-mode t)
-  
+
   (versor-enable-mode-line-display)
-  
+
   (versor-set-status-display)
 
   (setq versor-setup-done t))
