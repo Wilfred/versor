@@ -1,7 +1,7 @@
 ;;;; languide-sh-like.el -- shell etc definitions for language-guided editing
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2007-03-19 20:27:00 jcgs>
 ;;
-;; Copyright (C) 2004, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -45,9 +45,10 @@ Do not do auxiliary stuff that might be associated with this."
 		       (match-end 0)
 		     (point-min))))
     (goto-char (max bol semicolon))
-    (skip-to-actual-code)))
+    (skip-to-actual-code)
+    nil))
 
-(defmodal end-of-statement-internal (sh-mode) ()
+(defmodal end-of-statement-internal (sh-mode) (hint)
   "Move to the end of the current statement.
 Do not do auxiliary stuff that might be associated with this."
   (interactive)
