@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2007-03-11 17:14:41 jcgs>
+;;; Time-stamp: <2007-03-19 20:27:02 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -29,13 +29,14 @@
   "Move to the beginning of Lisp statement, which is a pretty nebulous concept."
   ;;;;;;;;;;;;;;;; wrong -- this effectively does previous-statement
   (unless (looking-at "(") (backward-up-list 1))
-  (forward-sexp -1))
+  (forward-sexp -1)
+  nil)
 
 (defmodal end-of-statement-internal (lisp-mode
 				     emacs-lisp-mode
 				     lisp-interaction-mode
 				     scheme-mode)
-  ()
+  (hint)
   "Move to the end of Lisp statement."
   ;;;;;;;;;;;;;;;; wrong -- this effectively does next-statement
   (unless (looking-at "(") (backward-up-list 1))
@@ -788,10 +789,18 @@ languide-region-detail-level says how much incidental information to include."
 	'numeric-constant)
        ((or (eq start-syntax ?w)
 	    (eq start-syntax ?_))
-	(if (and (memq functor '(defun defmacro defvar defconst defcustom defmodel defmodal))
-		 (eq which-member 2))
-	    'defun-name
-	  'symbol)))))
+	(cond
+	 ((and (memq functor '(defun defmacro defvar defconst defcustom defmodel defmodal))
+	       (eq which-member 2))
+	  'defun-name)
+	 ((and (memq functor '(when unless))
+	       (eq which-member 2))
+	  'if-condition)
+	 ((eq functor 'if)
+	  (if (eq which-member 2)
+	      'if-else-condition
+	    'if-else-body))
+	 (t 'symbol))))))
    (t (let* ((pps (save-excursion (parse-partial-sexp from to))))
 	(cond
 	 ((and (zerop (nth 0 pps))	; same level at both ends
