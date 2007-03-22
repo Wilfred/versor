@@ -1,5 +1,5 @@
 ;;;; versor-help.el -- help for versor
-;;; Time-stamp: <2006-08-03 20:19:51 john>
+;;; Time-stamp: <2007-03-18 19:07:36 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -81,7 +81,7 @@
 		    offset)))
 	(if (memq function '(versor-insert-before
 			     versor-insert-around
-			     versor-insert-within
+			     versor-replace
 			     versor-insert-after))
 	    (let* ((kinds (setq versor-insertion-kind-alist
 				(sort versor-insertion-kind-alist
