@@ -1,22 +1,22 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2007-03-08 20:41:47 jcgs>
+;;; Time-stamp: <2007-03-19 19:43:21 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
-;; 
+;;
 ;; emacs-versor is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2 of the License, or
 ;; (at your option) any later version.
-;; 
+;;
 ;; emacs-versor is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -55,7 +55,7 @@ Otherwise, do whatever was bound to the key that caused this
 command to be run."
   `(if (or versor-mode
 	   (not (interactive-p)))
-       (progn
+       (let ((versor-can-do-delayed-deletions nil)) ; hold these off until end of command
 	 (if versor-auto-change-for-modes
 	     ;; If we are keeping a different dimension for each mode,
 	     ;; check whether the mode has changed. It's not
@@ -427,18 +427,18 @@ If repeated, this undoes the first move, and goes back a meta-dimension."
 (defun versor-other-end-of-item (&rest junk)
   "Move to the other end of the current item."
   (interactive)
-  (versor-as-motion-command item		; todo: this is leaving the wrong item highlighted, I think... when it moves to the end of the item, the following item is highlighted; not sure whether this affects the selection as well as the highlighting, but I presume it does
-     (cond
-      ((= (point) (car item))
-       (goto-char (cdr item)))
-      ((= (point) (cdr item))
-       (goto-char (car item)))
-      (t
-       (let ((halfway (/ (+ (car item) (cdr item)) 2)))
-	 (if (< (point) halfway)
-	     (goto-char (cdr item))
-	   (goto-char (car item))))))
-     (versor-set-current-item (car item) (cdr item))))
+  (versor-as-motion-command item
+    (cond
+     ((= (point) (car item))
+      (goto-char (cdr item)))
+     ((= (point) (cdr item))
+      (goto-char (car item)))
+     (t
+      (let ((halfway (/ (+ (car item) (cdr item)) 2)))
+	(if (< (point) halfway)
+	    (goto-char (cdr item))
+	  (goto-char (car item))))))
+    (versor-set-current-item (car item) (cdr item))))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;;; extend item ;;;;
@@ -511,15 +511,16 @@ With optional LEVEL-OFFSET, add that to the level first."
   "Copy the current item."
   (interactive)
   (versor-as-motion-command current-item
-    (mapcar
-     (lambda (item)
-       (let* ((start (versor-overlay-start item))
-	      (end (versor-overlay-end item)))
-	 (versor-copy-region start end)))
-     (reverse (versor-get-current-items)))
-    (when (fboundp 'update-shown-stacks) ; from rpn-edit.el
-      (update-shown-stacks))
-    (versor-set-current-item (car current-item) (cdr current-item))))
+    (let ((items (versor-get-current-items)))
+      (mapcar
+       (lambda (item)
+	 (let* ((start (versor-overlay-start item))
+		(end (versor-overlay-end item)))
+	   (versor-copy-region start end)))
+       (reverse items))
+      (when (fboundp 'update-shown-stacks) ; from rpn-edit.el
+	(update-shown-stacks))
+      (versor-set-current-items items))))
 
 (defun versor-mark ()
   "Mark the current item.
@@ -542,9 +543,9 @@ this."
 (defun abbreviate-cut-string (cut-string)
   "Return a string based on CUT-STRING but more suitable for display in the minibuffer."
   (subst-char-in-string
-   ?\t ? 
+   ?\t ?
    (subst-char-in-string
-    ?\n ?  
+    ?\n ?
     (if (< (length cut-string) (frame-width))
 	cut-string
       (let ((w (/ (- (frame-width) 13 ) 2)))
@@ -698,7 +699,8 @@ With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
     (while (> n 0)
       (decf n)
       (push (current-kill (+ n offset) t) result))
-    (nreverse result)))
+    ;; (nreverse result)
+    result))
 
 (defun versor-top-n-searches (n)
   "Return the N most recent searches."
@@ -754,7 +756,7 @@ With optional OFFSET, return the OFFSET...OFFSET+N entries instead."
 			'begin-end-with-dummy
 		      'begin-end)
 		    statement-descr)
-	     (if versor-statement-insertion-with-dummy-value 
+	     (if versor-statement-insertion-with-dummy-value
 		 (assoc 'begin-end statement-descr)
 	       nil)))))
 
@@ -784,18 +786,25 @@ This lets us do commands such as insert-around using a common framework."
 
 (defun insert-active (insertion)
   "If INSERTION is a string, insert it; if a function, call it.
-Various other dwim things, too -- evaluate evaluable forms, etc."
+Various other dwim things, too -- evaluate evaluable forms, etc.
+Returns a cons of the start and end of what it inserted."
   (cond
-   ((stringp insertion) (versor-adjusting-insert insertion))
-   ((functionp insertion) (funcall insertion))
-   ((symbolp insertion)			; but not a function
-    (insert (symbol-name insertion)))
+   ((stringp insertion)
+    (versor-adjusting-insert insertion))
    ((and (consp insertion)
-	 (functionp (car insertion)))
-    (eval insertion))
-   ((consp insertion)			; but not an evaluable form
+	 (not (functionp (car insertion)))) ; but not an evaluable form
     (mapcar 'insert-active insertion))
-   ((integerp insertion) (insert insertion))))
+   (t
+    (let ((start (point)))
+      (cond
+       ((functionp insertion) (funcall insertion))
+       ((symbolp insertion)		; but not a function
+	(insert (symbol-name insertion)))
+       ((and (consp insertion)
+	     (functionp (car insertion)))
+	(eval insertion))
+       ((integerp insertion) (insert insertion)))
+      (cons start (point))))))
 
 (defun versor-insert-before ()
   "Insert something before the current versor item."
@@ -850,7 +859,7 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
 	  (set-marker start (versor-overlay-start current-item))
 	  (set-marker-insertion-type start nil)
 	  (goto-char start)
-	  (versor-adjusting-insert (first new-thing))
+	  (insert-active (first new-thing))
 	  (when versor-reindent-after-insert
 	    (save-excursion
 	      (goto-char start)
@@ -860,14 +869,31 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
 	  (versor-set-current-item start end)
 	  (set-marker end nil)))))))
 
-(defun versor-insert-within ()
-  "Insert something within the current versor item."
+(defun versor-replace ()
+  "Insert something \"within\" the current versor item, that is, replacing it."
   (interactive)
   (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
-   (let* ((new-thing (versor-get-insertable 1)))
-     ;; not yet sure what this really means
-     )))
+    (let* ((items (nreverse (versor-get-current-items)))
+	   (new-things (nreverse (versor-get-insertable (length items))))
+	   (new-selection nil))
+      (message "items=%S new-things=%S" items new-things)
+      (while items
+	(let* ((item (car items))
+	       (start (versor-overlay-start item))
+	       (end (versor-overlay-end item))
+	       (replacement (car new-things)))
+	  (message "deleting %d..%d and putting %S there instead" start end replacement)
+	  (versor-kill-region start end)
+	  (goto-char start)
+	  (let ((inserted (insert-active replacement)))
+	    (setq items (cdr items)
+		  new-things (cdr new-things)
+		  new-selection (cons (cons (copy-marker (car inserted))
+					    (copy-marker (cdr inserted)))
+				      new-selection)))))
+      (message "new-selection=%S" new-selection)
+      (versor-set-current-items new-selection))))
 
 (defun versor-command-p (command)
   "Return whether COMMAND is part of versor."
@@ -881,6 +907,6 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
   "Return whether COMMAND is part of the versor wrapper for languide."
   (string-match "^versor-languide-" (symbol-name command)))
 
-(provide 'versor-commands) 
+(provide 'versor-commands)
 
 ;;;; end of versor-commands.el
