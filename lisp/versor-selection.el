@@ -1,22 +1,22 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2007-03-04 13:58:46 jcgs>
+;;; Time-stamp: <2007-03-18 19:50:30 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
-;; 
+;;
 ;; emacs-versor is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2 of the License, or
 ;; (at your option) any later version.
-;; 
+;;
 ;; emacs-versor is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
@@ -111,7 +111,7 @@ yet to edit."
 (defun versor-get-current-items ()
   "Return the current items."
   (let ((result
-	 (cond 
+	 (cond
 	  ((versor-current-item-valid)
 	   ;; (message "versor-get-current-items: current item valid")
 	   versor-items)
@@ -126,7 +126,7 @@ yet to edit."
 	     )))
 	 ))
     ;; (message "%S" result)
-    result))
+    (copy-sequence result)))
 
 (defun versor-overlay-start (olay)
   "Return the start of OLAY.
@@ -320,7 +320,7 @@ of conses of start . end, in versor-latest-items."
   (unless (eq (car versor-items) 'not-yet-set)
     (setq versor-latest-items
 	  (catch 'no-region
-	    (mapcar 
+	    (mapcar
 	     (lambda (item)
 	       (if (overlayp item)
 		   (cons (overlay-start item) (overlay-end item))
