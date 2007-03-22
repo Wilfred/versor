@@ -1,5 +1,5 @@
 ;;;; languide-functional.el -- languide definitions for functional languages such as Haskell
-;;; Time-stamp: <2006-08-06 12:59:39 jcgs>
+;;; Time-stamp: <2007-03-19 20:27:02 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -26,9 +26,10 @@ Need only work if already at or just before the start of a statement.")
 Need only work if already at or just beyond the end of a statement.")
 
 (defmodal beginning-of-statement-internal (haskell-mode literate-haskell-mode) ()
-  "Move to the beginning of a Haskell statement.")
+  "Move to the beginning of a Haskell statement."
+  nil)
 
-(defmodal end-of-statement-internal (haskell-mode literate-haskell-mode) ()
+(defmodal end-of-statement-internal (haskell-mode literate-haskell-mode) (hint)
   "Move to the end of a Haskell statement.")
 
 (defmodal identify-statement (haskell-mode literate-haskell-mode) (default)
