@@ -1,5 +1,5 @@
 ;;;; versor-dwim.el -- move between code, comments, and strings, etc
-;;; Time-stamp: <2006-08-03 20:19:51 john>
+;;; Time-stamp: <2007-03-18 18:45:20 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -75,13 +75,13 @@ The optional argument says which functions have already been tried."
       (backward-sexp 1)
       "Went from trailing comment to the thing it trails")
      ((eq loc-type 'line-comment)
-      ;; condition only! 
+      ;; condition only!
       ;; no body to this "while" loop
       ;; while I'm at it, might as well make big multi-line
       ;; comment to test this code, which should run to the
       ;; thing just after the comment,
       ;; if called anywhere within it
-      (while (progn	       
+      (while (progn
 	       (forward-line 1)
 	       (looking-at "^\\s-*\\s<")))
       (skip-to-actual-code)
@@ -92,38 +92,10 @@ The optional argument says which functions have already been tried."
       "Went out of string")
      ((eq loc-type 'code)
       (cond
-       ;; first, try to go to the other end of an expression
-       ((and (save-excursion
-	       (skip-to-actual-code)
-	       (or (= (char-syntax (char-after)) open-bracket)
-		   (looking-at "\\<")))
-	     (< versor-dwim-successive-commands 3))
-	(let ((start (point))) 
-	  (forward-sexp 1)
-	  ;; I tried this, but it didn't dwim:
-	  ;; (skip-to-actual-code)
-	  ;; try this instead
-	  ;; if in multiple spaces between things, go part way into those spaces,
-	  ;; as that is a common place to want to start typing, e.g. a replacement
-	  ;; for something you just deleted, that had a space on either side of it
-	  (when (looking-at "  +")
-	    (forward-char))
-	  (versor-set-current-item start (point)))
-	"Went from start of expression to end of it")
-       ((and (save-excursion
-	       (skip-to-actual-code-backwards)
-	       (or (= (char-syntax (char-before)) close-bracket)
-		   (looking-at "\\>")))
-	     (< versor-dwim-successive-commands 3))
-	(previous-sexp 1)
-	;; if in multiple spaces, go part way into those spaces
-	(when (save-excursion
-		(skip-to-actual-code-backwards)
-		(looking-at "  +"))
-	  (skip-to-actual-code-backwards)
-	  (forward-char))
-	"Went from end of expression to start of it")
-       ;; otherwise, try going into the next string or comment
+       ;; if before multiple spaces, go into them
+       ((looking-at "\\s-\\s-")
+	(forward-char 1))
+       ;; try going into the next string or comment
        (t (let ((nearest-string (save-excursion
 				  (re-search-forward "\\s\"" (point-max) t)
 				  (point)))
@@ -154,6 +126,12 @@ The optional argument says which functions have already been tried."
 (defvar versor-dwim-successive-commands 0
   "The number of consecutive commands which are versor-dwim.")
 
+(defvar versor-dwim-starting-items nil
+  "The selection with which versor-dwim was called.")
+
+(defvar versor-dwim-starting-position nil
+  "The buffer offset at which versor-dwim was called.")
+
 (defun versor-dwim ()
   "Move to another sort of place that the user has in mind,
 switching as necesssary between comment, code, string literal, etc.
@@ -167,16 +145,22 @@ Aspects of mental state not necessary for figuring out where to leave point are
 factored out of the calculations."
   (interactive)
   (versor-as-motion-command current-item
-   (setq versor-dwim-successive-commands
-	 (if (eq last-command 'versor-dwim)
-	     (1+ versor-dwim-successive-commands)
-	   1))
-   (let ((dwim-function (or (versor-get-action 'dwim)
-			    (get major-mode 'versor-dwim)))) 
-     (message
-      (if dwim-function 
-	  (funcall dwim-function)
-	"No dwim function defined for dimension %s:%s" versor-current-meta-level-name versor-current-level-name)))))
+    (if (eq last-command 'versor-dwim)
+	(setq versor-dwim-successive-commands
+	      (1+ versor-dwim-successive-commands))
+      (setq versor-dwim-successive-commands 1
+	    versor-dwim-starting-items (versor-get-current-items)
+	    versor-dwim-starting-position (point)))
+    ;; (message "dwim count %d, items %S" versor-dwim-successive-commands versor-dwim-starting-items)
+    (if (<= versor-dwim-successive-commands versor-dwim-other-end-count)
+	(versor-other-end-of-item)
+      (let ((dwim-function (or (versor-get-action 'dwim)
+			       (get major-mode 'versor-dwim))))
+	(goto-char versor-dwim-starting-position)
+	(message
+	 (if dwim-function
+	     (funcall dwim-function)
+	   "No dwim function defined for dimension %s:%s" versor-current-meta-level-name versor-current-level-name))))))
 
 (defconst open-bracket (string-to-char "(")
   "Get this out-of-line to avoid confusing indenter when editing functions that use it.")
