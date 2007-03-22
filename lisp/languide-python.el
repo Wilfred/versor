@@ -1,5 +1,5 @@
 ;;;; languide-python.el -- languide definitions for python
-;;; Time-stamp: <2006-08-06 12:39:38 jcgs>
+;;; Time-stamp: <2007-03-19 20:27:01 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,8 @@ Need only work if already at or just beyond the end of a statement."
 (defmodal beginning-of-statement-internal (python-mode) ()
   "Move to the beginning of a python statement."
   (py-goto-initial-line)
-  (back-to-indentation))
+  (back-to-indentation)
+  nil)
 
 (defmodal previous-statement-internal (python-mode) (n)
   "Move to the NTH previous statement.
@@ -55,7 +56,7 @@ Then, if N is greater than 1, move back N-1 more statements."
     (py-end-of-statement)
     (point)))
 
-(defmodal end-of-statement-internal (python-mode) ()
+(defmodal end-of-statement-internal (python-mode) (hint)
   "Move to the end of a python statement."
   ;; (py-goto-beyond-final-line)
   (py-end-of-statement)

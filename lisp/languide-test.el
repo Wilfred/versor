@@ -1,5 +1,5 @@
 ;;;; test routines for languide
-;;; Time-stamp: <2004-06-03 14:50:27 john>
+;;; Time-stamp: <2007-03-19 20:26:59 jcgs>
 
 (require 'languide)
 
@@ -29,7 +29,7 @@ As a side-effect, colours in the buffer."
       (goto-char probe)
       (condition-case error-var
 	  (progn
-	    (beginning-of-statement-internal)
+	    (beginning-of-statement-internal nil)
 	    (setq this-whereto (point)))
 	(error
 	 (setq this-whereto (cons 'error error-var))))
