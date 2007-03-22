@@ -1,5 +1,5 @@
 ;;;; statement-navigation.el -- Statement-based navigation for languide and versor
-;;; Time-stamp: <2007-03-11 20:53:58 jcgs>
+;;; Time-stamp: <2007-03-19 20:35:45 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -26,11 +26,13 @@
 
 (defmodel beginning-of-statement-internal ()
   "Move to the beginning of the statement.
-Do not do auxiliary stuff that might be associated with this."
+Do not do auxiliary stuff that might be associated with this.
+Return the type of statement if obvious, in a form that can
+be given to end-of-statement-internal as a hint."
   (interactive))
 
-(defmodel end-of-statement-internal ()
-  "Move to the end of the current statement.
+(defmodel end-of-statement-internal (hint)
+  "Move to the end of the current statement, with HINT as to the statement type.
 Do not do auxiliary stuff that might be associated with this."
   (interactive))
 
@@ -70,8 +72,8 @@ If the statement cannot be identified, return DEFAULT.")
   "Move to the beginning of the statement.
 Argument 1 means the current statement, 2 the next, etc."
   (interactive)
-  (beginning-of-statement-internal)
-  (establish-current-statement 'beginning-of-statement))
+  (let ((hint (beginning-of-statement-internal)))
+    (establish-current-statement 'beginning-of-statement hint)))
 
 ;; this is for testing
 ;; (global-set-key [ kp-subtract ] 'beginning-of-statement-internal)
@@ -80,9 +82,9 @@ Argument 1 means the current statement, 2 the next, etc."
   "Move to the end of the current statement.
 Argument 1 means the current statement, 2 the next, etc."
   (interactive)
-  (beginning-of-statement-internal)
-  (establish-current-statement 'end-of-statement)
-  (end-of-statement-internal))
+  (let ((hint (beginning-of-statement-internal)))
+    (setq hint (establish-current-statement 'end-of-statement hint))
+    (end-of-statement-internal hint)))
 
 (defmodel previous-statement-internal (n)
   "Move to the NTH previous statement.
@@ -103,18 +105,18 @@ There an element of DWIM to this:
   If already at the beginning, move to the beginning of the previous one.
 Then, if N is greater than 1, move back N-1 more statements.
 Return the buffer offset of the end of the statement."
-  (let ((starting-point (point))
-	(previous-end nil))
-    ;; first, try going back to the start of a statement, to see
-    ;; whether we end up where we started:
-    (beginning-of-statement-internal)
+  (let* ((starting-point (point))
+	 (previous-end nil)
+	 ;; first, try going back to the start of a statement, to see
+	 ;; whether we end up where we started:
+	 (hint (beginning-of-statement-internal)))
     (when (= (point) starting-point) ; this means we were already at the start, so go back another
       ;; (languide-debug-message 'previous-statement "Was already at start, going back an extra one")
       (incf n))
     (while (> n 1)
       (setq previous-end (point))
       (move-into-previous-statement)
-      (beginning-of-statement-internal)
+      (setq hint (beginning-of-statement-internal))
       (decf n))
     ;; now adjust our idea of the "end of the statement"; either we
     ;; can go all the way up to the next statement (set
@@ -127,7 +129,7 @@ Return the buffer offset of the end of the statement."
 		   (let ((start (point)))
 		     (condition-case nil
 			 (progn
-			   (end-of-statement-internal))
+			   (end-of-statement-internal hint))
 		       (error (message "Could not find end of statement")))
 		     (point))))))
       end)))
@@ -152,7 +154,7 @@ you should possibly use next-statement instead."
 	(starting (point)))
     (while (> n 0)
       ;; todo: this does the seemingly wrong thing if called before the start of the first statement -- it ends up taking us to the second statement
-      (end-of-statement-internal)
+      (end-of-statement-internal nil)
       ;; not sure what the point of this next bit was... seems to do better without it!
       (when nil first ; go back to see if we were before the statement
 	    (let ((first-end (point)))
@@ -186,7 +188,8 @@ you should possibly use next-statement instead."
       (setq navigated-latest-part 'whole))
     (skip-to-actual-code)
     (let* ((start (point))
-	   (end (save-excursion (end-of-statement-internal) (point))))
+	   (hint nil)			; todo: get statement type here if possible
+	   (end (save-excursion (end-of-statement-internal hint) (point))))
       (message "next-statement start=%d end=%d" start end)
       (versor-set-current-item start end)
       (establish-current-statement 'next-statement end))))
