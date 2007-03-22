@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2007-03-11 20:59:08 jcgs>
+;;; Time-stamp: <2007-03-19 21:48:58 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -114,7 +114,8 @@ Need only work if already at or just beyond the end of a statement."
   "Things that can appear before the actual types of functions.")
 
 (defun continue-back-past-curly-ket (starting-point)
-  "Continue to back to the start of a C statement, having got back to a closing curly bracket."
+  "Continue to back to the start of a C statement, having got back to a closing curly bracket.
+Return the type if we spotted it."
   ;; taken out-of-line for readability of surrounding code
   (let* ((close (point))
 	 (following-code (skip-to-actual-code)))
@@ -128,14 +129,18 @@ Need only work if already at or just beyond the end of a statement."
       ;;   { ... } * while ( ...) { ... } // with the first { ... } being a free-standing compound statement
       ;; and so must go back to check for the "do"
       (goto-char (safe-scan-sexps (point) -2))
-      (unless (looking-at "\\<do\\>")
+      (if (looking-at "\\<do\\>")
+	  'do-while
 	;; go back to the "while"
-	(goto-char following-code)))
+	(goto-char following-code)
+	'while-do))
      ((looking-at "\\<else\\>")
       ;; where we started was:
       ;;   if ( ...) { ... } * else { ... }
       ;; and so we must go back over the "then", the condition, and the keyword
-      (goto-char (safe-scan-sexps (point) -3)))
+      ;; todo: this should be a beginning-of-statement-internal and then 2 exprs
+      (goto-char (safe-scan-sexps (point) -3))
+      'if-then-else)
 
      ;; having dealt with both the "{ ... } <keyword>" cases,
      ;; now see whether we started inside a statement that follows a closing brace
@@ -144,20 +149,41 @@ Need only work if already at or just beyond the end of a statement."
       ;;   { ... } ab*cd // where the { ... } is a free-standing compound statement, or anything else
       ;; so we want to go to:
       ;;   { ... } *abcd
-      (goto-char following-code))
+      (goto-char following-code)
+      ;; in this case, we don't know the type
+      nil)
      ;; next, try going back a statement and a keyword
      ;; and seeing if that is an else
      ((save-excursion ; don't disturb things for the next clause's test
 	;; we are looking for the cases like:
 	;;   if (...) { ... } else { ... } *
 	;; (languide-previous-substatement) ; we know it's a compound statement, or we wouldn't be in this function
+	;; todo: these can probably all be plain scan-sexps, as we're not checking for nil result anyway
 	(goto-char (safe-scan-sexps close -2))
 	;; let's see if that's got us to:
 	;;   if (...) { ... } *else { ... }
 	(looking-at "\\<else\\>"))
       (goto-char (safe-scan-sexps close -2)) ; re-do the movement that we did inside the save-excursion above
       (languide-previous-substatement)
-      (goto-char (safe-scan-sexps (point) -2)))
+      (goto-char (safe-scan-sexps (point) -2))
+      'if-then-else)
+
+     ((save-excursion ; don't disturb things for the next clause's test
+	(goto-char (safe-scan-sexps close -1))
+	(zerop (current-column)))
+      ;; top-level braces, presume a defun
+      (goto-char (safe-scan-sexps close -1))
+      (message "checking for a function definition around %d" (point))
+      (skip-to-actual-code-backwards) (backward-char 1)
+      (message "looks like a function definition around %d" (point))
+      ;; but is it K&R or ANSI?
+      (cond
+       ((looking-at ";")
+	(message "K&R arg type"))
+       ((looking-at ")")
+	(message "ANSI arg list")))
+      (when (re-search-backward "^[a-z][a-z0-9_ ]+(" (point-min) t)
+	(skip-chars-backward "a-z \t_")))
 
      ((save-excursion ; don't disturb things for the next clause's test
 	;; todo: add handling for java's "throws", etc
@@ -174,13 +200,15 @@ Need only work if already at or just beyond the end of a statement."
 		 (backward-word 1)
 		 (looking-at c-like-function-type-modifiers))
 	  (setq type-possible-start-start (point)))
-	(goto-char type-possible-start-start)))
+	(goto-char type-possible-start-start))
+      'defun)
 
 
      ;; if it wasn't an else, try going back another sexp
      ((progn
 	(goto-char (safe-scan-sexps close -3))
-	(looking-at "\\<\\(if\\)\\|\\(while\\)\\|\\(for\\)\\|\\(until\\)\\>")))
+	(looking-at "\\(\\<\\(if\\)\\|\\(while\\)\\|\\(for\\)\\|\\(until\\)\\>\\)"))
+      (intern (match-string-no-properties 1)))
      (t
       ;; Go back and see what was before the brace; could be
       ;;   if ( ... ) { ... }
@@ -198,7 +226,8 @@ Need only work if already at or just beyond the end of a statement."
 
        (t
 	 ;; Before the brace was not if/while/for/until/else; assuming plain block
-	(goto-char (safe-scan-sexps close -1))))))))
+	(goto-char (safe-scan-sexps close -1))
+	nil))))))
 
 (defvar debug-overlays nil)
 
@@ -214,7 +243,8 @@ Need only work if already at or just beyond the end of a statement."
 	(delete-overlay o)))))
 
 (defmodal beginning-of-statement-internal (c-mode perl-mode) ()
-  "Move to the beginning of a C or Perl statement."
+  "Move to the beginning of a C or Perl statement.
+Return the type if obvious."
   (mapcar 'delete-overlay debug-overlays)
   (setq debug-overlays nil)
   (let ((starting-point (point))
@@ -224,78 +254,83 @@ Need only work if already at or just beyond the end of a statement."
 	       (c-beginning-of-defun 1)
 	       (point))))
     (languide-c-back-to-possible-ender bod)
-    (let ((possible-ender (point)))
-      ;; We've now found a statement delimiter, and checked that it is a
-      ;; real one, and not part of a string or comment. Now we might make
-      ;; some adjustments, then finally move over any whitespace or comments
-      ;; leading in to the actual statement.
+    (let* ((possible-ender (point))
+	   ;; We've now found a statement delimiter, and checked that it is a
+	   ;; real one, and not part of a string or comment. Now we might make
+	   ;; some adjustments, then finally move over any whitespace or comments
+	   ;; leading in to the actual statement.
+	   (possible-type (cond
+			   ((looking-at "{")
+			    ;; move one character forward (into the braced area) so that
+			    ;; when we skip whitespace and comments, we will be at the
+			    ;; start of the first statement in the braces
+			    (forward-char 1)
+			    nil)
 
-      (cond
-       ((looking-at "{")
-	;; move one character forward (into the braced area) so that
-	;; when we skip whitespace and comments, we will be at the
-	;; start of the first statement in the braces
-	(forward-char 1))
+			   ((looking-at "}")
+			    (forward-char 1)
+			    ;; this will take us back past the rest of the statement
 
-       ((looking-at "}")
-	(forward-char 1)
-	;; this will take us back past the rest of the statement
-	;; todo: which is wrong in some cases, so fix that! Only go
-	;; back if what is ahead of us is something that can follow a
-	;; closing brace within a statement, so for example we should
-	;; go back if at "do { ... }  * while (...)", but not if at
-	;; "while (...) do { ... } *"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			    ;; todo: which is wrong in some cases, so fix that! Only go
+			    ;; back if what is ahead of us is something that can follow a
+			    ;; closing brace within a statement, so for example we should
+			    ;; go back if at "do { ... }  * while (...)", but not if at
+			    ;; "while (...) do { ... } *"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-	(continue-back-past-curly-ket
-	 starting-point
-	 ;; (point)
-	 )
+			    (continue-back-past-curly-ket
+			     starting-point
+			     ;; (point)
+			     )
 
-	;; (skip-to-actual-code)
+			    ;; (skip-to-actual-code)
 
-	)
-       ((looking-at ";")
-	(goto-char (match-end 0))
-	(let ((following-code (skip-to-actual-code)))
-	  ;; We have looked back from point, and found that the
-	  ;; nearest thing that could be the end of the previous
-	  ;; statement is a semicolon. then we've gone forward to the
-	  ;; first thing that is not a space or comment, and by
-	  ;; comparing a that position with that of the semicolon, we
-	  ;; can work out whether we have just gone straight to the
-	  ;; start of the current statement, or whether it is some
-	  ;; other case, such as the else part of an if-then-else
-	  (if (<= following-code starting-point)
-	      (progn
-		;; this is the "abcd;    fg*hi" case
-		(goto-char following-code)
-		(if (looking-at "else")
-		    (progn
-		      ;; this is the "if (xyz) abcd;    el*se mnop;" case
-		      (goto-char (- possible-ender 1)) ; just into the "then" statement
-		      (beginning-of-statement-internal)
+			    )
+			   ((looking-at ";")
+			    (goto-char (match-end 0))
+			    (prog1
+				(let ((following-code (skip-to-actual-code)))
+				  ;; We have looked back from point, and found that the
+				  ;; nearest thing that could be the end of the previous
+				  ;; statement is a semicolon. Then we've gone forward to the
+				  ;; first thing that is not a space or comment, and by
+				  ;; comparing that position with that of the semicolon, we
+				  ;; can work out whether we have just gone straight to the
+				  ;; start of the current statement, or whether it is some
+				  ;; other case, such as the else part of an if-then-else
+				  (if (<= following-code starting-point)
+				      (progn
+					;; this is the "abcd;    fg*hi" case
+					(goto-char following-code)
+					(if (looking-at "else")
+					    (progn
+					      ;; this is the "if (xyz) abcd;    el*se mnop;" case
+					      (goto-char (- possible-ender 1)) ; just into the "then" statement
+					      (beginning-of-statement-internal)
 		      ;;;;;;;;;;;;;;;; probably more to do here?
-		      )))
-	    (progn
-	      ;; this is the "abcd;  *  fghi" case
-	      (goto-char (- possible-ender 1))
-	      (beginning-of-statement-internal))))
-	(when (save-excursion ; this is old version, is it right????????????????
-		(parse-partial-sexp (point) starting-point
-				    nil	; targetdepth
-				    t	; stopbefore
-				    )
-		(= (point) starting-point))
-	  (backward-char 1)))))
+					      )
+					  nil))
+				    (progn
+				      ;; this is the "abcd;  *  fghi" case
+				      (goto-char (- possible-ender 1))
+				      (beginning-of-statement-internal))))
+			      (when (save-excursion ; this is old version, is it right????????????????
+				      (parse-partial-sexp (point) starting-point
+							  nil ; targetdepth
+							  t ; stopbefore
+							  )
+				      (= (point) starting-point))
+				(backward-char 1)))))))
 
-    ;; now we're at a real statement delimiter
+      ;; now we're at a real statement delimiter
     ;;;;;;;;;;;;;;;; why this "unless"? find out, and comment it!
-    ;; might mean to go to the start of a leading comment if there is one, otherwise to the code?
-    (unless (blank-between (point) (1+ starting-point))
-      (skip-to-actual-code starting-point))))
+      ;; might mean to go to the start of a leading comment if there is one, otherwise to the code?
+      (unless (blank-between (point) (1+ starting-point))
+	(skip-to-actual-code starting-point))
+      ;; we don't know what type it is
+      possible-type)))
 
-(defmodal end-of-statement-internal (c-mode perl-mode java-mode) ()
-  "Move to the end of a C, Perl or Java statement."
+(defmodal end-of-statement-internal (c-mode perl-mode java-mode) (hint)
+  "Move to the end of a C, Perl or Java statement. HINT suggests a statement type."
   (let ((old (point))
 	;; get beginning of defun, so we can see whether we have landed in a
 	;; string or comment
@@ -325,30 +360,37 @@ Need only work if already at or just beyond the end of a statement."
 	      (forward-char 1)))))
 
     (cond
-     ((= (char-after (1- (point))) ?{)
-      (backward-char 1)
-      (forward-sexp 1)))
-    (cond
-     ((save-excursion
-	(skip-to-actual-code)
-	(looking-at "else"))
-      (forward-sexp 1)
-      (end-of-statement-internal))
-     ((save-excursion
-	(skip-to-actual-code)
-	(looking-at "while"))
-      ;; now look around to see whether this is part of "do {} while ()"
-      ;; avert your eyes when reading this code, or re-write it for me!
-      (when (save-excursion
-	      (skip-to-actual-code)
-	      (forward-sexp 2)
-	      (if (looking-at "[ \t\r\n]")
-		  (skip-to-actual-code))
-	      (looking-at "[;}]"))
-	(skip-to-actual-code)
-	(forward-sexp 2)
-	(if (looking-at "[ \t\r\n]")
-	    (skip-to-actual-code)))))))
+     ((and (zerop (current-column))
+	   (looking-at "\\(static\\|extern\\)? *\\(struct +\\)?\\*?\\([a-z][a-z0-9_]*\\)"))
+      (end-of-defun))
+     (t
+      (cond
+       ((= (char-after (1- (point))) ?{)
+	(backward-char 1)
+	(forward-sexp 1)))
+      (cond
+       ((save-excursion
+	  (skip-to-actual-code)
+	  (looking-at "else"))
+	;; over the else keyword
+	(forward-sexp 1)
+	;; over the else clause
+	(end-of-statement-internal nil))
+       ((save-excursion
+	  (skip-to-actual-code)
+	  (looking-at "while"))
+	;; now look around to see whether this is part of "do {} while ()"
+	;; avert your eyes when reading this code, or re-write it for me!
+	(when (save-excursion
+		(skip-to-actual-code)
+		(forward-sexp 2)
+		(if (looking-at "[ \t\r\n]")
+		    (skip-to-actual-code))
+		(looking-at "[;}]"))
+	  (skip-to-actual-code)
+	  (forward-sexp 2)
+	  (if (looking-at "[ \t\r\n]")
+	      (skip-to-actual-code)))))))))
 
 (defvar c-binding-regexp-1
   (concat  "\\([a-z][a-z0-9_]*\\s-*\\*?\\[?\\]?\\)\\s-*" ; the type
@@ -1170,14 +1212,14 @@ languide-region-detail-level says how much incidental information to include."
 		      nil
 		    ;; now see whether the start and end are whole statements
 		    (if (save-excursion
-			  (and (progn
-				 (goto-char (1+ real-start))
-				 (beginning-of-statement-internal)
-				 (= (point) real-start))
-			       (progn
-				 (goto-char (1- real-end))
-				 (end-of-statement-internal)
-				 (= (point) real-end))))
+			  (let ((hint (progn
+					(goto-char (1+ real-start))
+					(beginning-of-statement-internal))))
+			    (and (= (point) real-start)
+				 (progn
+				   (goto-char (1- real-end))
+				   (end-of-statement-internal hint)
+				   (= (point) real-end)))))
 			'sequence
 		      nil)))))))))))
 
@@ -1368,7 +1410,7 @@ languide-region-detail-level says how much incidental information to include."
 	    (mapcar (lambda (statement)
 		      (unless (assoc 'whole (cdr statement))
 			(rplacd statement
-				(cons '(whole (end-of-statement-internal))
+				(cons '(whole (end-of-statement-internal nil))
 				      (cdr statement)))))
 		    statements)))
 	'(perl-mode c-mode java-mode))
