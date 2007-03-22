@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2007-03-03 17:03:09 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -31,7 +31,9 @@
 (defun navigate-this-body ()
   "Navigate to the body of the current statement."
   (interactive)
-  (navigate-to 'body))
+  (message "navigate-this-body starting at %d" (point))
+  (navigate-to 'body)
+  (message "navigate-this-body ending at %d" (point)))
 
 (defun navigate-this-tail ()
   "Navigate to the tail of the current statement."
@@ -106,12 +108,16 @@
 (defvar navigated-latest-part nil
   "The latest part of a statement that we navigated to.")
 
+(defvar navigated-latest-place nil
+  "The latest place we got to by statement navigation.")
+
 (defvar statement-latest-start nil
   "The last statement start position we navigated to.")
 
-(make-variable-buffer-local 'navigated-latest-part)
-
-
+(mapcar 'make-variable-buffer-local
+	'(navigated-latest-part
+	  navigated-latest-place
+	  statement-latest-start))
 
 (defun languide-parts ()
   "The parts we can navigate to."
