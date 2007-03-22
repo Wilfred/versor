@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2006-08-06 12:39:28 jcgs>
+;;; Time-stamp: <2007-03-03 17:24:27 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -26,14 +26,11 @@
 ;; the directions as selecting what it moves over, by wrapping it in a
 ;; call to ``remember''.
 
-
-
 (defconst languide-parts '("container" "framework" "whole" "head" "body" "tail")
   "The parts we can navigate to.")
 
 (defun navigate-to (part)
   "Navigate to PART of the current statement."
-  (setq navigated-latest-part part)
   (add-hook 'after-change-functions 'languide-after-change-function nil t) ; to invalidate cache as needed
   (let* ((old-position (point))		; in case we give up
 	 ;; see which statement we are now on; if it is the same as the last
@@ -51,7 +48,7 @@
 	 (remembered (statement-find-part statement-start part)))
     (if remembered
 	(progn				; we have cached data for this
-	  ;; (message "using cached statement position %S" remembered)
+	  (message "using cached statement position %S" remembered)
 	  (versor-set-current-items remembered)
 	  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
       (let* ((type (if prelocated
@@ -60,7 +57,7 @@
 	     (directions (get-statement-part type part)))
 	;; no cached data, really do the navigation
 ;;;;;;;;;;;;;;;; type is coming through as nil if we are prelocated but had not cached this part
-	;; (message "not cached; navigate-to %S %S got %S" type part directions)
+	(message "not cached; navigate-to %S %S got %S" type part directions) (backtrace)
 	(if directions
 	    (if (eq (car directions) 'statement-navigate)
 		(let ((selected-parts (progn
@@ -81,7 +78,9 @@
 	      (goto-char old-position)
 	      (error "Don't know how to handle directions like \"%S\" (for %S of %S)" directions part type))
 	  (goto-char old-position)
-	  (error "No %S defined for \"%S\" for %S" part type major-mode))))))
+	  (error "No %S defined for \"%S\" for %S" part type major-mode)))))
+  (setq navigated-latest-part part
+	navigated-latest-place (point)))
 
 (defvar mark-candidate nil
   "Where the mark will be set at the end of statement-navigate.
@@ -139,6 +138,7 @@ for use elsewhere."
 		   ((eq functor 'remember)
 		    ;; (message "(remember %S)" (cdr direction))
 		    (setq so-far (statement-navigate-list (cdr direction) so-far))
+		    ;; (message "so-far=%S" so-far)
 		    ;; return nil to last-part to avoid remembering it twice
 		    nil)
 		   ((eq functor 'if)
@@ -262,16 +262,18 @@ Intended for use from statement-navigate."
   (interactive)	; mostly for testing, but it might come in useful in its own right
   (let* ((start nil)
 	 (selected (without-changing-current-statement
+		    (message "(statements) skipping from %d" (point))
 		    (skip-to-actual-code)
 		    (setq start (point))
-		    ;; (message "(statements) starting at %d" start)
-		    (while (not (looking-at (compound-statement-close)))
-		      (message "forward one statement")
+		    (message "(statements) starting at %d" start)
+		    (while (not (or (eobp)
+				    (looking-at (compound-statement-close))))
+		      (message "forward one statement from %d" (point))
 		      (next-statement-internal 1)
 		      (skip-to-actual-code))
 		    (skip-to-actual-code-backwards)
 		    (set-mark-candidate start)
-		    ;; (message "(statements) ending at %d" (point))
+		    (message "(statements) ending at %d" (point))
 		    (cons start (point)))))
     (goto-char (cdr selected))
     selected))
