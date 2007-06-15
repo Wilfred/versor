@@ -1,5 +1,5 @@
 ;;;; versor-demo.el -- demo for versor and languide
-;;; Time-stamp: <2007-03-04 19:36:43 jcgs>
+;;; Time-stamp: <2007-04-09 14:51:05 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -430,10 +430,12 @@ We keep doing it until we are on the next function." 3
      (2 (versor-next) .5)
      (versor-over-next) .5
      (2 (versor-next)) .5
-     "Next, we use the \"kill surrounding\" command to make something unconditional.
-It removes the expression surrounding the selection, leaving just the selection in
+     "Next, we use the \"select surrounding\" command, followed by deleting the
+selection, to make something unconditional.
+This removes the expression surrounding the selection, leaving just the selection in
 its place." 5
-     (versor-kill-surrounding) 4
+     (versor-select-surrounding) 4
+     (versor-kill) 2
      "This has put two items onto the kill ring. We can now use the \"insert around\" command
 to wrap them around another selection." 5
      (versor-next) (versor-over-next) (versor-next)

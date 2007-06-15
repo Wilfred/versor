@@ -1,5 +1,5 @@
 ;;;; nested-blocks.el
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2006-11-04 20:45:24 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -219,7 +219,7 @@ Second argument says what level to stop at."
 		       (if (looking-at list-item)
 			   (match-string-no-properties 1)
 			 nil))))
-	(message "on-list, match-end=%S" (match-end 0))
+	(message "on-list=%S, match-end=%S" on-list (match-end 0))
 	(when on-list
 	  (goto-char (match-end 0)))
 	(goto-char
