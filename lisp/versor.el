@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2007-03-18 19:07:35 jcgs>
+;;; Time-stamp: <2007-06-15 13:35:30 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -260,6 +260,7 @@ amongst the arguments:
 The following arguments suppress some of the default behaviours:
   'use-region-face  -- suppress the selection colour changes
   'quiet-underlying -- do not indicate the underlying commands being used
+See the info pages for more details of versor.
 "
   (interactive)
 
