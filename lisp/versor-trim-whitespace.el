@@ -1,5 +1,5 @@
 ;;;; versor-trim-whitespace.el -- trim whitespace after a versor command
-;;; Time-stamp: <2007-03-19 19:38:27 jcgs>
+;;; Time-stamp: <2007-04-29 14:40:30 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -143,7 +143,7 @@ The descriptions of the whitespace are returned, as a cons."
       ;; todo: suspend this until we move away from here, so that if
       ;; we start typing, the space is as it was?
       ;; (message "versor-kill-region %S..%S" (car ws) (cdr ws))
-      (versor-adjust-whitespace (car ws) (cdr ws) " around deleted text"))))
+      (versor-adjust-whitespace start (car ws) (cdr ws) " around deleted text"))))
 
 (defvar versor-can-do-delayed-deletions t
   "Whether we can currently do delayed deletions.")
@@ -205,46 +205,49 @@ If a change happens before point moves out of it, don't delete it."
 	(space-end (save-excursion (skip-syntax-forward "-") (point))))
     (versor-delayed-delete space-start space-end)))
 
-(defun versor-adjust-whitespace (neighbouring-a neighbouring-b &optional debug-label)
+(defun versor-adjust-whitespace (around neighbouring-a neighbouring-b &optional debug-label)
   "Adjust whitespace after an insertion or deletion.
-Each of the two arguments can be chosen from 'blank-line, 'end or
-'start, 'margin, 'spaces, 'space, 'closing or 'opening, or nil. If
-NEIGHBOURING-A and NEIGHBOURING-B are the same, make
-sure there is only one of them in the buffer at point."
+The first argument is where the edit occurred.
+Each of the following two arguments can be chosen from 'blank-line,
+'end or 'start, 'margin, 'spaces, 'space, 'closing or 'opening, or
+nil. If NEIGHBOURING-A and NEIGHBOURING-B are the same, make sure
+there is only one of them in the buffer at point."
   (when versor-adjust-whitespace
     ;; (message "versor-adjust-whitespace%s neighbouring-a=%S neighbouring-b=%S" (if debug-label debug-label "") neighbouring-a neighbouring-b)
-    (let ((versor-can-do-delayed-deletions nil))
-      (if (eq neighbouring-b neighbouring-a)
-	  (cond
-	   ((eq neighbouring-a 'space)
-	    ;; (message "both were spaces, leaving one space")
-	    (just-one-space))
-	   ((eq neighbouring-a 'margin)
-	    (delete-blank-lines))
-	   ((eq neighbouring-a 'blank-line)
-	    (delete-blank-lines)
-	    (delete-blank-lines)
-	    (open-line 1)))
-	(cond
-	 ((eq neighbouring-a 'opening)
-	  ;; (message "neighbouring-a was opening, closing up")
-	  (versor-delayed-delete-horizontal-space))
-	 ((eq neighbouring-b 'closing)
-	  ;; (message "neighbouring-b was closing, closing up")
-	  (versor-delayed-delete-horizontal-space))
-	 ((eq neighbouring-a 'blank-line)
-	  ;; (message "neighbour-a was blank line, opening line")
-	  (delete-blank-lines)
-	  (delete-blank-lines)
-	  (open-line 1))
-	 ((eq neighbouring-a 'margin)
-	  ;; todo: don't always want to do this
-	  ;; (message "neighbour-a was margin, newline-and-indent")
-	  (newline-and-indent))
-	 ((or (eq neighbouring-a 'space)
-	      (eq neighbouring-a 'spaces))
-	  ;; (message "neighbour-a was whitespace, inserting space")
-	  (insert " ")))))))
+    (save-excursion
+      (goto-char around)
+      (let ((versor-can-do-delayed-deletions nil))
+       (if (eq neighbouring-b neighbouring-a)
+	   (cond
+	    ((eq neighbouring-a 'space)
+	     ;; (message "both were spaces, leaving one space")
+	     (just-one-space))
+	    ((eq neighbouring-a 'margin)
+	     (delete-blank-lines))
+	    ((eq neighbouring-a 'blank-line)
+	     (delete-blank-lines)
+	     (delete-blank-lines)
+	     (open-line 1)))
+	 (cond
+	  ((eq neighbouring-a 'opening)
+	   ;; (message "neighbouring-a was opening, closing up")
+	   (versor-delayed-delete-horizontal-space))
+	  ((eq neighbouring-b 'closing)
+	   ;; (message "neighbouring-b was closing, closing up")
+	   (versor-delayed-delete-horizontal-space))
+	  ((eq neighbouring-a 'blank-line)
+	   ;; (message "neighbour-a was blank line, opening line")
+	   (delete-blank-lines)
+	   (delete-blank-lines)
+	   (open-line 1))
+	  ((eq neighbouring-a 'margin)
+	   ;; todo: don't always want to do this
+	   ;; (message "neighbour-a was margin, newline-and-indent")
+	   (newline-and-indent))
+	  ((or (eq neighbouring-a 'space)
+	       (eq neighbouring-a 'spaces))
+	   ;; (message "neighbour-a was whitespace, inserting space")
+	   (insert " "))))))))
 
 (defun versor-adjusting-insert (string)
   "Insert STRING.
@@ -259,11 +262,11 @@ was inserted."
 						'followed-by string))
 	(following-in-buffer (versor-what-is-following (point))))
     ;; (message "versor-adjusting-insert %S:\"%S ... %S\":%S" preceding-in-buffer preceding-in-string following-in-string following-in-buffer)
-    (versor-adjust-whitespace preceding-in-string preceding-in-buffer " before inserted text")
     (let ((start (point)))
+      (versor-adjust-whitespace start preceding-in-string preceding-in-buffer " before inserted text")
       (insert string)
       (let ((end (point)))
-	(versor-adjust-whitespace following-in-string following-in-buffer " after inserted text")
+	(versor-adjust-whitespace end following-in-string following-in-buffer " after inserted text")
 	(cons start end)))))
 
 (provide 'versor-trim-whitespace)
