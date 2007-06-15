@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2007-03-19 20:27:02 jcgs>
+;;; Time-stamp: <2007-05-21 21:23:38 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -1076,8 +1076,8 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (create (precondition (require 'cl))
 	  (template & > "(when " p n>
 		    r ")"))
-  (begin-end "(when \n" ")")
-  (begin-end-with-dummy "(when true \n" ")"))
+  (begin-end "(when " "\n)")
+  (begin-end-with-dummy "(when true " "\n)"))
 
 (defstatement if-then-else (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   "If statement with else clause."
