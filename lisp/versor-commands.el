@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2007-03-19 19:43:21 jcgs>
+;;; Time-stamp: <2007-05-21 21:22:02 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -576,7 +576,7 @@ this."
 			(overlayp item))
 	       (delete-overlay item))))
 	 (versor-last-item-first))))
-    (if (fboundp 'update-shown-stacks)	; from rpn-edit.el
+    (if (fboundp 'update-shown-stacks)	; from rpn-edit.el -- perhaps move this into versor-copy-region
 	(update-shown-stacks))))
 
 (defun versor-yank (&optional arg)
@@ -591,31 +591,19 @@ Does yank, then adjusts whitespace, versor-style."
     ;; (versor-trim-whitespace (region-beginning))
     ))
 
-(defun versor-kill-surrounding ()
-  "Kill the sexp surrounding the selection, leaving the selection in its place."
+(defun versor-select-surrounding ()
+  "Select the sexp surrounding the selection, leaving the old selection unselected."
   (interactive)
   (barf-if-buffer-read-only)
   (versor-as-motion-command current-item
     (let* ((item-start (versor-overlay-start current-item))
 	   (item-end (versor-overlay-end current-item))
-	   (item-text (buffer-substring item-start item-end))
 	   (surrounding-item (versor-backward-up-list 1))
 	   (surrounding-end (versor-overlay-end surrounding-item))
 	   (surrounding-start (versor-overlay-start surrounding-item)))
-      ;; do the end one first, because if we did them the other way
-      ;; round, the buffer offsets would be wrong when we came to the
-      ;; second deletion; not only am I lazily avoiding converting to
-      ;; markers, but this is also the order in which versor-kill does
-      ;; a multi-part kill (for much the same reason); it's also nice
-      ;; that they're then on the kill ring in the right order for
-      ;; inserting them as you work through the kill-ring
-      (versor-kill-region item-end surrounding-end)
-      (versor-trim-whitespace item-end)
-      (kill-region surrounding-start item-start)
-      (versor-trim-whitespace surrounding-start)
-      (versor-set-current-item surrounding-start
-			       (+ surrounding-start
-				  (- item-end item-start))))))
+      (versor-set-current-items
+       (list (cons surrounding-start item-start)
+	     (cons item-end surrounding-end))))))
 
 (defun versor-transpose ()
   "Transpose this item with the following one."
@@ -778,11 +766,11 @@ This lets us do commands such as insert-around using a common framework."
   ;; in which case it ought to have a different name
   (if versor-insertion-using-menu
       (tmm-prompt versor-insertion-kinds-menu)
-      (let* ((key (read-event (if prompt prompt "Kind of insertion: ")))
-	     (command (assoc key versor-insertion-kind-alist)))
-	(if (consp command)
-	    (funcall (cdr command) n)
-	  (error "%S in not bound to a kind of insertion" key)))))
+    (let* ((key (read-event (if prompt prompt "Kind of insertion: ")))
+	   (command (assoc key versor-insertion-kind-alist)))
+      (if (consp command)
+	  (funcall (cdr command) n)
+	(error "%S in not bound to a kind of insertion" key)))))
 
 (defun insert-active (insertion)
   "If INSERTION is a string, insert it; if a function, call it.

@@ -1,5 +1,5 @@
 ;;;; versor-keymap.el -- set up a keymap for versor
-;;; Time-stamp: <2006-09-30 20:34:37 jcgs>
+;;; Time-stamp: <2007-04-09 14:51:06 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -43,7 +43,7 @@
 (define-key versor-general-keymap "?" 'versor-languide-make-conditional)
 (define-key versor-general-keymap ";" 'versor-languide-comment-selection)
 
-(define-key versor-general-keymap "u" 'versor-kill-surrounding)
+(define-key versor-general-keymap "u" 'versor-select-surrounding)
 
 (define-key versor-general-keymap "q" 'versor-end-command-mode)
 
