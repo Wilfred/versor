@@ -1,5 +1,5 @@
 ;;;; versor-help.el -- help for versor
-;;; Time-stamp: <2007-03-18 19:07:36 jcgs>
+;;; Time-stamp: <2007-05-20 20:37:58 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@
 			(split-string base-doc "\n")
 			"\n    ")))))
 
-(defadvice describe-function-1 (after versor (function parens interactive-p) activate)
+(defadvice describe-function-1-versor (after versor (function parens interactive-p) activate)
   "Further help for versor functions."
   (when (versor-command-p function)
     (with-current-buffer "*Help*"
