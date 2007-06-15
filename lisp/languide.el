@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2007-03-03 17:23:04 jcgs>
+;;; Time-stamp: <2007-03-11 12:50:33 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -201,7 +201,7 @@ whitespace).
 if it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
-expression, return t. 
+expression, return t.
 otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil.
