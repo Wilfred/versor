@@ -1,5 +1,5 @@
 ;;;; versor-tlc.el -- Two-(or Three-)Letter Commands for versor (and TLC for your hands, perhaps)
-;;; Time-stamp: <2007-06-14 02:27:57 jcgs>
+;;; Time-stamp: <2007-06-16 18:20:15 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -550,23 +550,13 @@ With optional WIDTH, use that instead of the frame width."
 (defvar versor-tlc-initialized nil
   "Whether TLC mode has been initialized.")
 
-(defvar versor-non-tlc-map nil
-  "The keymap to go back to when not doing TLC.")
-
-(defun versor-tlc-compensate-keymap (map)
-  "Set MAP up to get round the effects of versor-tlc."
-  (let ((base-map (or versor-non-tlc-map
-		      (current-global-map)))
-	(keyvec (make-vector 1 nil)))
-    (dotimes (key 256)
-      (aset keyvec 0 key)
-      (when (and (eq (lookup-key base-map keyvec)
-		     'self-insert-command)
-		 (lookup-key map keyvec))
-	(define-key map keyvec 'self-insert-command)))))
-
 (defvar versor-tlc-mode nil
   "Whether TLC mode is turned on.")
+
+(defun versor-tlc-not-in-this-buffer ()
+  ""
+  (make-local-variable 'versor-tlc-mode)
+  (setq versor-tlc-mode nil))
 
 (defun versor-tlc-initialize ()
   "Set up the versor TLC system."
@@ -575,14 +565,13 @@ With optional WIDTH, use that instead of the frame width."
   (setq versor-non-tlc-map (current-global-map)
 	versor-tlc-diagram-frame (make-frame versor-tlc-diagram-frame-parameters)
 	)
-  (versor-tlc-help-on)
-  (when nil
-    (mapcar 'versor-tlc-compensate-keymap
-	    (list minibuffer-local-completion-map
-		  minibuffer-local-must-match-map
-		  minibuffer-local-map
-		  minibuffer-local-ns-map))
-    ))
+  (mapcar (lambda (hook)
+	    (add-hook hook 'versor-tlc-not-in-this-buffer))
+	    '(rmail-mode-hook
+	      vm-mode-hook
+	      vm-summary-mode-hook
+	      'electric-buffer-menu-mode-hook))
+  (versor-tlc-help-on))
 
 (defun versor-tlc-mode-on ()
   "Helper function for versor-tlc-mode."
@@ -591,14 +580,16 @@ With optional WIDTH, use that instead of the frame width."
       (versor-tlc-initialize))
   (setq versor-tlc-mode t)
   (add-hook 'post-command-hook 'versor-tlc-display-main-map)
-  )
+  (add-hook 'minibuffer-setup-hook 'versor-tlc-not-in-this-buffer))
 
 (defun versor-tlc-mode-off ()
   "Helper function for versor-tlc-mode."
   (interactive)
   (setq versor-tlc-mode nil)
-  (remove-hook 'post-command-hook 'versor-tlc-display-main-map))
+  (remove-hook 'post-command-hook 'versor-tlc-display-main-map)
+  (remove-hook 'minibuffer-setup-hook 'versor-tlc-not-in-this-buffer))
 
+;;;###autoload
 (defun versor-tlc-mode (&optional arg)
   "Toggle versor TLC mode.
 With no argument, just toggle it. With an argument, switch off if the
