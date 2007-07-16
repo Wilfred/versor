@@ -1,5 +1,5 @@
 ;;;; versor-tlc.el -- Two-(or Three-)Letter Commands for versor (and TLC for your hands, perhaps)
-;;; Time-stamp: <2007-06-16 18:20:15 jcgs>
+;;; Time-stamp: <2007-07-04 18:09:08 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -118,7 +118,9 @@ the edge of the keyboard."
 (define-key versor-tlc-dimensions-map "s" 'versor-select-sentences)
 (define-key versor-tlc-dimensions-map "c" 'versor-select-chars)
 (define-key versor-tlc-dimensions-map ";" 'versor-select-statement-parts)
+(define-key versor-tlc-dimensions-map "'" 'versor-select-statements)
 (define-key versor-tlc-dimensions-map "t" 'versor-select-cells)
+(define-key versor-tlc-dimensions-map "r" 'versor-select-rows)
 
 ;;;;;;;;;;;;;;;;
 ;;;; Search ;;;;
@@ -196,19 +198,27 @@ evaluated to give the text to insert."
   "Insert keymap for TLC.")
 (fset 'versor-tlc-insert-map versor-tlc-insert-map)
 
-(define-tlc-key versor-tlc-insert-map row-upper 'right finger-index-stretch 'yank)
+(define-tlc-key versor-tlc-insert-map row-upper 'right finger-index-stretch 'yank) ; "y" on qwerty
+(define-tlc-key versor-tlc-insert-map row-upper 'left finger-ring 'downcase-word)
+(define-tlc-key versor-tlc-insert-map row-upper 'left finger-middle 'capitalize-word)
+(define-tlc-key versor-tlc-insert-map row-upper 'left finger-index 'upcase-word)
+(define-tlc-key versor-tlc-insert-map row-upper 'left finger-pinky 'quoted-insert)
+(define-tlc-key versor-tlc-insert-map row-upper 'right finger-middle 'smart-insert-parentheses)
+(define-tlc-key versor-tlc-insert-map row-upper 'right finger-ring 'smart-insert-quotes)
 (define-tlc-key versor-tlc-insert-map row-home 'left finger-middle 'dabbrev-expand)
 (define-tlc-key versor-tlc-insert-map row-lower 'right finger-index 'yank-menu)
 
 ;; mimic the tlc movement keys
-(define-tlc-key versor-tlc-insert-map row-home 'left finger-middle 'versor-insert-before)
+(define-tlc-key versor-tlc-insert-map row-home 'left finger-index 'versor-insert-before)
 (define-tlc-key versor-tlc-insert-map row-home 'left finger-index-stretch 'versor-insert-around)
 (define-tlc-key versor-tlc-insert-map row-home 'right finger-index 'versor-insert-after)
 (define-tlc-key versor-tlc-insert-map row-home 'right finger-index-stretch 'versor-replace)
 
 (define-tlc-key versor-tlc-insert-map row-home 'left finger-ring 'versor-tlc-insert-string)
-(define-tlc-key versor-tlc-insert-map row-lower 'left finger-index 'versor-tlc-insert-eval)
 (define-tlc-key versor-tlc-insert-map row-home 'right finger-middle 'versor-tlc-insert-key-command)
+(define-tlc-key versor-tlc-insert-map row-home 'right finger-ring 'dabbrev-expand)
+
+(define-tlc-key versor-tlc-insert-map row-lower 'left finger-index 'versor-tlc-insert-eval)
 
 ;;;;;;;;;;;;;;;;;;;
 ;;;; Transpose ;;;;
@@ -218,7 +228,13 @@ evaluated to give the text to insert."
   "Transpose keymap for TLC.")
 (fset 'versor-tlc-transpose-map versor-tlc-transpose-map)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; v for versor, x for expressions, w for words, l for lines
+(define-key versor-tlc-transpose-map "x" 'transpose-sexps)
+(define-key versor-tlc-transpose-map "w" 'transpose-words)
+(define-key versor-tlc-transpose-map "c" 'transpose-chars)
+(define-key versor-tlc-transpose-map "l" 'transpose-lines)
+(define-key versor-tlc-transpose-map "s" 'transpose-sentences)
+(define-key versor-tlc-transpose-map "p" 'transpose-paragraphs)
+(define-key versor-tlc-transpose-map "v" 'versor-transpose)
 
 ;;;;;;;;;;;;;;
 ;;;; Help ;;;;
@@ -231,7 +247,8 @@ evaluated to give the text to insert."
   "Provide help for TLC top-level."
   (interactive)
   ;; this is for QWERTY -- how should I make it handle dvorak? should use the same keys, but will be less mnemonic
-  (message "a -- append (normal emacs)  q --               z -- ctl-4
+  (message (format "versor-tlc-mode is %S
+a -- append (normal emacs)  q --               z -- ctl-4
 s -- search                 w -- ctl-x         x -- M-x
 d -- dimensions             e --               v -- vc
 f -- backward               r --               b -- bookmarks
@@ -241,7 +258,7 @@ j -- forward                u -- undo          , --
 k -- delete / copy          i -- insert        . --
 l -- languide               o --               ? -- tlc help
 ; -- versor                 p -- please help
-' -- repeat"))
+' -- repeat" versor-tlc-mode)))
 
 (defvar tlc-key-descr-length (- (/ (frame-width) 12) 3)
   "How long to make key descriptions.
@@ -261,6 +278,7 @@ If you change this, you should re-calculate tlc-key-descr-format.")
 				      (symbol-name value))
 				"--"))))
     (if (> (length cell-string) tlc-key-descr-length)
+	;; could try something like (replace-regexp-in-string "[aeiou]r?" "" cell-string)
 	(substring cell-string 0 tlc-key-descr-length)
       cell-string)))
 
@@ -315,6 +333,15 @@ With optional WIDTH, use that instead of the frame width."
 	  (put keymap 'diagram diagram)
 	  diagram))))
 
+(defvar versor-tlc-keymaps
+  '(("main" . versor-tlc-map)
+    ("dimensions" . versor-tlc-dimensions-map)
+    ("search" . versor-tlc-search-map)
+    ("delete/copy" . versor-tlc-delete/copy-map)
+    ("insert" . versor-tlc-insert-map)
+    ("transpose" . versor-tlc-transpose-map))
+  "List of symbols bound to versor-tlc keymaps.")
+
 (defun versor-tlc-keymap-diagram-buffer (keymap &optional label force-redraw width)
   "Return a buffer containing a diagram for KEYMAP.
 With optional LABEL, label it LABEL.
@@ -327,7 +354,13 @@ With optional WIDTH, use that instead of the frame width."
 	;; (message "buffer name is %S" (buffer-name buffer))
 	(set-buffer buffer)
 	(erase-buffer)
-	(insert (versor-tlc-keymap-diagram keymap label force-redraw width))
+	(if (eq keymap t)
+	    (dolist (map versor-tlc-keymaps)
+	      (insert "\n"
+		      (versor-tlc-keymap-diagram
+		       (cdr map)
+		      (car map) force-redraw width)))
+	  (insert (versor-tlc-keymap-diagram keymap label force-redraw width)))
 	(goto-char (point-min))
 	(put keymap 'diagram-buffer buffer)
 	buffer)))
@@ -346,19 +379,48 @@ With optional WIDTH, use that instead of the frame width."
 With optional LABEL, label it LABEL.
 With optional FORCE-REDRAW, don't use cached result.
 With optional WIDTH, use that instead of the frame width."
+  (unless (frame-live-p versor-tlc-diagram-frame)
+    (setq versor-tlc-diagram-frame (make-frame
+				    versor-tlc-diagram-frame-parameters)))
   (let* ( ;; (pop-up-frames t)
 	 ;; (display-buffer-reuse-frames t)
-	 )
-    (display-buffer
-     (versor-tlc-keymap-diagram-buffer keymap
-				       label
-				       force-redraw
-				       width)
-     t
-     versor-tlc-diagram-frame)))
+	 (editing-frame (selected-frame)))
+    (condition-case evar
+	(progn
+	  (message "editing-frame %S, this-command %S" editing-frame this-command)
+	  ;; (backtrace)
+	  (unless (eq (cdr (assq 'visibility
+				 (frame-parameters versor-tlc-diagram-frame)))
+		      t)
+	    (make-frame-visible versor-tlc-diagram-frame))
+	  (display-buffer
+	   (versor-tlc-keymap-diagram-buffer keymap
+					     label
+					     force-redraw
+					     width)
+	   'not-this-window
+	   versor-tlc-diagram-frame)
+	  (message "frame after displaying buffer: %S" (selected-frame))
+	  (unless (or (eq this-command 'handle-switch-frame)
+		      (eq editing-frame versor-tlc-diagram-frame))
+	    (select-frame-set-input-focus editing-frame))
+	  (message "frame after trying to go back: %S" (selected-frame)))
+      (error (display-buffer
+	      (versor-tlc-keymap-diagram-buffer keymap
+						label
+						force-redraw
+						width)
+	      'not-this-window
+	      nil)))))
+
+(defun versor-tlc-display-all-diagram ()
+  "Display a diagram of all the versor-tlc keymaps."
+  (interactive)
+  (versor-tlc-display-diagram t "*All TLC keymaps*" t))
 
 (defun versor-tlc-help-off ()
   (interactive)
+  "Switch off display of keyboard diagrams for versor-tlc-mode."
   (fset 'versor-tlc-dimensions-map versor-tlc-dimensions-map)
   (fset 'versor-tlc-search-map versor-tlc-search-map)
   (fset 'versor-tlc-delete/copy-map versor-tlc-delete/copy-map)
@@ -367,6 +429,7 @@ With optional WIDTH, use that instead of the frame width."
 
 (defun versor-tlc-help-on ()
   (interactive)
+  "Switch on display of keyboard diagrams for versor-tlc-mode."
   (fset 'versor-tlc-dimensions-map 'versor-tlc-do-dimensions-map)
   (fset 'versor-tlc-search-map 'versor-tlc-do-search-map)
   (fset 'versor-tlc-delete/copy-map 'versor-tlc-do-delete/copy-map)
@@ -376,7 +439,7 @@ With optional WIDTH, use that instead of the frame width."
 (defun versor-tlc-do-map (map-name label)
   (versor-tlc-display-diagram map-name label)
   (let* ((event (read-event))
-	 (command (lookup-key (symbol-value map-name) event)))
+	 (command (lookup-key (symbol-value map-name) (vector event))))
     (call-interactively command)))
 
 (defun versor-tlc-do-dimensions-map ()
@@ -447,10 +510,13 @@ With optional WIDTH, use that instead of the frame width."
 ;;;; The top row
 
 (define-tlc-key versor-tlc-map row-upper 'left finger-ring 'ctl-x-map)
+(define-tlc-key versor-tlc-map row-upper 'left finger-middle 'versor-dwim)
+(define-tlc-key versor-tlc-map row-upper 'left finger-index 'versor-reverse)
 (define-tlc-key versor-tlc-map row-upper 'left finger-index-stretch 'versor-tlc-transpose-map)
 (define-tlc-key versor-tlc-map row-upper 'right finger-index-stretch 'yank)
 (define-tlc-key versor-tlc-map row-upper 'right finger-index 'undo)
 (define-tlc-key versor-tlc-map row-upper 'right finger-middle 'versor-tlc-insert-map)
+(define-tlc-key versor-tlc-map row-upper 'right finger-ring 'versor-other-end-of-item)
 (define-tlc-key versor-tlc-map row-upper 'right finger-pinky 'help-map)
 
 ;;;; The bottom row
@@ -479,13 +545,14 @@ With optional WIDTH, use that instead of the frame width."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (put 'backward-kill-word 'vsd "delwd")
-(put 'beginning-of-buffer 'vsd "<--")
+(put 'repeat-complex-command 'vsd "chistory")
+(put 'beginning-of-buffer 'vsd "[<--")
 (put 'bookmark-map 'vsd "bookmark")
-(put 'ctl-x-4-map 'vsd "x4")
-(put 'ctl-x-map 'vsd "x")
-(put 'dabbrev-expand 'vsd "expand")
+(put 'ctl-x-4-map 'vsd "C-x 4")
+(put 'ctl-x-map 'vsd "C-x")
+(put 'dabbrev-expand 'vsd "dynabbrev")
 (put 'digit-argument 'vsd "digit")
-(put 'end-of-buffer 'vsd "-->")
+(put 'end-of-buffer 'vsd "-->]")
 (put 'execute-extended-command 'vsd "M-x")
 (put 'find-function 'vsd "function")
 (put 'find-library 'vsd "library")
@@ -495,9 +562,9 @@ With optional WIDTH, use that instead of the frame width."
 (put 'goto-line 'vsd "line")
 (put 'help-map 'vsd "help")
 (put 'isearch-backward 'vsd "backward")
-(put 'isearch-backward-regexp 'vsd "regexp")
+(put 'isearch-backward-regexp 'vsd "regback")
 (put 'isearch-forward 'vsd "forward")
-(put 'isearch-forward-regexp 'vsd "regexp")
+(put 'isearch-forward-regexp 'vsd "regforward")
 (put 'kill-region 'vsd "region")
 (put 'kill-ring-save 'vsd "copy")
 (put 'kill-sentence 'vsd "sentence")
@@ -506,28 +573,40 @@ With optional WIDTH, use that instead of the frame width."
 (put 'query-replace 'vsd "?")
 (put 'query-replace-regexp 'vsd ".+?")
 (put 'repeat-complex-command 'vsd "repeat")
+(put 'smart-insert-parentheses 'vsd "parens")
+(put 'smart-insert-quotes 'vsd "quotes")
 (put 'switch-to-buffer 'vsd "buffer")
 (put 'switch-to-buffer-other-window 'vsd "window")
+(put 'transpose-chars 'vsd "chars")
+(put 'transpose-lines 'vsd "lines")
+(put 'transpose-paragraphs 'vsd "paragraphs")
+(put 'transpose-sentences 'vsd "sentences")
+(put 'transpose-sexps 'vsd "exprs")
 (put 'undo 'vsd "undo")
 (put 'vc-prefix-map 'vsd "version")
 (put 'versor-copy 'vsd "copy")
+(put 'versor-dwim 'vsd "dwim")
 (put 'versor-general-keymap 'vsd "versor")
 (put 'versor-insert-after 'vsd "after")
 (put 'versor-insert-around 'vsd "around")
 (put 'versor-insert-before 'vsd "before")
 (put 'versor-kill 'vsd "kill")
 (put 'versor-next 'vsd "next")
+(put 'versor-other-end-of-item 'vsd "other end")
 (put 'versor-over-next 'vsd "NEXT")
 (put 'versor-over-prev 'vsd "PREV")
 (put 'versor-prev 'vsd "prev")
 (put 'versor-replace 'vsd "replace")
+(put 'versor-reverse 'vsd "reverse")
 (put 'versor-select-cells 'vsd "cells")
 (put 'versor-select-chars 'vsd "chars")
 (put 'versor-select-defuns 'vsd "defuns")
 (put 'versor-select-exprs 'vsd "exprs")
 (put 'versor-select-paragraphs 'vsd "paragraphs")
+(put 'versor-select-rows 'vsd "rows")
 (put 'versor-select-sentences 'vsd "sentences")
 (put 'versor-select-statement-parts 'vsd "parts")
+(put 'versor-select-statements 'vsd "statements")
 (put 'versor-select-surrounding 'vsd "surrounding")
 (put 'versor-select-words 'vsd "words")
 (put 'versor-tlc-delete/copy-map 'vsd "del/copy")
@@ -540,7 +619,7 @@ With optional WIDTH, use that instead of the frame width."
 (put 'versor-tlc-mode-off 'vsd "no tlc")
 (put 'versor-tlc-search-map 'vsd "search")
 (put 'versor-tlc-transpose-map 'vsd "transpose")
-(put 'versor-tlc-transpose-map 'vsd "yank")
+(put 'versor-tlc-transpose-map 'vsd "transpose")
 (put 'yank-menu 'vsd "yankmenu")
 
 ;;;;;;;;;;;;;;;;;
@@ -554,7 +633,9 @@ With optional WIDTH, use that instead of the frame width."
   "Whether TLC mode is turned on.")
 
 (defun versor-tlc-not-in-this-buffer ()
-  ""
+  "Suppress versor-tlc-mode in the current buffer.
+This should be done for all minibuffers."
+  (interactive)
   (make-local-variable 'versor-tlc-mode)
   (setq versor-tlc-mode nil))
 
@@ -570,7 +651,7 @@ With optional WIDTH, use that instead of the frame width."
 	    '(rmail-mode-hook
 	      vm-mode-hook
 	      vm-summary-mode-hook
-	      'electric-buffer-menu-mode-hook))
+	      electric-buffer-menu-mode-hook))
   (versor-tlc-help-on))
 
 (defun versor-tlc-mode-on ()
@@ -580,14 +661,18 @@ With optional WIDTH, use that instead of the frame width."
       (versor-tlc-initialize))
   (setq versor-tlc-mode t)
   (add-hook 'post-command-hook 'versor-tlc-display-main-map)
-  (add-hook 'minibuffer-setup-hook 'versor-tlc-not-in-this-buffer))
+  (add-hook 'minibuffer-setup-hook 'versor-tlc-not-in-this-buffer)
+  (message "versor-tlc-mode on"))
 
 (defun versor-tlc-mode-off ()
   "Helper function for versor-tlc-mode."
   (interactive)
   (setq versor-tlc-mode nil)
   (remove-hook 'post-command-hook 'versor-tlc-display-main-map)
-  (remove-hook 'minibuffer-setup-hook 'versor-tlc-not-in-this-buffer))
+  (remove-hook 'minibuffer-setup-hook 'versor-tlc-not-in-this-buffer)
+  (when (frame-live-p versor-tlc-diagram-frame)
+    (iconify-frame versor-tlc-diagram-frame))
+  (message "versor-tlc-mode off"))
 
 ;;;###autoload
 (defun versor-tlc-mode (&optional arg)
