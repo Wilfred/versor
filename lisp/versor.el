@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2007-06-15 14:20:36 john>
+;;; Time-stamp: <2007-07-02 17:44:20 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -40,8 +40,6 @@
 ;; todo: command to toggle between code and string literals
 ;; todo: fix change of dimensions that happens after type-break uses the minibuffer (probably more general than this)
 ;; todo: make mouse clicks and drags select and extend using the current versor dimensions
-;; todo: use custom
-;; todo: use Info-file-list-for-emacs
 
 (defvar version-version "1.09"
   "The version number for this release of versor.")
@@ -312,6 +310,8 @@ See the info pages for more details of versor.
       (require 'versor-tracking)
       (add-hook 'post-command-hook 'versor-tracking-hook))
 
+    ;; This is the separate set of arrows, not those overlaid on the
+    ;; numeric keypad
     (when (memq 'arrows keysets)
       (unless tracking
 	(versor-global-set-key [ left ]    'versor-prev)
@@ -436,6 +436,9 @@ See the info pages for more details of versor.
       ))
 
   (setq versor-mode t)
+
+  (eval-after-load "info"
+    '(add-to-list 'Info-file-list-for-emacs "versor"))
 
   (versor-enable-mode-line-display)
 
