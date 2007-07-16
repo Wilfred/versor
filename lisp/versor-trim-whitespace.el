@@ -1,5 +1,5 @@
 ;;;; versor-trim-whitespace.el -- trim whitespace after a versor command
-;;; Time-stamp: <2007-04-29 14:40:30 jcgs>
+;;; Time-stamp: <2007-07-16 14:21:42 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,11 @@
 
 (defun versor-trim-whitespace (whereabouts)
   "Trim the whitespace around WHEREABOUTS."
+  ;; Used from versor-yank (commented out),
+  ;; languide-remove-surrounding-call. Is this function obsolescent?  I
+  ;; think it's all moving towards versor-copy-region,
+  ;; versor-kill-region, versor-adjust-whitespace, and
+  ;; versor-adjusting-insert.
   (when versor-trim-whitespace
     (condition-case evar
 	(save-excursion
@@ -113,6 +118,9 @@ This can be:
     'space)
    (t nil)))
 
+(defvar versor-debug-adjust-whitespace t
+  "*Whether to say what's going on with the whitespace adjustment.")
+
 (defun versor-copy-region (start end)
   "Copy the region between START and END.
 It is labelled with descriptions of the neighbouring whitespace.
@@ -129,7 +137,8 @@ The descriptions of the whitespace are returned, as a cons."
 		       'followed-by
 		       following
 		       text)
-    ;; (message "versor-copy-region %S..%S" preceding following)
+    (when versor-debug-adjust-whitespace
+      (message "versor-copy-region %S..%S..%S" preceding text following))
     (if (eq last-command 'kill-region)
 	(kill-append  text (< end start))
       (kill-new text))
@@ -142,14 +151,21 @@ The descriptions of the whitespace are returned, as a cons."
     (when versor-adjust-whitespace
       ;; todo: suspend this until we move away from here, so that if
       ;; we start typing, the space is as it was?
-      ;; (message "versor-kill-region %S..%S" (car ws) (cdr ws))
-      (versor-adjust-whitespace start (car ws) (cdr ws) " around deleted text"))))
+      (when versor-debug-adjust-whitespace
+	(message "versor-kill-region %S..%S" (car ws) (cdr ws)))
+      (versor-adjust-whitespace start
+				(car ws) (cdr ws)
+				" around deleted text"))))
 
 (defvar versor-can-do-delayed-deletions t
-  "Whether we can currently do delayed deletions.")
+  "Whether we can currently do delayed deletions.
+This is not meant to be set; it gets bound to nil within some functions,
+to hold off the delayed deletions.  Use versor-delay-deletions to control
+whether deletions are delayed.")
 
 (defvar versor-delayed-deletions nil
-  "Things pending deletion resulting from versor-delayed-delete.")
+  "Things pending deletion resulting from versor-delayed-delete.
+Each item is a cons of a cons of start and end, and an optional insertion.")
 
 (make-variable-buffer-local 'versor-delayed-deletions)
 
@@ -161,9 +177,13 @@ The descriptions of the whitespace are returned, as a cons."
     (let ((versor-cancelling-deledendum t))
       (message "Doing delayed deletions")
       (backtrace)
-      (mapcar (lambda (pair)
-		(message "  deleting %d..%d" (car pair) (cdr pair))
-		(delete-region (car pair) (cdr pair)))
+      (mapcar (lambda (update)
+		(message "  delayed: deleting %d..%d" (caar update) (cdar update))
+		(delete-region (caar update) (cdar update))
+		(when (cdr update)
+		  (message "  delayed: inserting %S" (cdr update))
+		  (goto-char (caar update))
+		  (insert (cdr update))))
 	      versor-delayed-deletions)
       (setq versor-delayed-deletions nil))))
 
@@ -173,31 +193,46 @@ The descriptions of the whitespace are returned, as a cons."
 	     (not versor-cancelling-deledendum))
     (let ((versor-cancelling-deledendum t))
       (message "Cancelling delayed deletions")
-      (mapcar (lambda (pair)
-		(message "  cancelling %d..%d" (car pair) (cdr pair))
-		(remove-text-properties (car pair) (cdr pair)
+      (mapcar (lambda (update)
+		(message "  cancelling %d..%d" (caar pair) (cdar pair))
+		(remove-text-properties (caar pair) (cdar pair)
 					'(point-left nil
-						     'modification-hooks nil
-						     'face nil)))
+						     modification-hooks nil
+						     face nil)))
 	      versor-delayed-deletions)
       (setq versor-delayed-deletions nil))))
 
-(defun versor-delayed-delete (start end)
+(defun versor-delayed-delete (start end &optional insertion)
   "Delete the text between START and END when point moves out of it.
-If a change happens before point moves out of it, don't delete it."
-  (if (or (< (point) start)
-	  (>= (point) end))
-      (delete-region start end)
-    (let ((versor-can-do-delayed-deletions nil))
-      (message "arranging delayed deletion for %d..%d" start end)
-      (push (cons start end) versor-delayed-deletions)
-      (put-text-property start end 'face (cons 'background-color "red"))
-      (put-text-property start end 'point-left 'versor-delete-deledendum)
-      (put-text-property start end 'modification-hooks
-			 (cons 'versor-cancel-deledendum
-			       (get-text-property start
-						  'modification-hooks)))
-      (goto-char start))))
+With optional INSERTION, insert that after the deletion.
+If a change happens before point moves out of it, don't delete it.
+If versor-delay-deletions is nil, just do an ordinary deletion immediately."
+  (message "versor-delayed-delete %d..%d %S" start end insertion)
+  (if versor-delay-deletions
+      (if (and nil
+	       (or (< (point) start)
+		   (>= (point) end)))
+	  (delete-region start end)
+	(let ((versor-can-do-delayed-deletions nil))
+	  (message "arranging delayed deletion for %d..%d" start end)
+	  (push (cons (cons start
+			    end)
+		      insertion)
+		versor-delayed-deletions)
+	  (put-text-property start end 'face (cons 'background-color "red"))
+	  ;; todo: set fringes as well
+	  (put-text-property start end 'point-left 'versor-delete-deledendum)
+	  (put-text-property start end 'modification-hooks
+			     (cons 'versor-cancel-deledendum
+				   (get-text-property start
+						      'modification-hooks)))
+	  (goto-char start)))
+    (message "deleting immediately %d..%d" start end)
+    (delete-region start end)
+    (when insertion
+      (message "inserting immediately %d %S" start insertion)
+      (goto-char start)
+      (insert insertion))))
 
 (defun versor-delayed-delete-horizontal-space ()
   "Like delete-horizontal-space, but using versor-delayed-delete."
@@ -205,68 +240,147 @@ If a change happens before point moves out of it, don't delete it."
 	(space-end (save-excursion (skip-syntax-forward "-") (point))))
     (versor-delayed-delete space-start space-end)))
 
+(defun versor-delayed-one-blank-line-at (place)
+  "Leave one blank line at PLACE.
+If versor-delay-deletions is non-nil, don't actually do it until
+point leaves the text that would be deleted; and cancel it if the
+user makes changes in that text."
+  ;; todo: use versor-delayed-delete
+  (save-excursion
+    (message "versor-delayed-one-blank-line-at %d" (point))
+    (goto-char place)
+    (skip-syntax-backward "->")
+    (let ((start (point)))
+      (skip-syntax-forward "->")
+      (versor-delayed-delete start (point) "\n\n"))))
+
+(defun versor-delayed-just-one-space (place)
+  "Leave one space at PLACE.
+If versor-delay-deletions is non-nil, don't actually do it until
+point leaves the text that would be deleted; and cancel it if the
+user makes changes in that text."
+  ;; todo: use versor-delayed-delete
+  (goto-char place)
+  (just-one-space))
+
+(defun versor-delayed-delete-blank-lines (place)
+  "Delete blank lines around PLACE.
+If versor-delay-deletions is non-nil, don't actually do it until
+point leaves the text that would be deleted; and cancel it if the
+user makes changes in that text."
+  ;; todo: use versor-delayed-delete
+  (goto-char place)
+  (delete-blank-lines))
+
 (defun versor-adjust-whitespace (around neighbouring-a neighbouring-b &optional debug-label)
   "Adjust whitespace after an insertion or deletion.
 The first argument is where the edit occurred.
 Each of the following two arguments can be chosen from 'blank-line,
 'end or 'start, 'margin, 'spaces, 'space, 'closing or 'opening, or
 nil. If NEIGHBOURING-A and NEIGHBOURING-B are the same, make sure
-there is only one of them in the buffer at point."
+there is only one of whatever they are in the buffer at point.
+When deleting a piece of text, NEIGHBOURING-A describes the text
+just before the deleted piece, and NEIGHBOURING-B the text just
+after it.
+When inserting text, versor-adjust-whitespace is called twice,
+first with NEIGHBOURING-A being describing the text before the
+insertion, and NEIGHBOURING-B describing the start of the
+insertion; then with NEIGHBOURING-A describing the end of the
+insertion, and NEIGHBOURING-B describing the text just after the
+insertion."
   (when versor-adjust-whitespace
-    ;; (message "versor-adjust-whitespace%s neighbouring-a=%S neighbouring-b=%S" (if debug-label debug-label "") neighbouring-a neighbouring-b)
+    (when versor-debug-adjust-whitespace
+      (message "")
+      (message "versor-adjust-whitespace%s at %s, neighbouring-a=%S neighbouring-b=%S"
+	       (if debug-label debug-label "")
+	       (point)
+	       neighbouring-a
+	       neighbouring-b))
     (save-excursion
       (goto-char around)
       (let ((versor-can-do-delayed-deletions nil))
-       (if (eq neighbouring-b neighbouring-a)
-	   (cond
-	    ((eq neighbouring-a 'space)
-	     ;; (message "both were spaces, leaving one space")
-	     (just-one-space))
-	    ((eq neighbouring-a 'margin)
-	     (delete-blank-lines))
-	    ((eq neighbouring-a 'blank-line)
-	     (delete-blank-lines)
-	     (delete-blank-lines)
-	     (open-line 1)))
-	 (cond
-	  ((eq neighbouring-a 'opening)
-	   ;; (message "neighbouring-a was opening, closing up")
-	   (versor-delayed-delete-horizontal-space))
-	  ((eq neighbouring-b 'closing)
-	   ;; (message "neighbouring-b was closing, closing up")
-	   (versor-delayed-delete-horizontal-space))
-	  ((eq neighbouring-a 'blank-line)
-	   ;; (message "neighbour-a was blank line, opening line")
-	   (delete-blank-lines)
-	   (delete-blank-lines)
-	   (open-line 1))
-	  ((eq neighbouring-a 'margin)
-	   ;; todo: don't always want to do this
-	   ;; (message "neighbour-a was margin, newline-and-indent")
-	   (newline-and-indent))
-	  ((or (eq neighbouring-a 'space)
-	       (eq neighbouring-a 'spaces))
-	   ;; (message "neighbour-a was whitespace, inserting space")
-	   (insert " "))))))))
+	(if (eq neighbouring-b neighbouring-a)
+	    (cond
+	     ((eq neighbouring-a 'space)
+	      (when versor-debug-adjust-whitespace
+		(message "both were spaces, leaving one space"))
+	      (versor-delayed-just-one-space around))
+	     ((eq neighbouring-a 'margin)
+	      (when versor-debug-adjust-whitespace
+		(message "both were in margin, deleting blank lines"))
+	      (versor-delayed-delete-blank-lines around))
+	     ((eq neighbouring-a 'blank-line)
+	      (when versor-debug-adjust-whitespace
+		(message "both were blank lines, leaving one blank line"))
+	      (versor-delayed-one-blank-line-at around)))
+	  (cond
+	   ((eq neighbouring-a 'opening)
+	    (when versor-debug-adjust-whitespace
+	      (message "neighbouring-a was opening, closing up"))
+	    (versor-delayed-delete-horizontal-space))
+	   ((eq neighbouring-b 'closing)
+	    (when versor-debug-adjust-whitespace
+	      (message "neighbouring-b was closing, closing up"))
+	    (versor-delayed-delete-horizontal-space))
+	   ((eq neighbouring-a 'blank-line)
+	    (when versor-debug-adjust-whitespace
+	      (message "neighbour-a was blank line, opening line"))
+	    (versor-delayed-one-blank-line-at around))
+	   ((eq neighbouring-a 'margin)
+	    ;; todo: don't always want to do this
+	    (when versor-debug-adjust-whitespace
+	      (message "neighbour-a was margin, newline-and-indent"))
+	    (newline-and-indent))
+	   ((or (eq neighbouring-a 'space)
+		(eq neighbouring-a 'spaces))
+	    (when versor-debug-adjust-whitespace
+	      (message "neighbour-a was whitespace, inserting space"))
+	    (versor-delayed-just-one-space around))))))))
 
 (defun versor-adjusting-insert (string)
   "Insert STRING.
 Use its text properties 'preceded-by and 'followed-by, in conjunction with
 the results of versor-what-is-preceding and versor-what-is-following
 called at the insertion point, to adjust the whitespace around the insertion.
+STRING may be a single string, or a cons of two strings. In the
+latter case, the car of them is inserted first, the variable
+versor-mid-insertion-place gets set to point, and then then cdr
+of them is inserted. (Otherwise, versor-mid-insertion-place is nil.)
 Returns a cons of the start and end positions of where STRING itself
 was inserted."
-  (let ((preceding-in-string (get-text-property 0 'preceded-by string))
+  (setq versor-mid-insertion-place nil)
+  (let ((preceding-in-string (get-text-property
+			      0
+			      'preceded-by
+			      (if (stringp string)
+				  string
+				(car string))))
 	(preceding-in-buffer (versor-what-is-preceding (point)))
-	(following-in-string (get-text-property (1- (length string))
-						'followed-by string))
+	(following-in-string (if (stringp string)
+				 (get-text-property (1- (length string))
+						    'followed-by string)
+			       (get-text-property (1- (length (cdr string)))
+						  'followed-by (cdr string))))
 	(following-in-buffer (versor-what-is-following (point))))
-    ;; (message "versor-adjusting-insert %S:\"%S ... %S\":%S" preceding-in-buffer preceding-in-string following-in-string following-in-buffer)
+    (when versor-debug-adjust-whitespace
+      (message "versor-adjusting-insert %S:\"%S ... %S\":%S" 
+	       preceding-in-buffer preceding-in-string 
+	       following-in-string following-in-buffer))
     (let ((start (point)))
-      (versor-adjust-whitespace start preceding-in-string preceding-in-buffer " before inserted text")
-      (insert string)
+      (versor-adjust-whitespace start
+				preceding-in-string
+				preceding-in-buffer
+				" before inserted text")
+      (if (stringp string)
+	  (insert string)
+	(insert (car string))
+	(setq versor-mid-insertion-place (point))
+	(insert (cdr string)))
       (let ((end (point)))
-	(versor-adjust-whitespace end following-in-string following-in-buffer " after inserted text")
+	(versor-adjust-whitespace end
+				  following-in-string
+				  following-in-buffer
+				  " after inserted text")
 	(cons start end)))))
 
 (provide 'versor-trim-whitespace)
