@@ -1,5 +1,5 @@
 ;;; versor-status.el -- versatile cursor
-;;; Time-stamp: <2006-11-28 22:41:35 jcgs>
+;;; Time-stamp: <2007-07-16 14:07:21 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -40,33 +40,37 @@ The result is in the form of a property list."
       (setq attributes (cdr attributes)))
     result))
 
-(defun versor-set-status-display (&optional one of-these explicit)
+(defun versor-set-status-display (&optional one of-these explicit no-message)
   "Indicate the state of the versor system."
-  (setq versor-current-over-level-name (if versor-color-dimension-indicators
-					   (propertize (versor-level-name
-							(min (1+ versor-level)
-							     (1- (length (versor-current-meta-level)))))
-						       'face
-						       (cons 'foreground-color
-							     (cdr (assoc 'color (versor-current-level 1)))))
-					 (versor-level-name
-					  (min (1+ versor-level)
-					       (1- (length (versor-current-meta-level))))))
-	versor-current-level-name (if versor-color-dimension-indicators
-				      (propertize (versor-level-name versor-level)
-						  'face
-						  (cons 'foreground-color
-							(cdr (assoc 'color (versor-current-level)))))
-				    (versor-level-name versor-level))
-	versor-current-meta-level-name (versor-meta-level-name versor-meta-level))
+  (setq versor-current-over-level-name
+	(if versor-color-dimension-indicators
+	    (propertize (versor-level-name
+			 (min (1+ versor-level)
+			      (1- (length (versor-current-meta-level)))))
+			'face
+			(cons 'foreground-color
+			      (cdr (assoc 'color (versor-current-level 1)))))
+	  (versor-level-name
+	   (min (1+ versor-level)
+		(1- (length (versor-current-meta-level))))))
+	versor-current-level-name
+	(if versor-color-dimension-indicators
+	    (propertize (versor-level-name versor-level)
+			'face
+			(cons 'foreground-color
+			      (cdr (assoc 'color (versor-current-level)))))
+	  (versor-level-name versor-level))
+	versor-current-meta-level-name
+	(versor-meta-level-name versor-meta-level))
   (if (and versor-multi-line-level-display explicit)
       (versor-display-current-dimensions)
-    (if one
-	(if of-these
-	    (versor-display-highlighted-choice one of-these)
-	  (if (stringp one)
-	      (message one)))
-      (message (first (versor-current-level)))))
+    (unless no-message
+	(if one
+	    (if of-these
+		(versor-display-highlighted-choice one of-these)
+	      (if (stringp one)
+		  (message one)))
+	  (message (first (versor-current-level))))))
   (if versor-reversible
       (setq versor-mode-line-begin-string (if versor-reversed " <==" " <")
 	    versor-mode-line-end-string (if versor-reversed ">" "==>"))
@@ -96,15 +100,15 @@ The result is in the form of a property list."
 	     (versor-gather-level-attributes (versor-current-level)
 					     versor-item-attribute)))))
   (versor-speak "Moving by %s %s%s%s"
-		     versor-current-meta-level-name
-		     versor-current-level-name
-		     (if (and versor-text-in-code
-			      versor-am-in-text-in-code)
-			 " in embedded strings"
-		       "")
-		     (if versor-auto-change-for-modes
-			 (format " in %s mode" mode-name)
-		       ""))
+		versor-current-meta-level-name
+		versor-current-level-name
+		(if (and versor-text-in-code
+			 versor-am-in-text-in-code)
+		    " in embedded strings"
+		  "")
+		(if versor-auto-change-for-modes
+		    (format " in %s mode" mode-name)
+		  ""))
   ;; remember what dimension we were last in, mode-by-mode
   ;;  (require 'versor-local) (versor-popup-modal-levels "Just set levels")
   (let* ((mode (if (and versor-text-in-code
