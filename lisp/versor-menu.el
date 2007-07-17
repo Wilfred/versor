@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2006-11-21 12:32:52 jcgs>
+;;; Time-stamp: <2007-07-07 22:02:50 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -88,7 +88,7 @@ Allows various actions that depend on the current fine movement dimension."
 	      ;; more to go here -- stuff like tag lookup
 	      ("language operations" . versor-languide-menu)
 	      ("versor insertions" . versor-insertions-menu)
-	      ("find" . dwim-find)
+	      ("find" . dwim-find-at-point)
 	      ("describe" . dwim-help)
 	      ("search for next %s" . versor-search)
 	      ("copy region" . kill-ring-save)
