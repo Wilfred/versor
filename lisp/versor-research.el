@@ -1,5 +1,5 @@
 ;;;; versor-research.el -- Count use and non-use of versor
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2007-06-23 15:06:34 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -77,6 +77,9 @@ directly to a non-versor edit.")
 (defun versor-get-equivalent-command (command)
   "Find the versor equivalent for COMMAND, if any."
   (cdr (assoc command versor-equivalent-commands)))
+
+(defvar versor-research-report-errors t
+  "*Whether to report errors in the research code.")
 
 (defun versor-research-post-command-function ()
   "Record what happened during this command."
@@ -210,7 +213,8 @@ directly to a non-versor edit.")
 	    (setq versor-research-previous-previous-command-type versor-research-previous-command-type
 		  versor-research-previous-command-type command-type
 		  versor-research-same-type-command-chain nil)))
-      (error (message "error %s in  versor-research-post-command-function" error-var)))))
+      (error (when versor-research-report-errors
+	       (message "error %s in  versor-research-post-command-function" error-var))))))
 
 ;; I don't think we really need this one
 ;; (defun versor-research-before-change-function (from to)  )
