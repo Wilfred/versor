@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2007-05-21 21:23:38 jcgs>
+;;; Time-stamp: <2007-07-11 19:51:07 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -976,7 +976,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
 		    " (" (p "Argument list: ") ")" n>
 		    "\"" (p "Documentation string: ") "\"" n>
 		    r> ")" n))
-  (begin-end "(defun ()\n \"\"\n" ")"))
+  (begin-end ("(defun " . "()\n \"\"\n") ")"))
 
 (defstatement defvar (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   ""
@@ -993,7 +993,8 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (head "(progn" (expression-contents))
   (body "(progn" (skip-to-actual-code) (expressions))
   (create (template & > "(progn " p n>
-		    r ")")))
+		    r ")"))
+  (begin-end "(progn\n" ")"))
 
 (defstatement save-excursion (emacs-lisp-mode lisp-interaction-mode)
   ""
@@ -1001,7 +1002,8 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (head "(save-excursion" (expression-contents))
   (body "(save-excursion" (skip-to-actual-code) (expressions))
   (create (template & > "(save-excursion " p n>
-		    r ")")))
+		    r ")"))
+  (begin-end "(save-excursion\n" ")"))
 
 (defstatement save-window-excursion (emacs-lisp-mode lisp-interaction-mode)
   "Emacs-lisp \"save-window-excursion\" special form"
@@ -1009,7 +1011,8 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (head "(save-window-excursion" (expression-contents))
   (body "(save-window-excursion" (skip-to-actual-code) (expressions))
   (create (template & > "(save-window-excursion " p n>
-		    r ")")))
+		    r ")"))
+  (begin-end "(save-window-excursion\n" ")"))
 
 (defstatement while-do (emacs-lisp-mode lisp-interaction-mode)
   "Emacs-lisp \"while\" special form"
@@ -1018,7 +1021,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (body "(while" (expression) (skip-to-actual-code) (expressions))
   (create (template & > "(while " p n>
 		    r ")"))
-  (begin-end "(while " ")")
+  (begin-end ("(while ". "\n") ")")
   (begin-end-with-dummy "(while true " ")"))
 
 (defstatement unless (lisp-mode emacs-lisp-mode lisp-interaction-mode)
@@ -1029,7 +1032,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (create (precondition (require 'cl))
 	  (template & > "(unless " p n>
 		    r ")"))
-  (begin-end "(unless " ")")
+  (begin-end ("(unless " . "\n") ")")
   (begin-end-with-dummy "(unless false " ")"))
 
 (defstatement condition-chain (lisp-mode emacs-lisp-mode lisp-interaction-mode)
@@ -1037,7 +1040,8 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   ;; (keyword "cond")
   (head "(cond *")
   (body "(cond *" (skip-to-actual-code) (expressions))
-  (create (template & > "(cond" n> "(" p ")" n> "(t (" p " " p ")))")))
+  (create (template & > "(cond" n> "(" p ")" n> "(t (" p " " p ")))"))
+  (begin-end ("(cond\n(" . "(") ")))"))
 
 (defstatement function-call (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   ""
@@ -1056,7 +1060,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
    (expressions) (remember ")"))
   (create
    (template & > "(let ((" (p "Variable name: ") p "))" n> r n> ")"))
-  (begin-end "(let (())\n " ")"))
+  (begin-end ("(let ((" . "))\n ") ")"))
 
 (defstatement assignment (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   "Assignment statement"
@@ -1064,7 +1068,8 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (head "(setq" (expression-contents))
   (body "(setq" (expression) (skip-to-actual-code) (expression))
   (create (template & > "(setq " (p "Variable name: ") " "
-		    r ")")))
+		    r ")"))
+  (begin-end ("(setq " . " ") ")"))
 
 (defstatement if-then (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   "If statement without else clause."
@@ -1076,7 +1081,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (create (precondition (require 'cl))
 	  (template & > "(when " p n>
 		    r ")"))
-  (begin-end "(when " "\n)")
+  (begin-end ("(when " . "\n") "\n)")
   (begin-end-with-dummy "(when true " "\n)"))
 
 (defstatement if-then-else (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
@@ -1089,7 +1094,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (create (template & > "(if " p n>
 		    r n>
 		    p ")"))
-  (begin-end "(if" ")")
+  (begin-end ("(if " . "\n") ")")
   (begin-end-with-dummy "(if true " ")"))
 
 (defstatement and (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
