@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2007-05-21 21:22:02 jcgs>
+;;; Time-stamp: <2007-07-11 19:46:16 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -56,6 +56,7 @@ command to be run."
   `(if (or versor-mode
 	   (not (interactive-p)))
        (let ((versor-can-do-delayed-deletions nil)) ; hold these off until end of command
+	 ;; (message "before checking versor-auto-change-for-modes, versor-meta-level=%S" versor-meta-level)
 	 (if versor-auto-change-for-modes
 	     ;; If we are keeping a different dimension for each mode,
 	     ;; check whether the mode has changed. It's not
@@ -68,6 +69,8 @@ command to be run."
 				      major-mode)
 				    versor-mode-current-levels)))
 	       (when (and new-pair
+			  (numberp (cadr new-pair))
+			  (numberp (cddr new-pair))
 			  (or (not (eq versor-meta-level (cadr new-pair)))
 			      (not (eq versor-level (cddr new-pair)))))
 		 (setq versor-meta-level (cadr new-pair)
@@ -77,10 +80,13 @@ command to be run."
 	   ;; changing them per-buffer, so have a look for that here.
 	   (when (and versor-per-buffer
 		      (or (not (eq versor-meta-level versor-this-buffer-meta-level))
-			  (not (eq versor-level versor-this-buffer-level))))
+			  (not (eq versor-level versor-this-buffer-level)))
+		      (numberp versor-this-buffer-meta-level)
+		      (numberp versor-this-buffer-level))
 	     (setq versor-meta-level versor-this-buffer-meta-level
 		   versor-level versor-this-buffer-level)
 	     (versor-set-status-display t)))
+	 ;; (message "after checking versor-auto-change-for-modes, versor-meta-level=%S" versor-meta-level)
 	 (when versor-debug-command-movement
 	   (message "Moving from %d" (point)))
 	 (progn
@@ -120,6 +126,7 @@ if there is no end-of-item."
      (let ((,item-var (if (versor-current-item-valid)
 			  (versor-get-current-item)
 			(car versor-latest-items))))
+       ;; todo: invent item if there is none
        (run-hooks 'versor-pre-command-hook)
        (versor-clear-current-item-indication)
        (when versor-debug-motion-framework
@@ -139,6 +146,17 @@ if there is no end-of-item."
        (when versor-debug-motion-framework
 	 (message "versor-as-motion-command called versor-indicate-current-item, point is now %d" (point)))
        (run-hooks 'versor-post-command-hook))))
+
+(defmacro versor-backward-without-sticking-at-comments (function argument)
+  "Do FUNCTION, passing ARGUMENT.
+If that lands point inside a comment, keep going back out of
+comment and doing \(funcall function 1) until not in a comment."
+  `(progn
+     (,function ,argument)
+     (while (and (not (bobp))
+		 (in-comment-p))
+       (backward-out-of-comment)
+       (,function 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; commands begin here ;;;;
@@ -203,21 +221,21 @@ if there is no end-of-item."
   "Move to the previous meta-level."
   (interactive)
   (versor-as-motion-command current-item
-   (if (and (interactive-p)
-	    versor-reversed)
-       (incf versor-meta-level)
-     (decf versor-meta-level))
-   (versor-trim-meta-level)
-   (while (not (versor-meta-dimension-valid-for-mode
-		(aref (aref moves-moves versor-meta-level) 0)
-		major-mode))
-     (if (and (interactive-p)
-	      versor-reversed)
-	 (decf versor-meta-level)
-       (incf versor-meta-level))
-     (versor-trim-meta-level))
-   (versor-trim-level)
-   (versor-set-status-display
+    (if (and (interactive-p)
+	     versor-reversed)
+	(incf versor-meta-level)
+      (decf versor-meta-level))
+    (versor-trim-meta-level)
+    (while (not (versor-meta-dimension-valid-for-mode
+		 (aref (aref moves-moves versor-meta-level) 0)
+		 major-mode))
+      (if (and (interactive-p)
+	       versor-reversed)
+	  (decf versor-meta-level)
+	(incf versor-meta-level))
+      (versor-trim-meta-level))
+    (versor-trim-level)
+    (versor-set-status-display
      (aref (versor-current-meta-level) 0)
      (mapcar 'first (versor-meta-level-names))
      t)))
@@ -231,6 +249,7 @@ if there is no end-of-item."
     (if (not versor-reversible)
 	(error "Reversing movement directions is not enabled; set versor-reversible to enable it") ;
       (setq versor-reversed (not versor-reversed))
+      (message (if versor-reversed "Versor movements reversed" "Versor movements normal"))
       (versor-set-status-display))))
 
 (defun versor-get-action (action &optional level-offset)
@@ -677,7 +696,7 @@ If a MENU-LABEL is given, add that to versor-insertions-menu."
 			  menu-label
 			  `(lambda ()
 			    (interactive)
-			    (funcall ,fun n)))))
+			    (funcall ',fun n)))))
 
 (defun versor-top-n-kills (n &optional offset)
   "Return the top N entries in the kill ring.
@@ -768,9 +787,13 @@ This lets us do commands such as insert-around using a common framework."
       (tmm-prompt versor-insertion-kinds-menu)
     (let* ((key (read-event (if prompt prompt "Kind of insertion: ")))
 	   (command (assoc key versor-insertion-kind-alist)))
+      (message "Command is %S" command)
       (if (consp command)
 	  (funcall (cdr command) n)
 	(error "%S in not bound to a kind of insertion" key)))))
+
+(defvar versor-mid-insertion-place nil
+  "A place part-way through an insertion done by versor-adjusting-insert.")
 
 (defun insert-active (insertion)
   "If INSERTION is a string, insert it; if a function, call it.
@@ -779,6 +802,12 @@ Returns a cons of the start and end of what it inserted."
   (cond
    ((stringp insertion)
     (versor-adjusting-insert insertion))
+   ((and (consp insertion)
+	 (stringp (car insertion))
+	 (stringp (cdr insertion)))
+    (insert (car insertion))
+    (setq versor-mid-insertion-place (point))
+    (insert (cdr insertion)))
    ((and (consp insertion)
 	 (not (functionp (car insertion)))) ; but not an evaluable form
     (mapcar 'insert-active insertion))
@@ -839,15 +868,20 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
 	(error "insert-around from skeleton not yet implemented")
 	)
        (t
-	(goto-char (versor-overlay-end current-item))
-	(versor-adjusting-insert (second new-thing))
 	(let ((end (make-marker))
-	      (start (make-marker)))
+	      (start (make-marker))
+	      (remembered-place (make-marker)))
+	  (goto-char (versor-overlay-end current-item))
+	  (versor-adjusting-insert (second new-thing))
+	  (when versor-mid-insertion-place
+	    (set-marker remembered-place versor-mid-insertion-place))
 	  (set-marker end (point))
 	  (set-marker start (versor-overlay-start current-item))
 	  (set-marker-insertion-type start nil)
 	  (goto-char start)
 	  (insert-active (first new-thing))
+	  (when versor-mid-insertion-place
+	    (set-marker remembered-place versor-mid-insertion-place))
 	  (when versor-reindent-after-insert
 	    (save-excursion
 	      (goto-char start)
@@ -855,7 +889,10 @@ With optional GIVEN-THING, insert that, otherwise prompt the user."
 		(funcall indent-line-function)
 		(forward-line 1))))
 	  (versor-set-current-item start end)
-	  (set-marker end nil)))))))
+	  (set-marker end nil)
+	  (when (marker-position remembered-place)
+	    (goto-char remembered-place)
+	    (set-marker remembered-place nil))))))))
 
 (defun versor-replace ()
   "Insert something \"within\" the current versor item, that is, replacing it."
