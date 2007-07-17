@@ -1,5 +1,5 @@
 ;;;; versor-help.el -- help for versor
-;;; Time-stamp: <2007-05-20 20:37:58 jcgs>
+;;; Time-stamp: <2007-06-28 14:02:00 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(defadvice describe-key (after versor (key) activate)
+(defadvice describe-key (after versor (key untranslated up-event) activate)
   "Further help for versor functions."
   (let ((pre-versor-def (lookup-key versor-original-bindings-map key)))
     (when (and pre-versor-def
@@ -38,14 +38,16 @@
       (re-search-backward "`\\([^`']+\\)'" nil t)
       (help-xref-button
        1
-       #'(lambda (fun file)
-	   (require 'find-func)
-	   ;; Don't use find-function-noselect because it follows
-	   ;; aliases (which fails for built-in functions).
-	   (let* ((location (find-function-search-for-symbol
-			     fun nil file)))
-	     (pop-to-buffer (car location))
-	     (goto-char (cdr location))))
+       (if (< emacs-major-version 23)
+	   #'(lambda (fun file)
+	       (require 'find-func)
+	       ;; Don't use find-function-noselect because it follows
+	       ;; aliases (which fails for built-in functions).
+	       (let* ((location (find-function-search-for-symbol
+				 fun nil file)))
+		 (pop-to-buffer (car location))
+		 (goto-char (cdr location))))
+	 'help-function)
        (list base base-file-name)
        "mouse-2, RET: find function's definition"))
 
@@ -56,7 +58,10 @@
 			(split-string base-doc "\n")
 			"\n    ")))))
 
-(defadvice describe-function-1-versor (after versor (function parens interactive-p) activate)
+(defadvice describe-function-1 (after versor (function
+					      ;; emacs23 refuses these two:
+					      &optional parens interactive-p
+					      ) activate)
   "Further help for versor functions."
   (when (versor-command-p function)
     (with-current-buffer "*Help*"
