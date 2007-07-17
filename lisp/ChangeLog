@@ -1,0 +1,37 @@
+2007-07-16  John C G Sturdy  <jcgs@hosea>
+
+	* versor-status.el (versor-set-status-display): Tried to suppress
+	the dimension messages on changing buffer.
+
+	* versor-local.el (versor-buffer-change-function): there was an
+	error in switching buffer; it was trying to use the dimension
+	number as a dimension name
+
+2007-07-15  John C G Sturdy  <jcgs@hosea>
+
+	* versor-trim-whitespace.el: improvements to whitespace adjustment
+
+2007-07-04  John C G Sturdy  <jcgs@HOSEA>
+
+	* versor-commands.el (versor-definesert): quote the command
+	function being run by a defined insertion
+
+2007-07-02  John C G Sturdy  <jcgs@HOSEA>
+
+	* versor-base-moves.el (next-texp): try sentence-end as a function
+	if available (as in Emacs 23) and if not available, try as a
+	variable as in older Emacsen.
+
+	* versor-local.el (versor-buffer-change-function): Use the
+	per-buffer values of meta-level and level only when they are
+	valid.
+
+2007-06-20  John C G Sturdy  <john.sturdy@ul.ie>
+
+	* versor-tlc.el (versor-tlc-display-all-diagram): Wrote function
+	to display all versor-tlc keymaps, as popping them up one at a
+	time isn't working well, at least on windows-emacs.
+	(versor-tlc-do-map): Fix looking up next key read while displaying
+	diagrams on the fly.
+	
+
