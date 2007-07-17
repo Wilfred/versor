@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2007-03-18 19:50:30 jcgs>
+;;; Time-stamp: <2007-07-15 18:47:30 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -251,13 +251,15 @@ up for itself only if the command didn't set them for it."
   ;; todo: mention in manual
   "Commands after which the region description is not announced.")
 
-(defun versor-indicate-current-item ()
+(defun versor-indicate-current-item (&optional no-adjust)
   "Make the current item distinctly visible.
 This is intended to be called at the end of all versor commands.
 See also the complementary function versor-de-indicate-current-item,
 which goes on the pre-command-hook, to make sure that versor gets out
 of the way of ordinary Emacs commands.
-We assume point to be at the start of the item."
+We assume point to be at the start of the item.
+With optional argument non-nil, don't adjust point to the apparent
+start of the likely selection."
   (condition-case error-var
       (progn
 
@@ -273,7 +275,8 @@ We assume point to be at the start of the item."
 	(unless (versor-current-item-valid)
 	  (versor-set-current-item
 	   (progn
-	     (when versor-trim-item-starts-to-non-space
+	     (when (and versor-trim-item-starts-to-non-space
+			(not no-adjust))
 	       ;; To maintain consistency, it generally makes sense to
 	       ;; adjust point so that it's at the start of some
 	       ;; non-blank text; most commands will probably do this
@@ -295,7 +298,9 @@ We assume point to be at the start of the item."
 		(if (<= lines-needed lines-available)
 		    (recenter (/ (- lines-available lines-needed) 2))
 		  (recenter 0)
-		  (message "%d more lines of this item would not fit on screen" (- lines-needed lines-available 1)))))))
+		  (let ((extra (- lines-needed lines-available)))
+		    (when (> extra 0)
+		      (message "%d more lines of this item would not fit on screen" extra))))))))
 
 	;; re-do this because it somehow gets taken off from time to time
 	(add-hook 'pre-command-hook 'versor-de-indicate-current-item)
