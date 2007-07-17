@@ -1,5 +1,5 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2006-08-03 20:23:39 john>
+;;; Time-stamp: <2007-07-17 12:04:50 john>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -42,22 +42,35 @@
   (when (and versor-auto-change-for-modes
 	     (not versor-per-buffer))
     ;; now get the meta-level and level for the new major mode
-    (let ((new-pair (assoc major-mode versor-mode-current-levels)))
-      (when new-pair
-	(setq versor-meta-level (cadr new-pair)
-	      versor-level (cddr new-pair))
-	;; (message "Versor spotted mode change to %s, using %d %d" major-mode versor-meta-level versor-level)
-	(versor-set-status-display t)))))
+    (condition-case evar
+	(let ((new-pair (assoc major-mode versor-mode-current-levels)))
+	  (when (and new-pair
+		     (numberp (cadr new-pair))
+		     (numberp (cddr new-pair)))
+	    (setq versor-meta-level (cadr new-pair)
+		  versor-level (cddr new-pair))
+	    ;; (message "Versor spotted mode change to %s, using %d %d" major-mode versor-meta-level versor-level)
+	    (versor-set-status-display t)))
+      (error nil))))
 
 (defun versor-buffer-change-function (old-buffer)
   "Select dimension if necessary, as a hook on changing buffers."
   (when versor-per-buffer
-    (save-excursion
-      (set-buffer old-buffer)
-      (setq versor-this-buffer-meta-level versor-meta-level
-	    versor-this-buffer-level versor-level))
-    (versor-select-named-meta-level versor-this-buffer-meta-level)
-    (versor-select-named-level versor-this-buffer-level)))
+    (condition-case evar
+	(progn
+	  (save-excursion
+	    (set-buffer old-buffer)
+	    (setq versor-this-buffer-meta-level versor-meta-level
+		  versor-this-buffer-level versor-level))
+	  (when (numberp versor-this-buffer-meta-level)
+	    (setq versor-meta-level versor-this-buffer-meta-level)
+	    (versor-trim-meta-level))
+	  (when (numberp versor-this-buffer-level)
+	    (setq versor-level versor-this-buffer-level)
+	    (versor-trim-level))
+	  (versor-set-status-display nil nil nil t))
+      (error (message "error %S in versor-buffer-change-function" evar) 
+	     nil))))
 
 (defun versor-display-modal-levels (&optional label marked)
   "Display which levels are currently used for each mode."
