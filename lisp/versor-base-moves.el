@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2007-03-19 16:05:06 jcgs>
+;;; Time-stamp: <2007-07-02 19:03:27 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -58,6 +58,30 @@
 
 ;; todo: add tex, latex, bibtex ideas of paragraphs, perhaps going via generic-text, or building on the built-in ones in-place?
 
+;;;; characters
+
+(defun versor-backward-char (n)
+  "Like backward-char, but with a versor wrapper.
+This wrapper is required to prevent versor's command framework from
+adjusting point afterwards. It normally does this to keep at the start
+of a sensible item, but this doesn't make sense for character
+movements."
+  (interactive "p")
+  (backward-char n)
+  (versor-set-current-item (point) (1+ (point))))
+
+(defun versor-forward-char (n)
+  "Like forward-char, but with a versor wrapper.
+This wrapper is required to prevent versor's command framework from
+adjusting point afterwards. It normally does this to keep at the start
+of a sensible item, but this doesn't make sense for character
+movements."
+  (interactive "p")
+  (forward-char n)
+  (versor-set-current-item (point) (1+ (point))))
+
+;;;; lines
+
 (defun versor-start-of-line (n)
   "Move to first non-space on line, or to start of Nth line from here."
   (interactive "p")
@@ -84,12 +108,16 @@
 (defun versor-previous-line (n)
   "Move to the previous line, following margins if on one."
   (interactive "p")
-  (versor-following-margins (previous-line n)))
+  (versor-following-margins
+   (versor-backward-without-sticking-at-comments
+    previous-line n)))
 
 (defun versor-next-line (n)
   "Move to the next line, following margins if on one."
   (interactive "p")
   (versor-following-margins (next-line n)))
+
+;;;; sexps
 
 (defun safe-up-list (&rest args)
   "Like up-list, but returns nil on error."
@@ -143,6 +171,9 @@
 	(forward-sexp n)
 	(point))
     (error nil)))
+
+;;;; sexps, extended to handle bracketting by larger things than
+;;;; characters, e.g. markup tags
 
 (defmodel versor-backward-up-list (arg)
   "Like backward-up-list, but with some versor stuff around it.
@@ -342,51 +373,6 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
 	(py-end-of-statement)
 	(versor-set-current-item start (point))))))
 
-;; left over from trying a window selection dimension
-;; (defun other-window-backwards (n)
-;;   "Select the -Nth window -- see other-window, this just negates the argument."
-;;   (interactive "p")
-;;   (other-window (- n)))
-
-;; (defun first-window ()
-;;   "Select the first window in the frame"
-;;   (interactive)
-;;   (select-window (window-at 0 0)))
-
-;; (defun last-window ()
-;;   "Select the last window in the frame"
-;;   (interactive)
-;;   (select-window (window-at (1- (frame-width)) (- (frame-height) 3))))
-
-;; left over from a bumping character values dimension
-;; (defun zero-char ()
-;;   "Make the character at point be zero."
-;;   (save-excursion
-;;     (delete-region (point) (1+ (point)))
-;;     (insert 0)))
-
-;; (defun dec-char ()
-;;   "Decrement the character at point."
-;;   (interactive)
-;;   (save-excursion
-;;     (let ((new-char (1- (char-after (point)))))
-;;       (delete-region (point) (1+ (point)))
-;;       (insert new-char))))
-
-;; (defun inc-char ()
-;;   "Increment the character at point."
-;;   (interactive)
-;;   (save-excursion
-;;     (let ((new-char (1+ (char-after (point)))))
-;;       (delete-region (point) (1+ (point)))
-;;       (insert new-char))))
-
-;; (defun max-char ()
-;;   "Make the character at point be zero."
-;;   (save-excursion
-;;     (delete-region (point) (1+ (point)))
-;;     (insert -1)))
-
 (defmodel first-sexp ()
   "Move back by sexps until you can go back no more."
   (interactive))
@@ -508,7 +494,10 @@ they had markup tags. Likewise, treat sentences as blocks."
        ;; sentences
        ((save-excursion
 	  (skip-syntax-backward " " start)
-	  (looking-at sentence-end))
+	  (looking-at (or (and (fboundp 'sentence-end)
+			       ;; it's not a function before 23.
+			       (sentence-end))
+			  sentence-end)))
 	(when debug-texp (message "next-texp: sentence"))
 	(skip-to-actual-code)
 	(forward-sentence))
@@ -662,7 +651,10 @@ they had markup tags. Likewise, treat sentences as blocks."
      ((save-excursion
 	(skip-syntax-backward " ")
 	(backward-char 1)
-	(looking-at sentence-end))
+	(looking-at (or (and (fboundp 'sentence-end)
+			     ;; it's not a function before 23.
+			     (sentence-end))
+			sentence-end)))
       (when debug-texp (message "previous-texp: sentence"))
       (skip-to-actual-code-backwards)
       (backward-sentence))
@@ -771,6 +763,8 @@ they had markup tags. Likewise, treat sentences as blocks."
       (setq p n))
     (goto-char p)))
 
+;;;; words
+
 (defun versor-previous-word (n)
   "Move backward a word, or, with argument, that number of words.
 Like backward-word but skips comments."
@@ -818,6 +812,8 @@ and never on the space or punctuation before it; and skips comments."
       (delete-region (car item) (cdr item))
       (if spaced (just-one-space)))))
 
+;;;; Phrases
+
 (defun forward-phrase (n)
   "Move forward a phrase, or, with argument, that number of phrases.
 Stay within the current sentence."
@@ -829,6 +825,12 @@ Stay within the current sentence."
       (unless (re-search-forward phrase-end sentence 'stay)
 	(setq n 0))
       (decf n))))
+
+(defun versor-forward-phrase (n)
+  "Like forward-phrase, but with some versor wrapping."
+  (interactive "p")
+  ;; todo: set the selection explicitly
+  (forward-phrase n))
 
 (defun end-of-phrase (&rest ignore)
   "Move to the end of the current phrase."
@@ -870,28 +872,23 @@ Stay within the current sentence."
     (unless using-sentence-start
       (goto-char (match-end 0)))))
 
-;; left over from trying a buffer selection dimension
-;; (defun next-buffer ()
-;;   "Select the next buffer in this window."
-;;   (interactive)
-;;   (let ((this-buffer (current-buffer)))
-;;     (switch-to-buffer (other-buffer this-buffer))
-;;     (bury-buffer this-buffer)))
-;; 
-;; (defun previous-buffer ()
-;;   "Select the previous buffer in this window."
-;;   (interactive)
-;;   (switch-to-buffer (car (last (buffer-list)))))
-;; 
-;; (defun last-buffer ()
-;;   "Select the last buffer in this window."
-;;   (interactive)
-;; )
-;; 
-;; (defun first-buffer ()
-;;   "Select the first buffer in this window."
-;;   (interactive)
-;; )
+(defun versor-backward-phrase (n)
+  "Like backward-phrase, but with some versor wrapping."
+  ;; todo: set the selection explicitly
+  (interactive "p")
+  (versor-as-motion-command item
+    (versor-backward-without-sticking-at-comments
+     backward-phrase n)))
+
+(defun versor-backward-sentence (n)
+  "Like backward-sentence, but with some versor wrapping."
+  ;; todo: set the selection explicitly
+  (interactive "p")
+  (versor-as-motion-command item
+    (versor-backward-without-sticking-at-comments
+     backward-sentence n)))
+
+;;;; tempo markers
 
 (defun tempo-first-mark (n)
   "Go to the first tempo marker."
@@ -918,6 +915,8 @@ Stay within the current sentence."
   (interactive "p")
   (goto-char (point-max))
   (tempo-backward-mark))
+
+;;;; tabular text
 
 (defun versor-set-mode-properties (mode properties)
   "Set the mode-specific versor properties for MODE to be PROPERTIES.
@@ -1188,6 +1187,8 @@ If so, it is called on the other two arguments."
       (goto-char (match-end 0))
     (error "Could not locate last row")))
 
+;;;; defuns
+
 (defun versor-first-defun ()
   "Move to the start of the first function definition in the buffer."
   (interactive)
@@ -1210,6 +1211,8 @@ If so, it is called on the other two arguments."
   (goto-char (point-max))
   (beginning-of-defun 1))
 
+;;;; ELSE
+
 (defun versor-else-first-placeholder ()
   "Move to the first placeholder."
   (interactive)
@@ -1221,6 +1224,8 @@ If so, it is called on the other two arguments."
   (interactive)
   (goto-char (point-max))
   (else-previous-placeholder))
+
+;;;; marks
 
 (defvar versor-latest-mark 0
   "The latest mark versor's \"mark\" dimension has gone to in this buffer.")
@@ -1312,7 +1317,9 @@ If so, it is called on the other two arguments."
   (versor-make-sorted-marks)
   (setq versor-latest-sorted-mark (1- (length versor-sorted-marks)))
   (goto-char (nth versor-latest-sorted-mark versor-sorted-marks)))
-		       
+
+;;;; property changes
+
 (defun goto-first-property-change (n)
   "Go to the first property change."
   (interactive "p")
