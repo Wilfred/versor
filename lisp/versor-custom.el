@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2007-03-18 18:43:14 jcgs>
+;;; Time-stamp: <2007-07-15 21:40:43 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -97,6 +97,12 @@ and going forward from the last meta-level takes you to the first one."
 
 (defcustom versor-adjust-whitespace t
   "Whether Versor should adjust whitespace on insertions and deletions."
+  :group 'versor-editing
+  :type 'boolean)
+
+(defcustom versor-delay-deletions t
+  "Whether versor should delay deletions of whitespace until point moves away.
+This lets you start typing things in the whitespace, cancelling the deletion."
   :group 'versor-editing
   :type 'boolean)
 
