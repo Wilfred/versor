@@ -1,5 +1,5 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2006-11-28 11:09:50 jcgs>
+;;; Time-stamp: <2007-07-07 21:43:15 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
 ;;
@@ -21,7 +21,6 @@
 
 (require 'versor)
 (require 'versor-menu)
-(require 'structure-edit)
 
 (defvar pedals-hosts-preferring-num-lock
   nil
@@ -175,8 +174,38 @@ This symbol may be given inside a vector to define-key etc")
   ;; get rid of once I've verified that it is in fact OK.
   (let ((num-lock (handsfree-use-num-lock)))
     (cond
+     (pedals-use-kp-divide
+      (message "Setting up pedals using kp-divide for onward")
+      (setq
+       pedal-onward [ kp-divide ]
+       pedal-C-onward [ C-kp-divide ]
+       pedal-M-onward [ M-kp-divide ]
+       pedal-S-onward [ S-kp-divide ]
+       pedal-C-S-onward [ C-S-kp-divide ]
+       pedal-M-S-onward [ M-S-kp-divide ]
+       pedal-C-M-S-onward [ C-M-S-kp-divide ]
+
+       pedal-aux [ kp-end ]
+       pedal-C-aux [ C-kp-end ]
+       pedal-M-aux [ M-kp-end ]
+       pedal-S-aux [ S-kp-end ]		; which machine wants this?
+       pedal-S-aux [ S-kp-1 ]
+       pedal-C-S-aux [ C-S-kp-end ]
+       pedal-M-S-aux [ M-S-kp-end ]	; unfortunately not distinguishable by help?
+       pedal-C-M-S-aux [ C-M-S-kp-1 ]
+
+       pedal-menu [ kp-next ]
+       pedal-C-menu [ C-kp-next ]
+       pedal-M-menu [ M-kp-next ]
+       pedal-S-menu [ S-kp-next ]	; which machine wants this?
+       pedal-S-menu [ S-kp-3 ]
+       pedal-C-S-menu [ C-S-kp-next ]
+       pedal-M-S-menu [ M-S-kp-next ]
+       pedal-C-M-S-menu [ C-M-S-kp-next ]
+       )
+      )
      ((or (eq system-type 'gnu/linux)
-	  (equal (downcase (system-short-name)) "mayo")
+	  (equal (downcase (system-name)) "mayo")
 	  )
       (message "Setting up pedals as for gnu/linux or mayo")
       (setq 
@@ -238,7 +267,7 @@ This symbol may be given inside a vector to define-key etc")
        pedal-M-S-v-3 [ M-S-kp-7 ]
        )
       
-      (if (equal (downcase (system-short-name)) "mayo")
+      (if (equal (downcase (system-name)) "mayo")
 	  (progn
 	    (setq pedal-S-aux [ end ]
 		  pedal-C-S-aux [ C-end ]
@@ -259,34 +288,6 @@ This symbol may be given inside a vector to define-key etc")
 		pedal-M-S-onward [ M-S-kp-2 ]
 
 		pedal-M-S-menu [ M-S-kp-3 ]))))
-     (pedals-use-kp-divide
-      (message "Setting up pedals using kp-divide for onward")
-      (setq
-       pedal-onward [ kp-divide ]
-       pedal-C-onward [ C-kp-divide ]
-       pedal-M-onward [ M-kp-divide ]
-       pedal-S-onward [ S-kp-divide ]
-       pedal-C-S-onward [ C-S-kp-divide ]
-       pedal-M-S-onward [ M-S-kp-divide ]
-       pedal-C-M-S-onward [ C-M-S-kp-divide ]
-
-       pedal-aux [ kp-end ]
-       pedal-C-aux [ C-kp-end ]
-       pedal-M-aux [ M-kp-end ]
-       pedal-S-aux [ S-kp-end ]
-       pedal-C-S-aux [ C-S-kp-end ]
-       pedal-M-S-aux [ M-S-kp-end ]	; unfortunately not distinguishable by help?
-       pedal-C-M-S-aux [ C-M-S-kp-1 ]
-
-       pedal-menu [ kp-next ]
-       pedal-C-menu [ C-kp-next ]
-       pedal-M-menu [ M-kp-next ]
-       pedal-S-menu [ S-kp-next ]
-       pedal-C-S-menu [ C-S-kp-next ]
-       pedal-M-S-menu [ M-S-kp-next ]
-       pedal-C-M-S-menu [ C-M-S-kp-next ]
-       )
-      )
      (t
       (message "Using default pedal setup")
       (setq
@@ -325,114 +326,91 @@ which are most suitable for duplicating onto pedals."
       (setq key (read-event (format "That was %s; next key (space to end): "
 				    (key-description (list key))))))))
 
-(defun todo-define-pedals ()
-  "Set up pedal definitions for todo.el"
-  (if (and (boundp 'todo-mode-map)
-	   (keymapp todo-mode-map)
-	   (or (not (boundp 'todo-pedals-configured))
-	       (not todo-pedals-configured)))
-      (progn
-	(setq todo-pedals-configured t)
-	(define-key todo-mode-map pedal-onward 'todo-forward-item)
-	(define-key todo-mode-map pedal-S-onward 'todo-backward-item)
-	(define-key todo-mode-map pedal-aux 'todo-forward-category)
-	(define-key todo-mode-map pedal-S-aux 'todo-backward-category)
-	(define-key todo-mode-map pedal-menu 'todo-quit)
-	(define-key todo-mode-map pedal-S-menu 'todo-file-item))))
-
 (defun dired-define-pedals ()
   "Set up pedal definitions for dired"
-  (define-key dired-mode-map pedal-onward 'dired-next-line)
-  (define-key dired-mode-map pedal-S-onward 'dired-previous-line)
-  (define-key dired-mode-map pedal-C-onward 'dired-prev-subdir)
-  (define-key dired-mode-map pedal-C-S-onward 'dired-next-subdir)
-  (define-key dired-mode-map pedal-M-onward 'dired-tree-up)
-  (define-key dired-mode-map pedal-M-S-onward 'dired-tree-down)
-  (define-key dired-mode-map pedal-menu 'dired-find-file-or-insert-subdir)
-  (define-key dired-mode-map pedal-S-menu 'dired-flag-file-deletion)
-  (define-key dired-mode-map [ C-kp-3 ] 'revert-buffer)
-  (define-key dired-mode-map pedal-C-S-menu 'dired-do-flagged-delete)
-  (define-key dired-mode-map pedal-M-S-menu 'kill-buffer))
+  (eval-after-load "dired"
+    '(progn
+      (define-key dired-mode-map pedal-onward 'dired-next-line)
+      (define-key dired-mode-map pedal-S-onward 'dired-previous-line)
+      (define-key dired-mode-map pedal-C-onward 'dired-prev-subdir)
+      (define-key dired-mode-map pedal-C-S-onward 'dired-next-subdir)
+      (define-key dired-mode-map pedal-M-onward 'dired-tree-up)
+      (define-key dired-mode-map pedal-M-S-onward 'dired-tree-down)
+      (define-key dired-mode-map pedal-menu 'dired-find-file-or-insert-subdir)
+      (define-key dired-mode-map pedal-S-menu 'dired-flag-file-deletion)
+      (define-key dired-mode-map [ C-kp-3 ] 'revert-buffer)
+      (define-key dired-mode-map pedal-C-S-menu 'dired-do-flagged-delete)
+      (define-key dired-mode-map pedal-M-S-menu 'kill-buffer))))
 
 (defun vm-define-pedals ()
-  "Set up pedal definitions for vm"
-  (if (and (boundp 'vm-summary-mode-map)
-	   (keymapp vm-summary-mode-map)
-	   (or (not (boundp 'vm-pedals-configured))
-	       (not vm-pedals-configured)))
-      (progn
-	(setq vm-pedals-configured t)
-	(define-key vm-summary-mode-map pedal-aux 'vm-next-message)
-	(define-key vm-summary-mode-map pedal-S-aux 'vm-previous-message)
-	(define-key vm-summary-mode-map pedal-onward 'vm-scroll-forward)
-	(define-key vm-summary-mode-map pedal-S-onward 'vm-scroll-backward)
-	(define-key vm-summary-mode-map pedal-menu 'exit-recursive-edit ) ; because I normally run the mailer in a recursive edit
-	(define-key vm-summary-mode-map pedal-S-menu 'vm-delete-message)
-	(define-key vm-summary-mode-map pedal-C-S-menu 'vm-expunge-folder)
-	(define-key vm-summary-mode-map pedal-M-menu 'handsfree-main-menu)
-	(define-key vm-summary-mode-map pedal-M-S-menu 'vm-delete-as-spam))))
+  "Set up pedal definitions for vm."
+  (eval-after-load "vm"
+    '(progn
+      (define-key vm-summary-mode-map pedal-aux 'vm-next-message)
+      (define-key vm-summary-mode-map pedal-S-aux 'vm-previous-message)
+      (define-key vm-summary-mode-map pedal-onward 'vm-scroll-forward)
+      (define-key vm-summary-mode-map pedal-S-onward 'vm-scroll-backward)
+      (define-key vm-summary-mode-map pedal-menu 'exit-recursive-edit ) ; because I normally run the mailer in a recursive edit
+      (define-key vm-summary-mode-map pedal-S-menu 'vm-delete-message)
+      (define-key vm-summary-mode-map pedal-C-S-menu 'vm-expunge-folder)
+      (define-key vm-summary-mode-map pedal-M-menu 'handsfree-main-menu)
+      (define-key vm-summary-mode-map pedal-M-S-menu 'vm-delete-as-spam)
+      (setq vm-pedals-configured t)
+      )))
 
 (defun w3-define-pedals ()
   "Set up pedal definitions for w3"
-  (define-key w3-mode-map pedal-onward 'scroll-up)
-  (define-key w3-mode-map pedal-S-onward 'scroll-down)
-  (define-key w3-mode-map pedal-aux 'w3-widget-forward)
-  (define-key w3-mode-map pedal-S-aux 'w3-widget-backward)
-  (define-key w3-mode-map pedal-menu 'widget-button-press)
-  (define-key w3-mode-map pedal-S-menu 'w3-prev-document))
+  (eval-after-load "w3"
+    '(progn
+      (define-key w3-mode-map pedal-onward 'scroll-up)
+      (define-key w3-mode-map pedal-S-onward 'scroll-down)
+      (define-key w3-mode-map pedal-aux 'w3-widget-forward)
+      (define-key w3-mode-map pedal-S-aux 'w3-widget-backward)
+      (define-key w3-mode-map pedal-menu 'widget-button-press)
+      (define-key w3-mode-map pedal-S-menu 'w3-prev-document))))
 
 (defun gnus-define-pedals ()
   "Set up pedal definitions for gnus"
-  (if (and (boundp 'gnus-group-mode-map)
-	   (keymapp gnus-group-mode-map))
-      (progn
-	(define-key gnus-group-mode-map pedal-aux 'gnus-group-catchup-current)
-	(define-key gnus-group-mode-map pedal-S-aux 'gnus-group-exit)
-	(define-key gnus-group-mode-map pedal-onward 'next-line)
-	(define-key gnus-group-mode-map pedal-S-onward 'previous-line)
-	(define-key gnus-group-mode-map pedal-menu 'gnus-group-select-group)
-	(define-key gnus-group-mode-map pedal-S-menu 'gnus-group-read-group)))
-
-  (if (and (boundp 'gnus-summary-mode-map)
-	   (keymapp gnus-summary-mode-map))
-      (progn
-	(define-key gnus-summary-mode-map pedal-aux 'gnus-summary-tick-article-forward)
-	(define-key gnus-summary-mode-map pedal-S-aux 'gnus-summary-followup)
-	(define-key gnus-summary-mode-map pedal-onward 'gnus-summary-next-page)
-	(define-key gnus-summary-mode-map pedal-S-onward 'gnus-summary-previous-page)
-	(define-key gnus-summary-mode-map pedal-menu 'gnus-summary-exit)
-	(define-key gnus-summary-mode-map pedal-S-menu 'gnus-summary-catchup-and-exit))))
+  (eval-after-load "gnus"
+    '(progn
+      (define-key gnus-group-mode-map pedal-aux 'gnus-group-catchup-current)
+      (define-key gnus-group-mode-map pedal-S-aux 'gnus-group-exit)
+      (define-key gnus-group-mode-map pedal-onward 'next-line)
+      (define-key gnus-group-mode-map pedal-S-onward 'previous-line)
+      (define-key gnus-group-mode-map pedal-menu 'gnus-group-select-group)
+      (define-key gnus-group-mode-map pedal-S-menu 'gnus-group-read-group)
+      (if (and (boundp 'gnus-summary-mode-map)
+	       (keymapp gnus-summary-mode-map))
+	  (progn
+	    (define-key gnus-summary-mode-map pedal-aux 'gnus-summary-tick-article-forward)
+	    (define-key gnus-summary-mode-map pedal-S-aux 'gnus-summary-followup)
+	    (define-key gnus-summary-mode-map pedal-onward 'gnus-summary-next-page)
+	    (define-key gnus-summary-mode-map pedal-S-onward 'gnus-summary-previous-page)
+	    (define-key gnus-summary-mode-map pedal-menu 'gnus-summary-exit)
+	    (define-key gnus-summary-mode-map pedal-S-menu 'gnus-summary-catchup-and-exit))))))
 
 (defun yank-menu-define-pedals ()
   "Set up pedals for yank-menu"
-  (if (and (boundp 'yank-menu-map)
-	   (keymapp yank-menu-map)
-	   (or (not (boundp 'yank-menu-pedals-configured))
-	       (not yank-menu-pedals-configured)))
-      (progn
-	(setq yank-menu-pedals-configured t)
-	(define-key yank-menu-map pedal-onward 'yank-menu-next)
-	(define-key yank-menu-map pedal-S-onward 'yank-menu-previous)
-	(define-key yank-menu-map pedal-M-S-onward 'yank-menu-top)
-	(define-key yank-menu-map pedal-M-onward 'yank-menu-bottom)
-	(define-key yank-menu-map pedal-menu 'yank-menu-insert)
-	(define-key yank-menu-map pedal-S-menu 'yank-menu-quit))))
+  (eval-after-load "yank-menu"
+    '(progn
+      (define-key yank-menu-map pedal-onward 'yank-menu-next)
+      (define-key yank-menu-map pedal-S-onward 'yank-menu-previous)
+      (define-key yank-menu-map pedal-M-S-onward 'yank-menu-top)
+      (define-key yank-menu-map pedal-M-onward 'yank-menu-bottom)
+      (define-key yank-menu-map pedal-menu 'yank-menu-insert)
+      (define-key yank-menu-map pedal-S-menu 'yank-menu-quit))))
 
 (defun autocue-define-pedals ()
   "Set up pedals for autocue"
-  (if (and (boundp 'autocue-keymap)
-	   (keymapp autocue-keymap)
-	   (or (not (boundp 'autocue-pedals-configured))
-	       (not autocue-pedals-configured)))
-      (progn
-	(setq autocue-pedals-configured t)
-	(define-key autocue-keymap pedal-C-aux 'autocue:faster)
-	(define-key autocue-keymap pedal-C-S-aux 'autocue:slower)
-	(define-key autocue-keymap pedal-aux 'autocue:bigger)
-	(define-key autocue-keymap pedal-S-aux 'autocue:smaller)
-	(define-key autocue-keymap pedal-onward 'scroll-up)
-	(define-key autocue-keymap pedal-S-onward 'scroll-down)
-	(define-key autocue-keymap pedal-menu 'autocue:put-aside))))
+  (eval-after-load "autocue"
+    '(progn
+      (define-key autocue-keymap pedal-C-aux 'autocue:faster)
+      (define-key autocue-keymap pedal-C-S-aux 'autocue:slower)
+      (define-key autocue-keymap pedal-aux 'autocue:bigger)
+      (define-key autocue-keymap pedal-S-aux 'autocue:smaller)
+      (define-key autocue-keymap pedal-onward 'scroll-up)
+      (define-key autocue-keymap pedal-S-onward 'scroll-down)
+      (define-key autocue-keymap pedal-menu 'autocue:put-aside))))
 
 (defun view-mode-define-pedals ()
   "Set up pedals for view-mode"
@@ -442,15 +420,6 @@ which are most suitable for duplicating onto pedals."
     (define-key view-mode-map pedal-onward 'View-scroll-page-forward)
     (define-key view-mode-map pedal-S-onward 'View-scroll-page-backward)
     (define-key view-mode-map pedal-menu 'View-quit)))
-
-(defun sidebrain-browse-tasks-mode-define-pedals ()
-  "Set up pedals for sidebrain-browse-mode"
-  (define-key sidebrain-browse-tasks-mode-keymap pedal-aux 'sidebrain-browse-tasks-mark)
-  (define-key sidebrain-browse-tasks-mode-keymap pedal-S-aux 'sidebrain-browse-tasks-unmark)
-  (define-key sidebrain-browse-tasks-mode-keymap pedal-onward 'sidebrain-browse-tasks-next)
-  (define-key sidebrain-browse-tasks-mode-keymap pedal-S-onward 'sidebrain-browse-tasks-previous)
-  (define-key sidebrain-browse-tasks-mode-keymap pedal-S-menu 'sidebrain-browse-tasks-delete)
-  (define-key sidebrain-browse-tasks-mode-keymap pedal-menu 'sidebrain-browse-tasks-select))
 
 (defun planner-pedal-follow-or-menu ()
   "Visit the link at point, or bring up the main menu if no link is found."
@@ -462,21 +431,44 @@ which are most suitable for duplicating onto pedals."
 
 (defun planner-mode-define-pedals ()
   "Set up pedals for planner mode."
-  (define-key planner-mode-map pedal-onward 'next-line)
-  (define-key planner-mode-map pedal-S-onward 'previous-line)
-  (define-key planner-mode-map pedal-aux 'muse-next-reference)
-  (define-key planner-mode-map pedal-S-aux 'muse-previous-reference)
-  (define-key planner-mode-map pedal-C-onward 'planner-lower-task)
-  (define-key planner-mode-map pedal-C-S-onward 'planner-raise-task)
-  (define-key planner-mode-map pedal-C-aux 'planner-lower-task-priority)
-  (define-key planner-mode-map pedal-C-S-aux 'planner-raise-task-priority)
-  (define-key planner-mode-map pedal-menu 'planner-pedal-follow-or-menu)
-  (remove-hook 'planner-mode-hook 'planner-mode-define-pedals))
+  (eval-after-load "planner"
+    '(progn
+      (define-key planner-mode-map pedal-onward 'next-line)
+      (define-key planner-mode-map pedal-S-onward 'previous-line)
+      (define-key planner-mode-map pedal-aux 'muse-next-reference)
+      (define-key planner-mode-map pedal-S-aux 'muse-previous-reference)
+      (define-key planner-mode-map pedal-C-onward 'planner-lower-task)
+      (define-key planner-mode-map pedal-C-S-onward 'planner-raise-task)
+      (define-key planner-mode-map pedal-C-aux 'planner-lower-task-priority)
+      (define-key planner-mode-map pedal-C-S-aux 'planner-raise-task-priority)
+      (define-key planner-mode-map pedal-menu 'planner-pedal-follow-or-menu)
+      (remove-hook 'planner-mode-hook 'planner-mode-define-pedals))))
+
+(defun info-define-pedals ()
+  "Helper function for pedals-setup."
+  (eval-after-load "info"
+    '(progn
+      (define-key Info-mode-map pedal-aux 'Info-forward-node)
+      (define-key Info-mode-map pedal-S-aux 'Info-backward-node)
+      (define-key Info-mode-map pedal-C-aux 'Info-follow-reference)
+      (define-key Info-mode-map pedal-C-S-aux 'Info-last)
+      (define-key Info-mode-map pedal-onward 'Info-scroll-up)
+      (define-key Info-mode-map pedal-S-onward 'Info-scroll-down)
+      (define-key Info-mode-map pedal-menu 'Info-exit)
+      (define-key Info-mode-map pedal-S-menu 'Info-menu))))
 
 (defvar pedal:versor-change-dimension-ctrl nil
   "*Whether the control pedal should make versor movements switch dimension.
 This is the function normally assigned to meta and a versor movement, but
 pedal physical layout may make it more convenient to put it on control.")
+
+(defun comint-define-pedals ()
+  "Helper function for pedals-setup."
+  (eval-after-load "comint"
+    '(progn
+      (define-key comint-mode-map pedal-onward 'handsfree-comint-onwards)
+      (define-key comint-mode-map pedal-S-onward 'handsfree-comint-backwards)
+      (define-key comint-mode-map pedal-S-menu 'handsfree-comint-choose-or-return))))
 
 (defun pedals-setup ()
   "Set up the six-switch (or nine-switch) system.
@@ -600,78 +592,16 @@ See handsfree-menus.el for menus."
 	(define-key Buffer-menu-mode-map pedal-menu 'Buffer-menu-select)
 	(define-key Buffer-menu-mode-map pedal-S-menu 'Buffer-menu-delete)))
 
-  ;; I don't want to load lots of things now just to get their keymaps
-  ;; available, so bind now if the keymaps are already there,
-  ;; otherwise do it on a hook function just in time
-
-  (if (and (boundp 'todo-mode-map)
-	   (keymapp todo-mode-map))
-      (todo-define-pedals)
-    (add-hook 'todo-mode-hook 'todo-define-pedals))
-
-  (if (and (boundp 'dired-mode-map)
-	   (keymapp dired-mode-map))
-      (dired-define-pedals)
-    (add-hook 'dired-load-hook 'dired-define-pedals))
-   
-  (if (and (boundp 'vm-summary-mode-map)
-	   (keymapp vm-summary-mode-map))
-      (vm-define-pedals)
-    (add-hook 'vm-mode-hook 'vm-define-pedals))
-
-  (if (boundp 'w3-mode-map)
-      (w3-define-pedals)
-    (add-hook 'w3-load-hook 'w3-define-pedals))
-
-  (if (boundp 'gnus-group-mode-map)
-      (gnus-define-pedals)
-    (add-hook 'gnus-load-hook 'gnus-define-pedals))
-   
-  (if (and (boundp 'Info-mode-map)
-	   (keymapp Info-mode-map))
-      (progn
-	(define-key Info-mode-map pedal-aux 'Info-forward-node)
-	(define-key Info-mode-map pedal-S-aux 'Info-backward-node)
-	(define-key Info-mode-map pedal-C-aux 'Info-follow-reference)
-	(define-key Info-mode-map pedal-C-S-aux 'Info-last)
-	(define-key Info-mode-map pedal-onward 'Info-scroll-up)
-	(define-key Info-mode-map pedal-S-onward 'Info-scroll-down)
-	(define-key Info-mode-map pedal-menu 'Info-exit)
-	(define-key Info-mode-map pedal-S-menu 'Info-menu)
-	))
-
-
-  (if (and (boundp 'yank-menu-map)
-	   (keymapp yank-menu-map))
-      (yank-menu-define-pedals)
-    (add-hook 'yank-menu-entry-hooks 'yank-menu-define-pedals))
-
-  (if (and (boundp 'comint-mode-map)
-	   (keymapp comint-mode-map))
-      (progn
-	(define-key comint-mode-map pedal-onward 'handsfree-comint-onwards)
-	(define-key comint-mode-map pedal-S-onward 'handsfree-comint-backwards)
-	(define-key comint-mode-map pedal-S-menu 'handsfree-comint-choose-or-return)))
-
-  (if (and (boundp 'autocue-keymap)
-	   (keymapp autocue-keymap))
-      (autocue-define-pedals)
-    (add-hook 'autocue-start-hooks 'autocue-define-pedals))
-   
-  (if (and (boundp 'view-mode-map)
-	   (keymapp view-mode-map))
-      (view-mode-define-pedals)
-    (add-hook 'view-mode-hook 'view-mode-define-pedals))
-
-  (if (and (boundp 'sidebrain-browse-tasks-mode-keymap)
-	   (keymapp sidebrain-browse-tasks-mode-keymap))
-      (sidebrain-browse-tasks-mode-define-pedals)
-    (add-hook 'sidebrain-browse-mode-hook 'sidebrain-browse-tasks-mode-define-pedals))
-
-  (if (and (boundp 'planner-mode-map)
-	   (keymapp planner-mode-map))
-      (planner-mode-define-pedals)
-    (add-hook 'planner-mode-hook 'planner-mode-define-pedals)))
+  (dired-define-pedals)
+  (vm-define-pedals)
+  (w3-define-pedals)
+  (gnus-define-pedals)
+  (info-define-pedals)
+  (yank-menu-define-pedals)
+  (comint-define-pedals)
+  (autocue-define-pedals)
+  (view-mode-define-pedals)
+  (planner-mode-define-pedals))
 
 (defun pedals-draw-bindings (&optional keymap)
   "Draw the pedal bindings, in the main keymap or (from a program) the one given."
