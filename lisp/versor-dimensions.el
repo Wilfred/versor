@@ -1,9 +1,9 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2006-08-03 20:19:51 john>
+;;; Time-stamp: <2007-07-02 18:59:32 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -148,8 +148,8 @@ See the definition of versor-make-movemap for details of move maps."
 		      '((color "purple"
 )
 			(first beginning-of-line)
-			(previous backward-char)
-			(next forward-char)
+			(previous versor-backward-char)
+			(next versor-forward-char)
 			(last end-of-line)
 			;; (delete delete-char)
 			(transpose transpose-chars)
@@ -186,8 +186,8 @@ See the definition of versor-make-movemap for details of move maps."
 (versor-define-moves movemap-chars
 		      '((color "purple")
 			(first versor-start-of-line)
-			(previous backward-char)
-			(next forward-char)
+			(previous versor-backward-char)
+			(next versor-forward-char)
 			(last end-of-line)
 			;; (delete delete-char)
 			(transpose transpose-chars)
@@ -292,11 +292,11 @@ See the definition of versor-make-movemap for details of move maps."
 		       ;; versor-indicate-current-item works when the
 		       ;; things it calls don't explicitly set the item
 		       ;; boundaries for it:
-		       (first backward-phrase) 
+		       (first versor-backward-phrase) 
 		       (previous versor-previous-word)
 		       (next versor-next-word)
 		       (end-of-item versor-end-of-word)
-		       (last forward-phrase)
+		       (last versor-forward-phrase)
 		       (delete versor-delete-word)
 		       (transpose transpose-words)
 		       (dwim versor-dwim-textually)))
@@ -305,9 +305,9 @@ See the definition of versor-make-movemap for details of move maps."
 		     '((color "blue")
 		       (:background "cornflower blue")
 		       (:foreground "black")
-		       (first backward-sentence)
-		       (previous backward-phrase)
-		       (next forward-phrase)
+		       (first versor-backward-sentence)
+		       (previous versor-backward-phrase)
+		       (next versor-forward-phrase)
 		       (end-of-item end-of-phrase)
 		       (last forward-sentence)
 		       (dwim versor-dwim-textually)))
@@ -317,7 +317,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (:background "light sky blue")
 		       (:foreground "black")
 		       (first versor-backward-paragraph)
-		       (previous backward-sentence)
+		       (previous versor-backward-sentence)
 		       (next forward-sentence)
 		       (last versor-forward-paragraph)
 		       (transpose transpose-sentences)
@@ -642,9 +642,9 @@ versor-text-in-code non-nil.")
   "Alist mapping commands to their nearest Versor equivalents.")
 
 (defvar versor-used-commands
-  '(backward-char
-    backward-phrase
-    backward-sentence
+  '(versor-backward-char
+    versor-backward-phrase
+    versor-backward-sentence
     backward-word
     beginning-of-buffer
     beginning-of-defun
@@ -653,9 +653,9 @@ versor-text-in-code non-nil.")
     end-of-line
     end-of-phrase
     first-sexp
-    forward-char
+    versor-forward-char
     forward-page
-    forward-phrase
+    versor-forward-phrase
     forward-sentence
     forward-sexp
     innermost-list
