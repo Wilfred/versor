@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2007-07-15 21:40:43 jcgs>
+;;; Time-stamp: <2007-07-19 12:12:42 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -87,6 +87,11 @@ and going forward from the last meta-level takes you to the first one."
   :group 'versor-motion
   :type 'regexp)
 
+(defcustom versor-show-depth t
+  "Whether to put up messages show the parenthesis nesting level of point."
+  :group 'versor-motion
+  :type 'boolean)
+
 ;;;;;;;;;;;;;;;;;
 ;;;; editing ;;;;
 ;;;;;;;;;;;;;;;;;
@@ -122,7 +127,8 @@ You might want to turn this off if your mode line is already has a lot in it."
 
 (defcustom versor-color-dimension-indicators t
   "Whether to color the names of dimensions.
-The colors are used for this are the same as those used for the cursor and selection."
+The colors are used for this are the same as those used for the cursor and selection.
+This only works on some versions of Emacs."
   :type 'boolean
   :group 'versor-status)
 
