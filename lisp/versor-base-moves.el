@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2007-07-02 19:03:27 jcgs>
+;;; Time-stamp: <2007-07-20 17:41:19 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -89,6 +89,10 @@ movements."
 	  (not (eq last-command 'versor-start-of-line)))
       (back-to-indentation)
     (beginning-of-line n)))
+
+(defun move-beginning-of-this-line ()
+  "Wrapper to call move-beginning-of-line without needing args."
+  (move-beginning-of-line 1))
 
 (defmacro versor-following-margins (&rest body)
   "Perform BODY while sticking to the same margin if on one."
@@ -180,6 +184,19 @@ movements."
 Makes a two-part selection, of opening and closing brackets."
   (interactive "p"))
 
+(defun current-depth (where &optional msg)
+  "Return the depth of nesting of WHERE."
+  (interactive "d")
+  (let ((depth 0))
+    (condition-case evar
+	(while where
+	  (setq where (scan-lists where -1 1)
+		depth (1+ depth)))
+      (error (setq where nil)))
+    (when (or msg (interactive-p))
+      (message "depth %d" depth))
+    depth))
+
 (defmodal versor-backward-up-list (fundamental-mode) (arg)
   "Like backward-up-list, but with some versor stuff around it.
 Makes a two-part selection, of opening and closing brackets."
@@ -196,6 +213,8 @@ Makes a two-part selection, of opening and closing brackets."
 		(narrow-to-region start end)
 		(delete-trailing-whitespace))))
 	(error nil))))
+  (when versor-show-depth
+    (current-depth (point) t))
   ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
 	(end (save-excursion (safe-forward-sexp 1) (point))))
@@ -225,7 +244,8 @@ Makes a two-part selection, of opening and closing brackets."
 	      (narrow-to-region start end)
 	      (delete-trailing-whitespace)))
 	(error nil)))
-    ;; TODO: should probably be versor-set-current-item
+    (when versor-show-depth
+      (current-depth (point) t)) ;; TODO: should probably be versor-set-current-item
     (make-versor-overlay start (1+ start))
     ;; (message "extra overlay at %d..%d" (1- (point)) (point))
     ;; TODO: should probably be versor-add-to-current-item when I've written one
@@ -320,7 +340,8 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
 	  ;; (message "extra overlay at %d..%d" (1- (point)) (point))
 	  ;; TODO: should probably be versor-add-to-current-item when I've written one
 	  (versor-extra-overlay (1- (point)) (point))))
-    (let ((start (point)))
+    (when versor-show-depth
+      (current-depth (point) t))    (let ((start (point)))
       (when (safe-forward-sexp 1)
 	(versor-set-current-item start (point))
 	(goto-char start)))))
