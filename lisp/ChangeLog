@@ -1,3 +1,30 @@
+2007-07-25  John C G Sturdy  <jcgs@hosea>
+
+	* versor-demo.el (versor-lisp-demo-1): revision and debugging of
+	the demo (also leading to debugging things that it uses -- I may
+	start using it as a regular test)
+
+	* versor-selection.el (versor-last-item-first): more debugging
+	messages for the motion framework
+
+	* languide.el (region-type-description): suppress output of
+	unknown region types, even when other information is present
+
+	* versor.el (versor-setup): output messages during setup, to
+	confirm what was set up
+
+	* versor-commands.el (versor-transpose): allow lists of items to
+	be passed in by the motion framework; use this for versor-kill
+
+2007-07-20  John C G Sturdy  <jcgs@hosea>
+
+	* versor-menu.el (versor-dynamic-menu): Re-arranged dynamic menu.
+
+2007-07-19  John C G Sturdy  <jcgs@hosea>
+
+	* versor-base-moves.el (last-sexp): put up messages for depth of
+	nesting at point, for in/out-level commands.
+
 2007-07-16  John C G Sturdy  <jcgs@hosea>
 
 	* versor-status.el (versor-set-status-display): Tried to suppress
