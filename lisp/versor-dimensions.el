@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2007-07-02 18:59:32 jcgs>
+;;; Time-stamp: <2007-07-20 17:41:55 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -145,8 +145,7 @@ See the definition of versor-make-movemap for details of move maps."
 	  "references"))
 
 (versor-define-moves movemap-default-chars
-		      '((color "purple"
-)
+		      '((color "purple")
 			(first beginning-of-line)
 			(previous versor-backward-char)
 			(next versor-forward-char)
@@ -160,6 +159,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (other-color "gray")
 		       (:background "black")
 		       (:foreground "white")
+		       (start-of-item move-beginning-of-this-line)
 		       (first beginning-of-buffer)
 		       (previous previous-line)
 		       (next next-line)
@@ -172,6 +172,7 @@ See the definition of versor-make-movemap for details of move maps."
 (versor-define-moves movemap-default-pages
 		     '((color "black")
 		       (other-color "gray")
+		       (start-of-item back-to-indentation)
 		       (first beginning-of-buffer)
 		       (previous
 			;; scroll-down
@@ -181,6 +182,7 @@ See the definition of versor-make-movemap for details of move maps."
 			;; scroll-up
 			forward-page
 			)
+		       (start-of-item back-to-indentation)
 		       (last end-of-buffer)))
 
 (versor-define-moves movemap-chars
@@ -202,6 +204,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (previous versor-previous-line)
 		       (next versor-next-line)
 		       (last end-of-buffer)
+		       (start-of-item back-to-indentation)
 		       (end-of-item end-of-line)
 		       ;; (delete kill-line)
 			(transpose transpose-lines)
@@ -219,6 +222,7 @@ See the definition of versor-make-movemap for details of move maps."
 			;; scroll-up
 			forward-page
 			)
+		       (start-of-item move-beginning-of-this-line)
 		       (last end-of-buffer)))
 
 (versor-define-moves movemap-exprs
@@ -232,6 +236,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (last last-sexp)
 		       (mark mark-sexp)
 		       ;; (delete kill-sexp)
+		       (start-of-item skip-to-actual-code)
 		       (transpose transpose-sexps)
 		       (dwim versor-dwim-lispishly)
 		       ))
@@ -254,6 +259,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (previous statement-navigate-parts-previous)
 		       (next statement-navigate-parts-next)
 		       (last navigate-this-body)
+		       (start-of-item skip-to-actual-code)
 		       (end-of-item latest-statement-navigation-end)
 		       (dwim versor-dwim-lispishly)))
 
@@ -266,6 +272,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (next next-statement)
 		       (last end-of-defun) ;;;;;;;;;;;;;;;; make this go back one statement from the end of the defun
 		       (end-of-item latest-statement-navigation-end)
+		       (start-of-item skip-to-actual-code)
 		       (dwim versor-dwim-lispishly)))
 
 (versor-define-moves movemap-defuns
@@ -275,6 +282,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (first versor-first-defun)
 		       (previous versor-previous-defun)
 		       (next versor-next-defun)
+		       (start-of-item skip-to-actual-code)
 		       (end-of-item end-of-defun)
 		       (last versor-last-defun)
 		       ;; (transpose transpose-sexps); would only work for lisp?
@@ -295,6 +303,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (first versor-backward-phrase) 
 		       (previous versor-previous-word)
 		       (next versor-next-word)
+		       (start-of-item skip-to-actual-code)
 		       (end-of-item versor-end-of-word)
 		       (last versor-forward-phrase)
 		       (delete versor-delete-word)
@@ -308,6 +317,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (first versor-backward-sentence)
 		       (previous versor-backward-phrase)
 		       (next versor-forward-phrase)
+		       (start-of-item skip-to-actual-code)
 		       (end-of-item end-of-phrase)
 		       (last forward-sentence)
 		       (dwim versor-dwim-textually)))
@@ -320,6 +330,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (previous versor-backward-sentence)
 		       (next forward-sentence)
 		       (last versor-forward-paragraph)
+		       (start-of-item skip-to-actual-code)
 		       (transpose transpose-sentences)
 		       (dwim versor-dwim-textually)))
 
@@ -330,6 +341,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (first beginning-of-buffer)
 		       (previous versor-backward-paragraph)
 		       (next versor-forward-paragraph)
+		       (start-of-item skip-to-actual-code)
 		       (end-of-item versor-end-of-paragraph)
 		       (last end-of-buffer)
 		       (transpose transpose-paragraphs)
@@ -357,7 +369,8 @@ See the definition of versor-make-movemap for details of move maps."
 		       (first versor-first-cell)
 		       (previous versor-previous-cell)
 		       (next versor-next-cell)
-		       (last versor-last-cell)))
+		       (last versor-last-cell)
+		       (start-of-item skip-to-actual-code)))
 
 (versor-define-moves movemap-rows
 		     '((color "cyan")
@@ -366,7 +379,8 @@ See the definition of versor-make-movemap for details of move maps."
 		       (first versor-first-row)
 		       (previous versor-previous-row)
 		       (next versor-next-row)
-		       (last versor-last-row)))
+		       (last versor-last-row)
+		       (start-of-item skip-to-actual-code)))
 
 (versor-define-moves movemap-mark-ring
 		     '((color "orange")
