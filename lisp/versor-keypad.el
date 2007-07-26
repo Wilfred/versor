@@ -1,5 +1,5 @@
 ;;;; versor-keypad.el -- define keypad keys for using keypad almost in isolation
-;;; Time-stamp: <2007-07-17 13:49:42 john>
+;;; Time-stamp: <2007-07-25 18:11:25 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -18,6 +18,7 @@
 (defun versor-keypad-setup ()
   "Set up the keypad for being the main editing input."
   (interactive)
+  (keypad-separate)
   (global-set-key [ pause ] 'handsfree-main-menu)
   (global-set-key [ C-pause ] 'versor-do-dynamic-menu)
   ;; fill in the rest
