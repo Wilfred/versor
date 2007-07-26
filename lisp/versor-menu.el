@@ -1,5 +1,5 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2007-07-07 22:02:50 jcgs>
+;;; Time-stamp: <2007-07-20 15:41:03 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -68,34 +68,38 @@ The menu keymap is passed as the only argument to each function.")
   "Functions to run to add menu items at the top of the dynamic menu.
 The menu keymap is passed as the only argument to each function.")
 
+(defvar versor-dynamic-menu 
+  '(("versor insertions" . versor-insertions-menu)
+    ("kill %s" . versor-kill)
+    ("alter %s" . versor-begin-altering-item)
+    ("language operations" . versor-languide-menu)
+    ("versor control" . versor-control-menu)
+    ("describe" . dwim-help)
+    ("search for next %s" . versor-search)
+    ("find" . dwim-find-at-point)
+    ("select surrounding" . versor-select-surrounding)
+    ("mark %s" . versor-mark)
+    ("copy %s" . versor-copy))
+  "Versor dynamic menu.
+This does things involving the current selection.")
+
 (defun versor-generate-dynamic-menu ()
   "Generate dynamic menu for versor.
 Allows various actions that depend on the current fine movement dimension."
   (let ((dynamic-menu (make-sparse-keymap "Versor dynamic menu")))
-    (run-hook-with-args 'versor-dynamic-menu-add-items-at-bottom-hook dynamic-menu)
+    (run-hook-with-args 'versor-dynamic-menu-add-items-at-bottom-hook
+			dynamic-menu)
     (mapcar (function
 	     (lambda (name-command)
 	       (let* ((raw-name (car name-command))
-		      (formatted-name (format raw-name versor-current-level-name))
-		      )
-		 (versor-add-menu-item dynamic-menu formatted-name (cdr name-command)))))
-	    '(
-	      ("yank" . versor-yank)
-	      ("alter %s" . versor-begin-altering-item)
-	      ("kill %s" . versor-kill)
-	      ("versor control" . versor-control-menu)
-	      ;; cannibalize ~/open-projects/emacs-pedals/handsfree-tools-menus.el for
-	      ;; more to go here -- stuff like tag lookup
-	      ("language operations" . versor-languide-menu)
-	      ("versor insertions" . versor-insertions-menu)
-	      ("find" . dwim-find-at-point)
-	      ("describe" . dwim-help)
-	      ("search for next %s" . versor-search)
-	      ("copy region" . kill-ring-save)
-	      ("mark %s" . versor-mark)
-	      ("copy %s" . versor-copy)
-	      ))
-    (run-hook-with-args 'versor-dynamic-menu-add-items-at-top-hook dynamic-menu)
+		      (formatted-name (format raw-name
+					      versor-current-level-name)))
+		 (versor-add-menu-item dynamic-menu
+				       formatted-name
+				       (cdr name-command)))))
+	    versor-dynamic-menu)
+    (run-hook-with-args 'versor-dynamic-menu-add-items-at-top-hook
+			dynamic-menu)
     dynamic-menu))
 
 (defun versor-do-dynamic-menu ()
@@ -109,6 +113,7 @@ Allows various actions that depend on the current fine movement dimension."
 (defun versor-insertions-menu ()
   "Run the versor insertions menu."
   (interactive)
+  (message "versor-insertions-menu, (versor-current-item-valid) = %S" (versor-current-item-valid))
   (let ((versor-insertion-using-menu t))
     (tmm-prompt (versor-generate-insertions-menu))))
 
@@ -125,6 +130,7 @@ Allows various actions that depend on the current fine movement dimension."
 	    '(
 	      ("insert before %s" . versor-insert-before)
 	      ("insert after %s" . versor-insert-after)
+	      ("replace %s" . versor-replace)
 	      ("insert around %s" . versor-insert-around)
 	      ))
     dynamic-menu))
