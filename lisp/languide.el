@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2007-03-11 12:50:33 jcgs>
+;;; Time-stamp: <2007-07-25 20:18:43 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -218,12 +218,13 @@ When interactive, or with optional third argument non-nil, display the result."
 			(if region-type-description-always
 			    "code block"
 			  nil))
-		       (languide-region-detail-string
-			(format "region type %S; %s" type languide-region-detail-string))
 		       ((null type)
 			(if region-type-description-always
 			    "unknown region type"
 			  nil))
+		       (languide-region-detail-string
+			(format "region type %S; %s"
+				type languide-region-detail-string))
 		       (t
 			(format "region type %S" type)))))
     (setq languide-region-description (or description ""))
