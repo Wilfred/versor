@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2007-07-11 19:46:16 jcgs>
+;;; Time-stamp: <2007-07-25 22:42:42 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -48,6 +48,37 @@ Local to each buffer.")
 (defvar versor-debug-command-movement nil
   "Whether to show the movements made by commands.")
 
+(defun versor-local-dimensions-update ()
+  "If we are keeping a different dimension for each mode,
+check whether the mode has changed. It's not sufficient to use a
+hook that detects buffer or mode changes after each command,
+because you can come out of the minibuffer without triggering a
+command hook."
+  (if versor-auto-change-for-modes
+      (let ((new-pair (assoc (if (and versor-text-in-code
+				      versor-am-in-text-in-code)
+				 (symbol-name major-mode)
+			       major-mode)
+			     versor-mode-current-levels)))
+	(when (and new-pair
+		   (numberp (cadr new-pair))
+		   (numberp (cddr new-pair))
+		   (or (not (eq versor-meta-level (cadr new-pair)))
+		       (not (eq versor-level (cddr new-pair)))))
+	  (setq versor-meta-level (cadr new-pair)
+		versor-level (cddr new-pair))
+	  (versor-set-status-display t)))
+    ;; If not changing dimensions per-mode, we might be
+    ;; changing them per-buffer, so have a look for that here.
+    (when (and versor-per-buffer
+	       (or (not (eq versor-meta-level versor-this-buffer-meta-level))
+		   (not (eq versor-level versor-this-buffer-level)))
+	       (numberp versor-this-buffer-meta-level)
+	       (numberp versor-this-buffer-level))
+      (setq versor-meta-level versor-this-buffer-meta-level
+	    versor-level versor-this-buffer-level)
+      (versor-set-status-display t))))
+
 (defmacro versor-as-versor-command (&rest versor-body)
   "Run BODY as a versor command, if versor-mode is enabled,
 or if not called interactively.
@@ -57,35 +88,7 @@ command to be run."
 	   (not (interactive-p)))
        (let ((versor-can-do-delayed-deletions nil)) ; hold these off until end of command
 	 ;; (message "before checking versor-auto-change-for-modes, versor-meta-level=%S" versor-meta-level)
-	 (if versor-auto-change-for-modes
-	     ;; If we are keeping a different dimension for each mode,
-	     ;; check whether the mode has changed. It's not
-	     ;; sufficient to use a hook that detects buffer or mode
-	     ;; changes after each command, because you can come out
-	     ;; of the minibuffer without triggering a command hook.
-	     (let ((new-pair (assoc (if (and versor-text-in-code
-					     versor-am-in-text-in-code)
-					(symbol-name major-mode)
-				      major-mode)
-				    versor-mode-current-levels)))
-	       (when (and new-pair
-			  (numberp (cadr new-pair))
-			  (numberp (cddr new-pair))
-			  (or (not (eq versor-meta-level (cadr new-pair)))
-			      (not (eq versor-level (cddr new-pair)))))
-		 (setq versor-meta-level (cadr new-pair)
-		       versor-level (cddr new-pair))
-		 (versor-set-status-display t)))
-	   ;; If not changing dimensions per-mode, we might be
-	   ;; changing them per-buffer, so have a look for that here.
-	   (when (and versor-per-buffer
-		      (or (not (eq versor-meta-level versor-this-buffer-meta-level))
-			  (not (eq versor-level versor-this-buffer-level)))
-		      (numberp versor-this-buffer-meta-level)
-		      (numberp versor-this-buffer-level))
-	     (setq versor-meta-level versor-this-buffer-meta-level
-		   versor-level versor-this-buffer-level)
-	     (versor-set-status-display t)))
+	 ;; (versor-local-dimensions-update); moved to versor-as-motion-command
 	 ;; (message "after checking versor-auto-change-for-modes, versor-meta-level=%S" versor-meta-level)
 	 (when versor-debug-command-movement
 	   (message "Moving from %d" (point)))
@@ -121,31 +124,47 @@ Necessary pre- and post-processing get done.
 The BODY may call versor-set-current-item to show us where
 it has decided the item is to be; otherwise we fiddle around
 with calling the end-of-item of the dimension, or the next
-if there is no end-of-item."
-  `(versor-as-versor-command
-     (let ((,item-var (if (versor-current-item-valid)
-			  (versor-get-current-item)
-			(car versor-latest-items))))
-       ;; todo: invent item if there is none
-       (run-hooks 'versor-pre-command-hook)
-       (versor-clear-current-item-indication)
-       (when versor-debug-motion-framework
-	 (message "About to call versor-as-motion-command body, point is %d" (point)))
-       (progn
-	 ,@body)
-       (when versor-debug-motion-framework
-	 (message "Called versor-as-motion-command body, point is %d" (point)))
-       ;; the few commands that want to do otherwise, must re-set this
-       ;; one just after using this macro
-       (setq versor-extension-direction nil)
-       ;; Now act on the versor-set-current-item done by the command
-       ;; body, if it did one; otherwise, try to work out the
-       ;; appropriate item selection, based on point and on the
-       ;; current dimension
-       (versor-indicate-current-item)
-       (when versor-debug-motion-framework
-	 (message "versor-as-motion-command called versor-indicate-current-item, point is now %d" (point)))
-       (run-hooks 'versor-post-command-hook))))
+if there is no end-of-item.
+
+If ITEM-VAR is a symbol, it names a variable to bind to the first
+item of the selection. If it is a list containing a symbol, it
+that symbol names a variable to bind to the list of selection
+items."
+  (let ((as-list (consp item-var)))
+    (when as-list
+      (setq item-var (car item-var)))
+    `(versor-as-versor-command
+       (let ((,item-var ,(if as-list
+			     '(if (versor-current-item-valid)
+				  (versor-get-current-items)
+				versor-latest-items)
+			   '(if (versor-current-item-valid)
+				(versor-get-current-item)
+			      (car versor-latest-items)))))
+	 ;; todo: invent item if there is none
+	 (run-hooks 'versor-pre-command-hook)
+	 (versor-clear-current-item-indication)
+	 (versor-local-dimensions-update)
+	 (when versor-debug-motion-framework
+	   (message "About to call versor-as-motion-command body, point is %d" (point)))
+	 (progn
+	   ,@body)
+	 (when versor-debug-motion-framework
+	   (message "Called versor-as-motion-command body, point is %d" (point)))
+	 ;; the few commands that want to do otherwise, must re-set this
+	 ;; one just after using this macro
+	 (setq versor-extension-direction nil)
+	 ;; Now act on the versor-set-current-item done by the command
+	 ;; body, if it did one; otherwise, try to work out the
+	 ;; appropriate item selection, based on point and on the
+	 ;; current dimension
+	 
+	 ;; todo: this has issues with being inside a comment -- it can reset point to where it was at the start of the command (try next-sexp in a comment in texinfo mode, for example)
+	 
+	 (versor-indicate-current-item)
+	 (when versor-debug-motion-framework
+	   (message "versor-as-motion-command called versor-indicate-current-item, point is now %d" (point)))
+	 (run-hooks 'versor-post-command-hook)))))
 
 (defmacro versor-backward-without-sticking-at-comments (function argument)
   "Do FUNCTION, passing ARGUMENT.
@@ -582,21 +601,28 @@ normal Emacs commands. Our corresponding insertion commands understand
 this."
   (interactive)
   (barf-if-buffer-read-only)
-  (versor-as-motion-command current-item
+  (versor-as-motion-command (current-items)
     (let ((ready-made (versor-get-action 'delete)))
       (if ready-made
 	  (versor-call-interactively ready-made)
+	(message "items are %S" current-items)
 	(mapcar
 	 (lambda (item)
 	   (let* ((start (versor-overlay-start item))
 		  (end (versor-overlay-end item)))
+	     (message "  item is %S: %S..%S" item start end)
 	     (versor-kill-region start end)
 	     (when (and (not (eq item (car versor-items)))
 			(overlayp item))
 	       (delete-overlay item))))
-	 (versor-last-item-first))))
-    (if (fboundp 'update-shown-stacks)	; from rpn-edit.el -- perhaps move this into versor-copy-region
-	(update-shown-stacks))))
+	 ;; We must delete the furthest first, to avoid upsetting the
+	 ;; offsets of the ones we haven't yet deleted, so sort them
+	 ;; by their start positions.
+	 (sort current-items
+	       (function
+		(lambda (a b)
+		  (> (versor-overlay-start a)
+		     (versor-overlay-start b))))))))))
 
 (defun versor-yank (&optional arg)
   "Versor wrapper for yank.
@@ -605,10 +631,7 @@ Does yank, then adjusts whitespace, versor-style."
   (barf-if-buffer-read-only)
   (versor-as-versor-command
     (let ((text (current-kill 0)))
-      (versor-adjusting-insert text))
-    ;; (versor-trim-whitespace (region-end))
-    ;; (versor-trim-whitespace (region-beginning))
-    ))
+      (versor-adjusting-insert text))))
 
 (defun versor-select-surrounding ()
   "Select the sexp surrounding the selection, leaving the old selection unselected."
@@ -639,9 +662,7 @@ Does yank, then adjusts whitespace, versor-style."
 	    (delete-region starting (point))
 	    (goto-char starting)
 	    (versor-start-of-item)
-	    (insert latter)))
-	)
-      )))
+	    (insert latter)))))))
 
 (defvar versor-isearch-string nil
   "A string that we pass to isearch, via versor-isearch-mode-hook-function")
