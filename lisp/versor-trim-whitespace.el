@@ -1,5 +1,5 @@
 ;;;; versor-trim-whitespace.el -- trim whitespace after a versor command
-;;; Time-stamp: <2007-07-16 14:21:42 jcgs>
+;;; Time-stamp: <2007-07-25 20:16:23 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -21,6 +21,8 @@
 ;;; for me. The end of a versor editing command is often the right
 ;;; time to adjust whitespace, hence doing it this way. I doubt it
 ;;; would make a good general post-command-hook!
+
+;;; todo: possibly use insert-for-yank?
 
 (defvar versor-trim-whitespace t
   "*Whether to adjust the whitespace around the place affected by each versor editing action.")
@@ -55,32 +57,35 @@ This can be:
   'space      if there is whitespace there
   'opening    if there is some kind of opening bracket there
   nil         otherwise."
-  (cond
-   ((save-excursion
-      (goto-char (1- where))
-      (looking-at "\\s("))
-    'opening)
-   ((save-excursion
-      (goto-char where)
-      (beginning-of-line 0)
-      (looking-at "^\\s-*$"))
-    'blank-line)
-   ((bolp)
-    'start)
-   ((save-excursion
-      (goto-char where)
-      (skip-syntax-backward "-" (line-beginning-position))
-      (bolp))
-    'margin)
-   ((save-excursion
-      (goto-char (- where 2))
-      (looking-at "\\s-"))
-    'spaces)
-   ((save-excursion
-      (goto-char (1- where))
-      (looking-at "\\s-"))
-    'space)
-   (t nil)))
+  (save-excursion
+    (cond
+     ((progn
+	(goto-char (1- where))
+	(looking-at "\\s("))
+      'opening)
+     ((progn
+	(goto-char where)
+	(beginning-of-line 0)
+	(looking-at "^\\s-*$"))
+      'blank-line)
+     ((progn
+	(goto-char where)
+	(bolp))
+      'start)
+     ((progn
+	(goto-char where)
+	(skip-syntax-backward "-" (line-beginning-position))
+	(bolp))
+      'margin)
+     ((progn
+	(goto-char (- where 2))
+	(looking-at "\\s-"))
+      'spaces)
+     ((progn
+	(goto-char (1- where))
+	(looking-at "\\s-"))
+      'space)
+     (t nil))))
 
 (defun versor-what-is-following (where)
   "Return a description of the whitespace or other characters following WHERE.
@@ -91,32 +96,35 @@ This can be:
   'space      if there is whitespace there
   'closing    if there is some kind of closing bracket there
   nil         otherwise."
-  (cond
-   ((save-excursion
-      (goto-char where)
-      (looking-at "\\s)"))
-    'closing)
-   ((save-excursion
-      (goto-char where)
-      (beginning-of-line 2)
-      (looking-at "^\\s-*$"))
-    'blank-line)
-   ((eolp)
-    'end)
-   ((save-excursion
-      (goto-char where)
-      (skip-syntax-forward "-" (line-end-position))
-      (eolp))
-    'margin)
-   ((save-excursion
-      (goto-char (1+ where))
-      (looking-at "\\s-"))
-    'spaces)
-   ((save-excursion
-      (goto-char where)
-      (looking-at "\\s-"))
-    'space)
-   (t nil)))
+  (save-excursion
+    (cond
+     ((progn
+	(goto-char where)
+	(looking-at "\\s)"))
+      'closing)
+     ((progn
+	(goto-char where)
+	(beginning-of-line 2)
+	(looking-at "^\\s-*$"))
+      'blank-line)
+     ((progn
+	(goto-char where)
+	(eolp))
+      'end)
+     ((progn
+	(goto-char where)
+	(skip-syntax-forward "-" (line-end-position))
+	(eolp))
+      'margin)
+     ((progn
+	(goto-char (1+ where))
+	(looking-at "\\s-"))
+      'spaces)
+     ((progn
+	(goto-char where)
+	(looking-at "\\s-"))
+      'space)
+     (t nil))))
 
 (defvar versor-debug-adjust-whitespace t
   "*Whether to say what's going on with the whitespace adjustment.")
@@ -142,6 +150,8 @@ The descriptions of the whitespace are returned, as a cons."
     (if (eq last-command 'kill-region)
 	(kill-append  text (< end start))
       (kill-new text))
+    (if (fboundp 'update-shown-stacks)	; from rpn-edit.el
+	(update-shown-stacks))
     (cons preceding following)))
 
 (defun versor-kill-region (start end)
@@ -149,8 +159,6 @@ The descriptions of the whitespace are returned, as a cons."
   (let ((ws (versor-copy-region start end)))
     (delete-region start end)
     (when versor-adjust-whitespace
-      ;; todo: suspend this until we move away from here, so that if
-      ;; we start typing, the space is as it was?
       (when versor-debug-adjust-whitespace
 	(message "versor-kill-region %S..%S" (car ws) (cdr ws)))
       (versor-adjust-whitespace start
@@ -194,8 +202,8 @@ Each item is a cons of a cons of start and end, and an optional insertion.")
     (let ((versor-cancelling-deledendum t))
       (message "Cancelling delayed deletions")
       (mapcar (lambda (update)
-		(message "  cancelling %d..%d" (caar pair) (cdar pair))
-		(remove-text-properties (caar pair) (cdar pair)
+		(message "  cancelling %d..%d" (caar update) (cdar update))
+		(remove-text-properties (caar update) (cdar update)
 					'(point-left nil
 						     modification-hooks nil
 						     face nil)))
@@ -234,10 +242,14 @@ If versor-delay-deletions is nil, just do an ordinary deletion immediately."
       (goto-char start)
       (insert insertion))))
 
-(defun versor-delayed-delete-horizontal-space ()
-  "Like delete-horizontal-space, but using versor-delayed-delete."
-  (let ((space-start (save-excursion (skip-syntax-backward "-") (point)))
-	(space-end (save-excursion (skip-syntax-forward "-") (point))))
+(defun versor-delayed-delete-horizontal-space (place)
+  "Like delete-horizontal-space at PLACE, but using versor-delayed-delete."
+  (let ((space-start (save-excursion (goto-char place)
+				     (skip-syntax-backward "-")
+				     (point)))
+	(space-end (save-excursion (goto-char place)
+				   (skip-syntax-forward "-")
+				   (point))))
     (versor-delayed-delete space-start space-end)))
 
 (defun versor-delayed-one-blank-line-at (place)
@@ -271,6 +283,12 @@ user makes changes in that text."
   ;; todo: use versor-delayed-delete
   (goto-char place)
   (delete-blank-lines))
+
+(defun versor-delayed-newline-and-indent (place)
+  "Like newline-and-indent at PLACE, but delayed."
+  ;; todo: use versor-delayed-delete
+  (goto-char place)
+  (newline-and-indent))
 
 (defun versor-adjust-whitespace (around neighbouring-a neighbouring-b &optional debug-label)
   "Adjust whitespace after an insertion or deletion.
@@ -317,24 +335,24 @@ insertion."
 	   ((eq neighbouring-a 'opening)
 	    (when versor-debug-adjust-whitespace
 	      (message "neighbouring-a was opening, closing up"))
-	    (versor-delayed-delete-horizontal-space))
+	    (versor-delayed-delete-horizontal-space around))
 	   ((eq neighbouring-b 'closing)
 	    (when versor-debug-adjust-whitespace
 	      (message "neighbouring-b was closing, closing up"))
-	    (versor-delayed-delete-horizontal-space))
+	    (versor-delayed-delete-horizontal-space around))
 	   ((eq neighbouring-a 'blank-line)
 	    (when versor-debug-adjust-whitespace
-	      (message "neighbour-a was blank line, opening line"))
+	      (message "neighbour-a was blank line, opening line at %d" around))
 	    (versor-delayed-one-blank-line-at around))
 	   ((eq neighbouring-a 'margin)
 	    ;; todo: don't always want to do this
 	    (when versor-debug-adjust-whitespace
-	      (message "neighbour-a was margin, newline-and-indent"))
-	    (newline-and-indent))
+	      (message "neighbour-a was margin, newline-and-indent at %d" (point)))
+	    (versor-delayed-newline-and-indent around))
 	   ((or (eq neighbouring-a 'space)
 		(eq neighbouring-a 'spaces))
 	    (when versor-debug-adjust-whitespace
-	      (message "neighbour-a was whitespace, inserting space"))
+	      (message "neighbour-a was whitespace, inserting space at %d" around))
 	    (versor-delayed-just-one-space around))))))))
 
 (defun versor-adjusting-insert (string)
