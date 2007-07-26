@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2007-07-15 18:47:30 jcgs>
+;;; Time-stamp: <2007-07-25 20:38:45 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -88,12 +88,18 @@ other emacs commands.")
 If there are multiple items, return only the first one."
   (cond
    ((versor-current-item-valid)
+    (when versor-debug-motion-framework
+      (message "versor-get-current-item: current item valid"))
     (let ((olay (car versor-items)))
       (cons (overlay-start olay)
 	    (overlay-end olay))))
    ((versor-valid-item-list-p versor-latest-items)
+    (when versor-debug-motion-framework
+      (message "versor-get-current-item: latest item valid"))
     (car versor-latest-items))
    (t
+    (when versor-debug-motion-framework
+      (message "versor-get-current-item: constructing item"))
     (versor-invent-item))))
 
 (defun versor-last-item-first ()
@@ -113,20 +119,31 @@ yet to edit."
   (let ((result
 	 (cond
 	  ((versor-current-item-valid)
-	   ;; (message "versor-get-current-items: current item valid")
+	   (when versor-debug-motion-framework
+	     (message "versor-get-current-items: current item valid"))
+	   ;; versor-as-motion-command uses (versor-get-current-item) correspondingly to here
 	   versor-items)
 	  ((versor-valid-item-list-p versor-latest-items)
-	   ;; (message "versor-get-current-items: latest item valid")
+	   (when versor-debug-motion-framework
+	     (message "versor-get-current-items: latest item valid"))
 	   versor-latest-items)
 	  (t
-	   ;; (message "versor-get-current-items: constructing item")
+	   (when versor-debug-motion-framework
+	     (message "versor-get-current-items: constructing item"))
 	   (let ((pair (versor-invent-item)))
 	     (make-versor-overlay (car pair) (cdr pair))
 	     versor-items
 	     )))
 	 ))
-    ;; (message "%S" result)
-    (copy-sequence result)))
+    ;; make it into conses, in case we delete the overlays before the
+    ;; result is used
+    (mapcar (function
+	     (lambda (item)
+	       (if (overlayp item)
+		   (cons (overlay-start item)
+			 (overlay-end item))
+		 item)))
+	    result)))
 
 (defun versor-overlay-start (olay)
   "Return the start of OLAY.
@@ -241,8 +258,16 @@ You should normally call versor-set-current-item rather than this."
 It clears variables looked at by versor-indicate-current-item, which sets them
 up for itself only if the command didn't set them for it."
   (setq versor-indication-known-valid nil)
-  (delete-versor-overlay))
+  ;; todo: we should remember what the indication was, I think this goes in versor-latest-items
 
+  ;; if we do this, it can construct the wrong thing... for example,
+  ;; if it should delete a pair of brackets, it deletes everything
+  ;; between them instead... in such a case, I see it is running
+  ;; "constructing items"
+
+  ;; (versor-save-selection)
+
+  (delete-versor-overlay))
 
 (defvar versor-quiet-commands '(versor-out
 				versor-in
@@ -273,6 +298,8 @@ start of the likely selection."
 	;; function, is called by the versor-as-motion-command macro
 
 	(unless (versor-current-item-valid)
+	  (when versor-debug-motion-framework
+	    (message "Establishing current item"))
 	  (versor-set-current-item
 	   (progn
 	     (when (and versor-trim-item-starts-to-non-space
@@ -283,7 +310,13 @@ start of the likely selection."
 	       ;; anyway, but here we just make sure, which makes it
 	       ;; easier to borrow underlying commands not written
 	       ;; specially for versor.
-	       (skip-to-actual-code))
+	       (let ((trimmer (versor-get-action 'start-of-item)))
+		 (when trimmer
+		   (when versor-debug-motion-framework
+		     (message "trimming from %d" (point)))
+		   (funcall trimmer)
+		   (when versor-debug-motion-framework
+		     (message "trimmed to %d" (point))))))
 	     (point))
 	   (versor-end-of-item-position)))
 
@@ -316,6 +349,25 @@ start of the likely selection."
        ;; (with-output-to-temp-buffer "*Backtrace for item indication*" (backtrace))
        (versor-de-indicate-current-item)))))
 
+(defun versor-save-selection ()
+  "Save the current selection, into versor-latest-items."
+  (setq versor-latest-items
+	(catch 'no-region
+	  (mapcar
+	   (lambda (item)
+	     (when versor-debug-motion-framework
+	       (message "  Saving item %S" item))
+	     (if (overlayp item)
+		 (cons (overlay-start item) (overlay-end item))
+	       (if (condition-case error
+		       (progn
+			 (region-beginning)
+			 nil)
+		     (error t))
+		   (throw 'no-region nil)
+		 (cons (region-beginning) (region-end)))))
+	   versor-items))))
+
 (defun versor-de-indicate-current-item ()
   "Remove the current item marking.
 Intended to go on pre-command-hook, to make sure that versor gets out
@@ -323,20 +375,7 @@ of the way of ordinarily Emacs commands. In case, however, the new
 command is itself a versor command, we save the item marking as a list
 of conses of start . end, in versor-latest-items."
   (unless (eq (car versor-items) 'not-yet-set)
-    (setq versor-latest-items
-	  (catch 'no-region
-	    (mapcar
-	     (lambda (item)
-	       (if (overlayp item)
-		   (cons (overlay-start item) (overlay-end item))
-		 (if (condition-case error
-			 (progn
-			   (region-beginning)
-			   nil)
-		       (error t))
-		     (throw 'no-region nil)
-		   (cons (region-beginning) (region-end)))))
-	     versor-items)))
+    (versor-save-selection)
     ;; (versor-display-item-list (format "starting command %S" this-command) versor-latest-items)
     (setq languide-region-description "")
     (delete-versor-overlay)))
