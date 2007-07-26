@@ -1,5 +1,5 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2007-07-02 17:44:20 jcgs>
+;;; Time-stamp: <2007-07-25 18:23:17 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -202,6 +202,47 @@ With arg, turn Versor mode on if and only if arg is positive."
 	      (setq rest nil))
 	  (setq rest (cdr rest)))))))
 
+(defvar versor-tracking nil
+  "Whether Versor is tracking.
+Use versor-toggle-tracking to set this.")
+
+(defun versor-toggle-tracking (arg)
+  "Toggle versor tracking.
+With no argument, just toggle it. With an argument, switch off if the
+argument is negative, otherwise switch on."
+  (interactive "p")
+  (setq versor-tracking
+	(if arg
+	    (if (< (prefix-numeric-value arg) 0)
+		nil
+	      t)
+	  (not versor-tracking)))
+  (if versor-tracking
+      (progn
+	(require 'versor-tracking)
+	(add-hook 'post-command-hook 'versor-tracking-hook))
+    (remove-hook 'post-command-hook 'versor-tracking-hook)))
+
+(defun keypad-separate ()
+  "Remove mappings of keypad keys."
+  (interactive)
+  (let* ((holder (cons nil (cdr function-key-map)))
+	 (pairs holder)
+	 (nextpairs (cdr pairs)))
+    (while pairs
+      (let* ((pair (car nextpairs))
+	     (name (car pair)))
+	(if (and (symbolp name)
+		 (string-match "kp-" (symbol-name name)))
+	    (progn
+	      (message "Unmapping %S from function-key-map" name)
+	      (rplacd pairs (cdr nextpairs))
+	      (setq nextpairs (cdr pairs)))
+	  (progn
+	    (setq pairs (cdr pairs)
+		  nextpairs (cdr pairs))))))
+    (rplacd function-key-map (cdr holder))))
+
 (defvar versor-setup-done nil
   "Whether Versor has initialized itself yet.")
 
@@ -271,48 +312,58 @@ See the info pages for more details of versor.
   (when (memq 'modal keysets)
     ;; (require 'versor-modal)
     (require 'versor-local)
+    (message "Setting up versor to use auto-change for modes")
     (setq versor-auto-change-for-modes t))
 
   (when (memq 'local keysets)
     (require 'versor-local)
+    (message "Setting up versor to use per-buffer settings")
     (setq versor-per-buffer t))
 
   (when (memq 'text-in-code keysets)
     (require 'versor-text-in-code)
+    (message "Setting up versor to use separate settings for text in code")
     (setq versor-text-in-code t))
 
   (when (memq 'menu keysets)
+    (message "Setting up versor to use menu")
     (require 'versor-menu))
 
   (when (memq 'verbose keysets)
+    (message "Setting up versor to be verbose")
     (setq versor-verbose t))
 
   (when (memq 'research keysets)
     (require 'versor-research)
+    (message "Setting up versor to log research data")
     (versor-research-start))
 
   (when (memq 'mouse keysets)
     (require 'versor-tracking)
+    (message "Setting up versor to use mouse tracking")
     (versor-mouse-setup))
 
   (unless (memq 'use-region-face keysets)
+    (message "Setting up versor to use the region face")
     (setq versor-item-attribute :background))
 
   (when (memq 'quiet-underlying keysets)
+    (message "Setting up versor not to display underlying commands")
     (setq versor-display-underlying-commands nil))
 
   (when (memq 'tlc keysets)
+    (message "Setting up versor to use tlc")
     (require 'versor-tlc))
 
   (let ((tracking (memq 'tracking keysets)))
-
     (when tracking
-      (require 'versor-tracking)
-      (add-hook 'post-command-hook 'versor-tracking-hook))
+      (message "Setting up versor to use keyboard tracking")
+      (versor-toggle-tracking 1))
 
     ;; This is the separate set of arrows, not those overlaid on the
     ;; numeric keypad
     (when (memq 'arrows keysets)
+      (message "Setting up versor to use main arrow keys")
       (unless tracking
 	(versor-global-set-key [ left ]    'versor-prev)
 	(versor-global-set-key [ right ]   'versor-next))
@@ -348,6 +399,7 @@ See the info pages for more details of versor.
     (when (memq 'arrows-misc keysets)
       ;; todo: I think I can make better use of these -- perhaps put versor-begin-altering-item and versor-dwim on them?
       (require 'languide-keymap) ; I don't think you can autoload keymaps, but perhaps I should try?
+      (message "Setting up versor to use main auxiliary keys")
       (versor-global-set-key [ prior ]   'versor-over-over-prev)
       (versor-global-set-key [ next ]    'versor-over-over-next)
       (versor-global-set-key [ C-prior ] 'versor-over-over-start)
@@ -379,6 +431,8 @@ See the info pages for more details of versor.
       )
 
     (when (memq 'keypad keysets)
+      (message "Setting up versor to use keypad")
+      (keypad-separate)
       (unless tracking
 	(versor-global-set-key [ kp-left ]    'versor-prev)
 	(versor-global-set-key [ kp-right ]   'versor-next))
@@ -420,6 +474,8 @@ See the info pages for more details of versor.
       (versor-global-set-key [ C-kp-next ]  'versor-over-over-end))
 
     (when (memq 'keypad-misc keysets)
+      (message "Setting up versor to use keypad auxiliary keys")
+      (keypad-separate)
       (versor-global-set-key [ kp-enter ]  'versor-copy)
       (define-key (current-global-map)
 	[ kp-insert ] 'versor-insertion-placement-keymap)
