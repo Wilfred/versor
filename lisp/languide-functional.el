@@ -1,5 +1,5 @@
 ;;;; languide-functional.el -- languide definitions for functional languages such as Haskell
-;;; Time-stamp: <2007-03-19 20:27:02 jcgs>
+;;; Time-stamp: <2007-08-11 14:43:48 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -16,6 +16,7 @@
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 (provide 'languide-functional)
+(require 'modal-functions)
 
 (defmodal move-into-previous-statement (haskell-mode literate-haskell-mode) ()
   "Move into the previous Haskell statement.

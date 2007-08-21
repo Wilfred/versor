@@ -1,5 +1,7 @@
 ;;;; example-like.el -- example
-;;; Time-stamp: <2006-03-06 16:59:05 jcgs>
+;;; Time-stamp: <2007-08-11 14:43:48 jcgs>
+
+(require 'modal-functions)
 
 (defmodal move-into-previous-statement example-mode ()
   "Move into the previous statement.

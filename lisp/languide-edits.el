@@ -1,5 +1,5 @@
 ;;;; languide-edits.el
-;;; Time-stamp: <2007-03-11 12:40:56 jcgs>
+;;; Time-stamp: <2007-08-11 14:41:09 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -20,6 +20,7 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (require 'cl)
+(require 'modal-functions)
 
 (defvar languide-auto-edit-overlays nil
   "Highlights added by languide to show what it has done.
