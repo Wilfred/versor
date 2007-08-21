@@ -1,5 +1,5 @@
 ;;;; versor-help.el -- help for versor
-;;; Time-stamp: <2007-06-28 14:02:00 jcgs>
+;;; Time-stamp: <2007-07-19 12:15:11 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -38,7 +38,7 @@
       (re-search-backward "`\\([^`']+\\)'" nil t)
       (help-xref-button
        1
-       (if (< emacs-major-version 23)
+       (if (< emacs-major-version 22)
 	   #'(lambda (fun file)
 	       (require 'find-func)
 	       ;; Don't use find-function-noselect because it follows
