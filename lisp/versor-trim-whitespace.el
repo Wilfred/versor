@@ -1,5 +1,5 @@
 ;;;; versor-trim-whitespace.el -- trim whitespace after a versor command
-;;; Time-stamp: <2007-07-25 20:16:23 jcgs>
+;;; Time-stamp: <2007-08-19 16:42:00 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -390,9 +390,12 @@ was inserted."
 				preceding-in-buffer
 				" before inserted text")
       (if (stringp string)
+	  ;; todo: use insert-for-yank
 	  (insert string)
+	;; todo: use insert-for-yank
 	(insert (car string))
 	(setq versor-mid-insertion-place (point))
+	;; todo: use insert-for-yank
 	(insert (cdr string)))
       (let ((end (point)))
 	(versor-adjust-whitespace end
