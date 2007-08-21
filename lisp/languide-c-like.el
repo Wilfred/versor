@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2007-06-12 19:01:59 john>
+;;; Time-stamp: <2007-08-21 10:56:20 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -20,7 +20,9 @@
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (require 'cl)
+(require 'modal-functions)
 
+;; todo: make use of cc-mode (would have to understand it first)
 
 (defun languide-c-back-to-possible-ender (bod)
   "Move point back to be at something that might end a C statement,
@@ -68,6 +70,8 @@ is liable to return the wrong result."
   (save-excursion
     (condition-case error-var
 	(progn
+	  ;; we only need to go up one level of brackets, because the
+	  ;; semicolons in a for-control occur at the top level of it
 	  (backward-up-list 1)
 	  (backward-sexp 1)
 	  (looking-at "for"))
@@ -737,8 +741,9 @@ Each element is a list of:
 	      (pps (save-excursion (parse-partial-sexp bod (point)))))
 	  (unless (or
 		   (string-match (cond
-				  ((eq major-mode 'java-mode) c-Java-keywords)
-				  (t c-C-keywords))
+				  ;; todo: find separate one for java
+				  ((eq major-mode 'java-mode) c-keywords-regexp)
+				  (t c-keywords-regexp))
 				 name)
 		   ;; in comment or quoted:
 		   (fourth pps) (fifth pps))
@@ -901,9 +906,6 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
     (let ((end (scan-sexps (point) -1)))
       (buffer-substring-no-properties (scan-sexps end -1) end))))
 
-(defconst semicolon (string-to-char ";")
-  "Get this out-of-line to avoid confusing indenter when editing functions that use it.")
-
 (defmodal function-call-string (c-mode java-mode perl-mode) (name arglist where)
   "Return a function call for a function called NAME taking ARGLIST. WHERE gives context."
   (let ((at-statement-start (save-excursion
@@ -911,7 +913,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 			      ;; or a function call expression.
 			      (goto-char where)
 			      (skip-to-actual-code-backwards)
-			      (memq (char-before) (list ?{ semicolon ?})))))
+			      (memq (char-before) (list ?{ ?\; ?})))))
     (concat name "("
 	    (mapconcat (function
 			(lambda (arg)
@@ -1410,7 +1412,9 @@ languide-region-detail-level says how much incidental information to include."
 	    (mapcar (lambda (statement)
 		      (unless (assoc 'whole (cdr statement))
 			(rplacd statement
-				(cons '(whole (end-of-statement-internal nil))
+				(cons '(whole statement-navigate 
+					      statement ; (up-to-end-of-statement)
+					      )
 				      (cdr statement)))))
 		    statements)))
 	'(perl-mode c-mode java-mode))
