@@ -1,5 +1,5 @@
 ;;;; languide-sh-like.el -- shell etc definitions for language-guided editing
-;;; Time-stamp: <2007-03-19 20:27:00 jcgs>
+;;; Time-stamp: <2007-08-11 14:43:48 jcgs>
 ;;
 ;; Copyright (C) 2004, 2006, 2007  John C. G. Sturdy
 ;;
@@ -19,7 +19,8 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
+(require 'cl)
+(require 'modal-functions)
 
 (defmodal move-into-previous-statement (sh-mode) ()
   "Move into the previous statement.
