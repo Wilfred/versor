@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2007-03-03 17:24:27 jcgs>
+;;; Time-stamp: <2007-08-21 18:19:20 john>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@
 	 (remembered (statement-find-part statement-start part)))
     (if remembered
 	(progn				; we have cached data for this
-	  (message "using cached statement position %S" remembered)
+	  ;; (message "using cached statement position %S" remembered)
 	  (versor-set-current-items remembered)
 	  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
       (let* ((type (if prelocated
@@ -57,7 +57,7 @@
 	     (directions (get-statement-part type part)))
 	;; no cached data, really do the navigation
 ;;;;;;;;;;;;;;;; type is coming through as nil if we are prelocated but had not cached this part
-	(message "not cached; navigate-to %S %S got %S" type part directions) (backtrace)
+	;; (message "not cached; navigate-to %S %S got %S" type part directions) (backtrace)
 	(if directions
 	    (if (eq (car directions) 'statement-navigate)
 		(let ((selected-parts (progn
@@ -256,25 +256,24 @@ Intended for use from statement-navigate."
        (skip-to-actual-code-backwards)
        (set-mark-candidate start)
        (cons start (point))))))
-
+  
 (defun statements ()
   "Select the statements up to the next closing bracket."
   (interactive)	; mostly for testing, but it might come in useful in its own right
   (let* ((start nil)
 	 (selected (without-changing-current-statement
-		    (message "(statements) skipping from %d" (point))
 		    (skip-to-actual-code)
 		    (setq start (point))
-		    (message "(statements) starting at %d" start)
 		    (while (not (or (eobp)
 				    (looking-at (compound-statement-close))))
-		      (message "forward one statement from %d" (point))
+		      ;; (message "forward one statement from %d" (point))
 		      (next-statement-internal 1)
 		      (skip-to-actual-code))
 		    (skip-to-actual-code-backwards)
 		    (set-mark-candidate start)
-		    (message "(statements) ending at %d" (point))
 		    (cons start (point)))))
+    (when (interactive-p)
+	(set-mark (car selected)))
     (goto-char (cdr selected))
     selected))
 
