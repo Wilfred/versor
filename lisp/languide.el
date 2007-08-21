@@ -1,5 +1,5 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2007-07-25 20:18:43 jcgs>
+;;; Time-stamp: <2007-08-20 18:38:08 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -290,8 +290,8 @@ When interactive, or with optional third argument non-nil, display the result."
   "If in a comment, move to just before it, else do nothing.
 Returns whether it did anything."
   (interactive)
-  (if text-mode-variant
-      (when (in-comment-p) 
+  (if (derived-mode-p 'text-mode)
+      (when (in-comment-p)
 	;; If we can, get to the start of the comment (but inside it),
 	;; in case there are multiple comment starters. If
 	;; comment-beginning isn't available, we just do what we can.
@@ -300,11 +300,12 @@ Returns whether it did anything."
 	(re-search-backward comment-start-skip (point-min) t))
     (if (safe-scan-lists (point) -1 1)
 	(let* ((bod (save-excursion (beginning-of-defun) (point)))
-	       (parse-results (parse-partial-sexp bod (point)
-						  0
-						  nil
-						  nil
-						  nil))
+	       (parse-results (save-excursion
+				(parse-partial-sexp bod (point)
+						    0
+						    nil
+						    nil
+						    nil)))
 	       (in-comment-or-string (nth 8 parse-results)))
 	  (if in-comment-or-string
 	      (goto-char in-comment-or-string)
