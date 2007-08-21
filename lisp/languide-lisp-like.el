@@ -1,5 +1,5 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2007-07-25 16:48:40 jcgs>
+;;; Time-stamp: <2007-08-20 17:06:56 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
@@ -19,7 +19,8 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
+(require 'cl)
+(require 'modal-functions)
 
 (defmodal beginning-of-statement-internal (lisp-mode
 					   emacs-lisp-mode
@@ -57,12 +58,8 @@ Maps strings to symbols.")
   "Identify a Lisp form or function."
   (if (looking-at "(\\([-:_a-z0-9]+\\)")
       (let ((string (match-string-no-properties 1)))
-	;; (message "Seems to be a %s" string)
 	(or (cdr (assoc string lisp-mode-statement-identities))
-	    ;; (intern string)
-	    'function-call
-	    )
-	)
+	    'function-call))
     default))
 
 (defmodal insert-compound-statement-open (lisp-mode
@@ -99,6 +96,8 @@ Returns the position if it found one, or nil otherwise."
 (defmodal variables-in-scope (lisp-mode emacs-lisp-mode lisp-interaction-mode) (whereat)
   "Return the alist list of variables in scope at WHEREAT."
   ;; todo: make this spot lambda bindings too
+  ;; todo: make it not spot literals
+  ;; todo: make it not spot keywords
   (save-excursion
     (goto-char whereat)
     (beginning-of-defun)
@@ -551,6 +550,7 @@ Each element is a list of:
 	       (pps (parse-partial-sexp bod where)))
 	  (if (and (not (= preceding-char open-bracket))
 		   (not (= preceding-char ?'))
+		   (not (= preceding-char ?:))
 		   (not (fourth pps))	; inside string
 		   (not (fifth pps)))	; inside comment
 	      (push (list (match-string-no-properties 0) where) result))
@@ -767,7 +767,7 @@ languide-region-detail-level says how much incidental information to include."
 			  (buffer-substring-no-properties f-start f-end))))
 	   (which-member (and f-start (count-sexps f-start from))))
       (cond
-       ((eq start-char 34)
+       ((eq start-char ?\")
 	(when (> languide-region-detail-level 1)
 	  (setq languide-region-detail-string (format "contents: \"%s\""
 						      (buffer-substring-no-properties
@@ -797,9 +797,10 @@ languide-region-detail-level says how much incidental information to include."
 	       (eq which-member 2))
 	  'if-condition)
 	 ((eq functor 'if)
-	  (if (eq which-member 2)
-	      'if-else-condition
-	    'if-else-body))
+	  (cond
+	   ((eq which-member 2) 'if-else-condition)
+	   ((eq which-member 3) 'if-else-body)
+	   ((eq which-member 4) 'if-else-tail)))
 	 (t 'symbol))))))
    (t (let* ((pps (save-excursion (parse-partial-sexp from to))))
 	(cond
