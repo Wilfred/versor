@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2007-03-03 17:03:09 jcgs>
+;;; Time-stamp: <2007-08-21 12:26:34 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -31,9 +31,7 @@
 (defun navigate-this-body ()
   "Navigate to the body of the current statement."
   (interactive)
-  (message "navigate-this-body starting at %d" (point))
-  (navigate-to 'body)
-  (message "navigate-this-body ending at %d" (point)))
+  (navigate-to 'body))
 
 (defun navigate-this-tail ()
   "Navigate to the tail of the current statement."
