@@ -1,6 +1,11 @@
 ;;;; handsfree-read-number.el
-;;; Time-stamp: <2006-08-02 12:18:54 john>
+;;; Time-stamp: <2007-08-22 19:28:53 jcgs>
 ;;
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.

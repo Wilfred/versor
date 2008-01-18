@@ -1,5 +1,14 @@
 ;;;; languide-bindings.el -- handle variable bindings in a language-parameterized way
-;;; Time-stamp: <2006-08-02 12:19:35 john>
+;;; Time-stamp: <2007-08-22 19:18:38 jcgs>
+
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004?
+;; Keywords: editing
+
+;; This file is NOT part of GNU Emacs.
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
