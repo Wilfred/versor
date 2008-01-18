@@ -1,5 +1,5 @@
 ;;;; languide-keymap.el -- keymap and menu setup for languide
-;;; Time-stamp: <2006-08-02 12:18:07 john>
+;;; Time-stamp: <2007-12-12 18:58:46 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -46,10 +46,7 @@
   (interactive)
   (tmm-prompt versor-languide-menu))
 
-(defvar languide-map (make-sparse-keymap "Languide")
-  "Keymap for languide operations.")
-
-(fset 'languide-map languide-map)
+(define-prefix-command 'languide-map nil "Language operations")
 
 (define-key languide-map "=" 'versor-languide-convert-selection-to-variable)
 (define-key languide-map "f" 'versor-languide-convert-selection-to-function)
