@@ -1,5 +1,14 @@
 ;;;; languide-custom.el -- customization definitions for languide
-;;; Time-stamp: <2007-03-03 14:36:56 jcgs>
+;;; Time-stamp: <2007-08-22 19:30:46 jcgs>
+
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2005?
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -16,7 +25,10 @@
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 
+;;; Commentary:
+;; 
 
+;;; Code:
 (defgroup languide nil
   "Languide-guided editing.
 This includes things like turning pieces of inline code into separate functions,
@@ -35,7 +47,7 @@ it shows the changed text in this face, until the next user input."
   "*Whether to include the whole statement as the container.
 If this is non-nil, when you select the container of a statement,
 the whole containing statement is selected, rather than just the
-part of it containing the statement. For example, if you have
+part of it containing the statement.  For example, if you have
   if (a) {
     b;
     c;
@@ -61,7 +73,7 @@ whole if statement, rather than just the block body."
   :group 'languide)
 
 (defcustom languide-region-detail-level 5
-  "*The level of extra detail to be included in languide-region-detail-string by languide-region-type."
+  "*The level of extra detail to be included in `languide-region-detail-string' by `languide-region-type'."
   :type 'integer
   :group 'languide)
 
@@ -73,7 +85,7 @@ whole if statement, rather than just the block body."
 (defcustom languide-debug-messages nil
   "*Whether languide should tell you what it is doing, in great detail.
 You should need to set this only if working on the internals of languide.
-See also languide-debug-functions."
+See also `languide-debug-functions'."
   :type '(restricted-sexp :match-alternatives
 			 (integerp 't 'nil))
   :group 'languide)
@@ -86,7 +98,7 @@ See also languide-debug-functions."
 				      ;; next-statement
 				      ;; navigate-to
 				      )
-  "Which functions languide-debug-messages should output messages for.
+  "Which functions `languide-debug-messages' should output messages for.
 You should need to set this only if working on the internals of languide."
   :group 'languide
   :type '(set (const beginning-of-statement-internal)
@@ -104,3 +116,7 @@ You should need to set this only if working on the internals of languide."
 (provide 'languide-custom)
 
 ;;; end of languide-custom.el
+
+(provide 'languide-custom)
+
+;;; languide-custom.el ends here
