@@ -1,7 +1,7 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2007-07-07 21:43:15 jcgs>
+;;; Time-stamp: <2007-10-07 20:48:59 jcgs>
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -572,15 +572,15 @@ See handsfree-menus.el for menus."
   (define-key isearch-mode-map pedal-menu 'isearch-exit)
   (define-key isearch-mode-map pedal-S-menu 'isearch-cancel)
 
-  (if (and (boundp 'versor-altering-map)
-	   (keymapp versor-altering-map))
+  (if (and (boundp 'versor-altering-mode-map)
+	   (keymapp versor-altering-mode-map))
       (progn
-	(define-key versor-altering-map pedal-onward 'versor-alter-item-next)
-	(define-key versor-altering-map pedal-S-onward 'versor-alter-item-prev)
-	(define-key versor-altering-map pedal-aux 'versor-alter-item-over-next)
-	(define-key versor-altering-map pedal-S-aux 'versor-alter-item-over-prev)
-	(define-key versor-altering-map pedal-menu 'versor-end-altering-item)
-	(define-key versor-altering-map pedal-S-menu 'versor-abandon-altering-item)))
+	(define-key versor-altering-mode-map pedal-onward 'versor-alter-item-next-value)
+	(define-key versor-altering-mode-map pedal-S-onward 'versor-alter-item-previous-value)
+	(define-key versor-altering-mode-map pedal-aux 'versor-alter-item-next-type)
+	(define-key versor-altering-mode-map pedal-S-aux 'versor-alter-item-previous-type)
+	(define-key versor-altering-mode-map pedal-menu 'versor-end-altering-item)
+	(define-key versor-altering-mode-map pedal-S-menu 'versor-abandon-altering-item)))
 
   (if (and (boundp 'Buffer-menu-mode-map)
 	   (keymapp Buffer-menu-mode-map))
