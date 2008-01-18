@@ -1,15 +1,22 @@
 ;;; versor.el -- versatile cursor
-;;; Time-stamp: <2007-07-25 18:23:17 jcgs>
+;;; Time-stamp: <2007-10-07 20:48:59 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
-;;
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: editing
+
+;; This file is NOT part of GNU Emacs.
+
 ;; This file is part of emacs-versor.
 ;;
 ;; emacs-versor is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation; either version 2 of the License, or
+;; the Free Software Foundation; either version 3 of the License, or
 ;; (at your option) any later version.
 ;;
 ;; emacs-versor is distributed in the hope that it will be useful,
@@ -21,6 +28,10 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+
+;;; Commentary:
+;;
 
 (require 'tempo)
 (require 'cl)
@@ -41,6 +52,7 @@
 ;; todo: fix change of dimensions that happens after type-break uses the minibuffer (probably more general than this)
 ;; todo: make mouse clicks and drags select and extend using the current versor dimensions
 
+;;; Code:
 (defvar version-version "1.09"
   "The version number for this release of versor.")
 
@@ -49,19 +61,19 @@
 ;;;;;;;;;;;;;;;
 
 (defvar versor-start-hooks nil
-  "*Hooks for versor-start.
+  "*Hooks for `versor-start'.
 If one of these returns non-nil, it is taken as having done the action.")
 
 (defvar versor-prev-hooks nil
-  "*Hooks for versor-prev.
+  "*Hooks for `versor-prev'.
 If one of these returns non-nil, it is taken as having done the action.")
 
 (defvar versor-next-hooks nil
-  "*Hooks for versor-next.
+  "*Hooks for `versor-next'.
 If one of these returns non-nil, it is taken as having done the action.")
 
 (defvar versor-end-hooks nil
-  "*Hooks for versor-end.
+  "*Hooks for `versor-end'.
 If one of these returns non-nil, it is taken as having done the action.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -133,17 +145,18 @@ This is for choosing before, after, around or inside.")
 
 (fset 'versor-insertion-placement-keymap versor-insertion-placement-keymap)
 
-(defvar versor-altering-map (make-sparse-keymap "Versor alter item")
+(defvar versor-altering-mode-map (make-sparse-keymap "Versor alter item")
   "Keymap for altering the selected item.")
 
-(fset 'versor-altering-map versor-altering-map)
+(fset 'versor-altering-mode-map versor-altering-mode-map)
 
 (defvar versor-original-bindings-map
   (make-sparse-keymap "Versor non-versor bindings")
   "A keymap holding the key bindings that Versor displaced.")
 
 (defun versor-global-set-key (key command)
-  "Like global-set-key, but if the old binding was not a versor one, save the old binding."
+  "Like `global-set-key', for KEY and COMMAND.
+If the old binding was not a versor one, save the old binding."
   (let ((old-value (lookup-key (current-global-map) key t)))
     (when (and (symbolp old-value)
 	       (not (string-match "^versor-" (symbol-name old-value))))
@@ -204,7 +217,7 @@ With arg, turn Versor mode on if and only if arg is positive."
 
 (defvar versor-tracking nil
   "Whether Versor is tracking.
-Use versor-toggle-tracking to set this.")
+Use `versor-toggle-tracking' to set this.")
 
 (defun versor-toggle-tracking (arg)
   "Toggle versor tracking.
@@ -247,24 +260,24 @@ argument is negative, otherwise switch on."
   "Whether Versor has initialized itself yet.")
 
 (defun versor-setup (&rest keysets)
-  "Set up the versor (versatile cursor) key system.
+  "Set up the versor (versatile cursor) key system, as given by KEYSETS.
 
 This rebinds the cursor (arrow) keys in such a way that they can move
 the cursor in other ways than just cartesian (up/down,
-left/right). Instead, they take a pair of adjacent dimensions in a
+left/right).  Instead, they take a pair of adjacent dimensions in a
 series of dimensions (such as characters/lines or lines/pages).
 
-Several such series (meta-dimensions) of dimensions are available. The
+Several such series (meta-dimensions) of dimensions are available.  The
 vertical arrow keys are always for the more significant of the two
 dimensions, just as they are in the normal key bindings.
 
-Meta-arrows change the dimensions. M-left and M-right shift the pair
+Meta-arrows change the dimensions.  M-left and M-right shift the pair
 of dimensions within the current series, and M-up and M-down change
-which series you are in. The cursor colour indicates which dimension
+which series you are in.  The cursor colour indicates which dimension
 is selected, and the current meta-dimension and dimension are shown
 in the mode line.
 
-The current item is highlighted after each versor move. The
+The current item is highlighted after each versor move.  The
 highlighting is removed at the next command, so versor can co-operate
 unobtrusively with traditional character-based editing.
 
@@ -291,6 +304,7 @@ amongst the arguments:
   'text-in-code  -- switch dimensions for string literals and comments,
                     allowing code-oriented movement in actual code, and
                     text-oriented movement in embedded natural language text
+  'joystick      -- define joystick actions (needs joystick.el)
   'menu          -- define a menu of versor commands
   'mouse         -- define the mouse button to make a versor selection of
                     the appropriate dimension
@@ -299,8 +313,7 @@ amongst the arguments:
 The following arguments suppress some of the default behaviours:
   'use-region-face  -- suppress the selection colour changes
   'quiet-underlying -- do not indicate the underlying commands being used
-See the info pages for more details of versor.
-"
+See the info pages for more details of versor."
   (interactive)
 
   (when (null keysets) (setq keysets '(arrows arrows-misc)))
@@ -309,16 +322,17 @@ See the info pages for more details of versor.
     (setq keysets (cons 'ctrl-x keysets)))
   ;; todo: add setting of versor-meta-dimensions-valid-for-modes, and add to info file, and document this
 
-  (when (memq 'modal keysets)
-    ;; (require 'versor-modal)
-    (require 'versor-local)
-    (message "Setting up versor to use auto-change for modes")
-    (setq versor-auto-change-for-modes t))
+  (let ((modal (memq 'modal keysets)))
+    (when modal
+      (require 'versor-local)
+      (message "Setting up versor to use auto-change for modes")
+      (setq versor-auto-change-for-modes t))
 
-  (when (memq 'local keysets)
-    (require 'versor-local)
-    (message "Setting up versor to use per-buffer settings")
-    (setq versor-per-buffer t))
+    (when (memq 'local keysets)
+      (when modal (error "Versor-setup options 'modal 'local conflict"))
+      (require 'versor-local)
+      (message "Setting up versor to use per-buffer settings")
+      (setq versor-per-buffer t)))
 
   (when (memq 'text-in-code keysets)
     (require 'versor-text-in-code)
@@ -337,6 +351,11 @@ See the info pages for more details of versor.
     (require 'versor-research)
     (message "Setting up versor to log research data")
     (versor-research-start))
+
+  (when (memq 'joystick keysets)
+    (require 'versor-joystick)
+    (message "Setting up versor to use joystick")
+    (versor-joystick-setup))
 
   (when (memq 'mouse keysets)
     (require 'versor-tracking)
@@ -390,10 +409,10 @@ See the info pages for more details of versor.
       (versor-global-set-key [ C-up ]    'versor-over-start)
       (versor-global-set-key [ C-down ]  'versor-over-end)
 
-      (define-key versor-altering-map [ left ] 'versor-alter-item-prev)
-      (define-key versor-altering-map [ right ] 'versor-alter-item-next)
-      (define-key versor-altering-map [ up ] 'versor-alter-item-over-prev)
-      (define-key versor-altering-map [ down ] 'versor-alter-item-over-next)
+      (define-key versor-altering-mode-map [ left ] 'versor-alter-item-prev)
+      (define-key versor-altering-mode-map [ right ] 'versor-alter-item-next-value)
+      (define-key versor-altering-mode-map [ up ] 'versor-alter-item-over-prev)
+      (define-key versor-altering-mode-map [ down ] 'versor-alter-item-over-next)
       )
 
     (when (memq 'arrows-misc keysets)
@@ -416,13 +435,13 @@ See the info pages for more details of versor.
       (define-key (current-global-map) [ insert ]   'versor-insertion-placement-keymap)
       (versor-global-set-key [ M-insert ] 'versor-begin-altering-item)
       (define-key global-map [ C-insert ] 'languide-map)
-      (define-key versor-altering-map [ insert ] 'versor-end-altering-item)
-      (define-key versor-altering-map [ return ] 'versor-end-altering-item)
+      (define-key versor-altering-mode-map [ insert ] 'versor-end-altering-item)
+      (define-key versor-altering-mode-map [ return ] 'versor-end-altering-item)
 
       (versor-global-set-key [ delete ]   'versor-kill)
       (versor-global-set-key [ M-delete ] 'versor-copy)
       (versor-global-set-key [ C-delete ] 'versor-select-surrounding)
-      (define-key versor-altering-map [ delete ] 'versor-abandon-altering-item)
+      (define-key versor-altering-mode-map [ delete ] 'versor-abandon-altering-item)
 
       (define-key versor-insertion-placement-keymap [ left ]  'versor-insert-before)
       (define-key versor-insertion-placement-keymap [ right ] 'versor-insert-after)
@@ -450,9 +469,6 @@ See the info pages for more details of versor.
       (versor-global-set-key [ C-kp-end ]   'versor-end-of-item)
       (versor-global-set-key [ M-kp-home ] 'versor-dwim)
 
-      (define-key versor-altering-map [ kp-left ] 'versor-alter-item-prev)
-      (define-key versor-altering-map [ kp-right ] 'versor-alter-item-next)
-
       (unless tracking
 	(versor-global-set-key [ kp-up ]      'versor-over-prev)
 	(versor-global-set-key [ kp-down ]    'versor-over-next))
@@ -465,8 +481,10 @@ See the info pages for more details of versor.
       (versor-global-set-key [ C-kp-up ]    'versor-over-start)
       (versor-global-set-key [ C-kp-down ]  'versor-over-end)
 
-      (define-key versor-altering-map [ kp-up ] 'versor-alter-item-over-prev)
-      (define-key versor-altering-map [ kp-down ] 'versor-alter-item-over-next)
+      (define-key versor-altering-mode-map [ kp-up ] 'versor-alter-item-over-prev)
+      (define-key versor-altering-mode-map [ kp-down ] 'versor-alter-item-next-type)
+      (define-key versor-altering-mode-map [ kp-left ] 'versor-alter-item-prev)
+      (define-key versor-altering-mode-map [ kp-right ] 'versor-alter-item-next-value)
 
       (versor-global-set-key [ kp-prior ]   'versor-over-over-prev)
       (versor-global-set-key [ kp-next ]    'versor-over-over-next)
@@ -506,7 +524,7 @@ See the info pages for more details of versor.
   "The most recent message to be spoken from Versor.")
 
 (defun versor-speak (format-string &rest args)
-  "If versor-speaking is non-nil, say FORMAT-STRING, using it to format ARGS."
+  "If `versor-speaking' is non-nil, say FORMAT-STRING, using it to format ARGS."
   (let* ((msg (apply 'format format-string args)))
     (setq versor-latest-spoken-message msg)
     (when versor-speaking
@@ -519,4 +537,4 @@ See the info pages for more details of versor.
 
 (provide 'versor)
 
-;;;; end of versor.el
+;;; versor.el ends here
