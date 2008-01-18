@@ -1,8 +1,15 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2007-08-20 18:38:08 jcgs>
+;;; Time-stamp: <2007-12-11 17:28:34 jcgs>
 ;;
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
-;;
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: 
+
+;; This file is NOT part of GNU Emacs.
+
 ;; This file is part of emacs-versor.
 ;;
 ;; emacs-versor is free software; you can redistribute it and/or modify
@@ -151,7 +158,7 @@ Returns point, if there was a bracket to go out of, else nil."
 (defmodel statement-container ()
   "Move to the end of the container of the current statement.")
 
-(defmodel language-conditional-needs-unifying ()
+(defmodel languide-conditional-needs-unifying (from to)
   "Whether the conditional statement needs its dependent statements unified for it.")
 
 (defmodel insert-function-declaration (name result-type arglist body &optional docstring)
@@ -209,7 +216,9 @@ languide-region-detail-level says how much incidental information to include.")
 
 (defun region-type-description (start end &optional display)
   "Return a description of the region type between START and END.
-When interactive, or with optional third argument non-nil, display the result."
+Also, put it in the header line of the buffer.
+When interactive, or with optional third argument DISPLAY
+non-nil, display the result."
   (interactive "r")
   (let* ((type (languide-region-type (or start (region-beginning))
 				     (or end (region-end))))
@@ -286,11 +295,15 @@ When interactive, or with optional third argument non-nil, display the result."
 	    (> cs ce))))
     nil))
 
+(defvar other-text-modes '(latex-mode tex-mode)
+  "Text-editing modes that are not (derived-mode-p 'text-mode).")
+
 (defun backward-out-of-comment ()
   "If in a comment, move to just before it, else do nothing.
 Returns whether it did anything."
   (interactive)
-  (if (derived-mode-p 'text-mode)
+  (if (or (derived-mode-p 'text-mode)
+	  (memq major-mode other-text-modes))
       (when (in-comment-p)
 	;; If we can, get to the start of the comment (but inside it),
 	;; in case there are multiple comment starters. If
