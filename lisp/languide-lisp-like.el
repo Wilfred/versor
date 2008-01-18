@@ -1,6 +1,15 @@
 ;;;; languide-lisp-like.el -- Lisp, Elisp, Scheme definitions for language-guided editing
-;;; Time-stamp: <2007-08-20 17:06:56 jcgs>
+;;; Time-stamp: <2007-12-31 20:37:39 jcgs>
 ;;
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
+
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
@@ -19,9 +28,18 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+;;; Commentary:
+;; Lisp, Elisp, Scheme definitions for language-guided editing.  This
+;; makes the modal definitions for those languages' modes, as used to
+;; implement the defmodel'ed functions in languide-bindings.el,
+;; languide-edits.el, languide.el, modal-functions.el,
+;; statement-navigation.el, versor-alter-item.el, and
+;; versor-base-moves.el.
+
 (require 'cl)
 (require 'modal-functions)
 
+;;; Code:
 (defmodal beginning-of-statement-internal (lisp-mode
 					   emacs-lisp-mode
 					   lisp-interaction-mode
@@ -51,7 +69,7 @@
     ("let*" . variable-declaration)
     ("progn" . progn)
     ("defun" . defun))
-  "Alist of lisp functors which are recognized by languide.
+  "Alist of Lisp functors which are recognized by languide.
 Maps strings to symbols.")
 
 (defmodal identify-statement (lisp-mode emacs-lisp-mode lisp-interaction-mode) (default)
@@ -76,12 +94,17 @@ Maps strings to symbols.")
   "Insert a progn's closing bracket."
   (languide-insert ")"))
 
-(defmodal language-conditional-needs-unifying (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode) ()
+(defmodal languide-conditional-needs-unifying
+  (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode) (from to)
   "Whether the conditional statement needs its dependent statements unified for it."
   nil)
 
 (defun find-next-lisp-binding-outwards (&optional allow-conversions)
   "Move to the next enclosing binding.
+
+With optional ALLOW-CONVERSIONS, include places that could be
+converted to binding places.
+
 Returns the position if it found one, or nil otherwise."
   (interactive)
   (let ((binding-pattern (if allow-conversions
@@ -568,160 +591,31 @@ Each element is a list of:
 	i
       (1- i))))
 
-(defmodal languide-region-type-old (lisp-mode emacs-lisp-mode lisp-interaction-mode)
-  (from to)
-  "Try to work out what type of thing the code between FROM and TO is.
-Results can be things like if-then-body, if-then-else-tail, progn-whole,
-while-do-head, defun-body, and so on. If one of these is returned, the
-code must be exactly that (apart from leading and trailing
-whitespace).
-If it is not recognizable as anything in particular, but ends at the
-same depth as it starts, and never goes below that depth in between,
-that is, is something that could be made into a compound statement or
-expression, return t.
-Otherwise return nil.
-May set languide-region-detail-string to a string giving the user incidental
-information; otherwise should clear it to nil."
-  (setq languide-region-detail-string nil)
-  (cond
-   ((save-excursion (goto-char from)
-		    ;; this tests whether the selection is a single expression
-		    (skip-to-actual-code to)
-		    (and (not (looking-at "("))
-			 (save-excursion
-			   (backward-char)
-			   (skip-to-actual-code-backwards)
-			   (backward-char)
-			   (not (looking-at "(")))
-			 (progn
-			   (forward-sexp)
-			   (let ((expr-1-end (point)))
-			     (goto-char to)
-			     (skip-to-actual-code-backwards from)
-			     (eq (point) expr-1-end)))))
-    (let* ((start-char (char-after from))
-	   (start-syntax (char-syntax start-char)))
-      (cond
-       ((eq start-char 34)
-	'string-literal)
-       ((eq start-char ??)
-	'character-literal)
-       ((and (>= start-char ?0) (<= start-char ?9))
-	'numeric-constant)
-       ((or (eq start-syntax ?w)
-	    (eq start-syntax ?_))
-	'symbol))))
-   (t (let* ((pps (save-excursion (parse-partial-sexp from to))))
-	(cond
-	 ((and (zerop (nth 0 pps))	; same level at both ends
-	       (>= (nth 6 pps) 0))	; no dip in level between ends
-	  (let* ((n-parts (count-sexps from to))
-		 (f-start (safe-scan-lists from 1 -1))
-		 (f-end (and f-start
-			     (safe-scan-sexps f-start 1)))
-		 (functor (and f-end
-			       (intern
-				(buffer-substring-no-properties f-start f-end))))
-		 (surrounding-start (safe-scan-lists from -1 1))
-		 (surrounding-end (and surrounding-start
-				       (safe-scan-sexps surrounding-start 1)))
-		 (sf-start (and surrounding-start
-				(safe-scan-lists surrounding-start 1 -1)))
-		 (sf-end (and sf-start
-			      (safe-scan-sexps sf-start 1)))
-		 (surrounding-functor (and sf-end
-					   (not (= (char-after sf-start) open-bracket))
-					   (intern
-					    (buffer-substring-no-properties sf-start sf-end))))
-		 (s-members (and sf-start
-				 surrounding-end
-				 (count-sexps sf-start (1- surrounding-end))))
-		 (which-s-member (and sf-start
-				      (count-sexps sf-start from))))
-	    ;; (message "functor %S; surrounding-functor %S, of which we are %S of %S" functor surrounding-functor which-s-member s-members)
-	    (cond
-	     ((eq surrounding-functor nil)
-	      ;; could be an individual let binding, or something like
-	      ;; that, but is likely not to be a common or garden code sexp
-	      (let* ((sursurrounding-start (safe-scan-lists surrounding-start -1 1))
-		     (ssf-start (and sursurrounding-start
-				     (safe-scan-lists sursurrounding-start 1 -1)))
-		     (ssf-end (and sf-start
-				   (safe-scan-sexps ssf-start 1)))
-		     (sursurrounding-functor (and ssf-end
-						  (not (= (char-after ssf-start) open-bracket))
-						  (intern
-						   (buffer-substring-no-properties ssf-start ssf-end)))))
-		(cond
-		 ((eq sursurrounding-functor 'cond)
-		  (if (eq which-s-member 0)
-		      'cond-condition
-		    ;; (message "cond body which=%S n=%S members=%S" which-s-member n-parts s-members)
-		    (if (and (numberp which-s-member)
-			     (= which-s-member 2)
-			     (= n-parts (- s-members 1)))
-			(progn
-			  (setq languide-region-detail-string (format "%d parts" n-parts))
-			  'cond-body)
-		      t)))
-		 ((memq sursurrounding-functor '(let let*))
-		  'variable-binding)
-		 (t nil))))
-	     ((eq which-s-member 0)
-	      'functor)
-	     ((eq surrounding-functor 'cond)
-	      'cond-clause)
-	     ((eq functor 'defun) defun-body)
-	     ((memq surrounding-functor '(let let*))
-	      (cond
-	       ((eq which-s-member 2)
-		(if (eq n-parts 1)
-		    (let ((this-binding f-start)
-			  (n-bindings 0))
-		      (while (setq this-binding (safe-scan-sexps this-binding 1))
-			(setq n-bindings (1+ n-bindings)))
-		      (setq languide-region-detail-string (format "%d bindings" n-bindings))
-		      'let-bindings)
-		  nil))
-	       ((and (= which-s-member 3)
-		     (= n-parts (- s-members 2)))
-		(progn
-		  (setq languide-region-detail-string (format "%d parts" n-parts))
-		  'let-body))
-	       (t t)))
-	     ;; todo: lots more to do here
-	     ((memq functor '(progn save-excursion save-window-excursion)) 'progn-whole)
-	     ((memq surrounding-functor '(when unless))
-	      (if (eq which-s-member 2)
-		  'if-condition
-		(if (and (= which-s-member 3)
-			 (= n-parts (- s-members 2)))
-		    (progn
-		      (setq languide-region-detail-string (format "%d parts" n-parts))
-		      'if-then-body)
-		  t)))
-	     ((and (eq surrounding-functor 'if)
-		   (numberp which-s-member))
-	      (cond
-	       ((= which-s-member 2)
-		(if (= n-parts 1)
-		    'if-condition
-		  nil))
-	       ((= which-s-member 3)
-		(if (= n-parts 1)
-		    'if-body
-		  nil))
-	       ((and (= which-s-member 4)
-		     (= n-parts (- s-members 3)))
-		(progn
-		  (setq languide-region-detail-string (format "%d parts" n-parts))
-		  'if-then-else-tail))
-	       (t t)))
-	     (t t))))
-	 (t nil))))))
+(defvar languide-lisp-form-functors
+  '((quote . quote-statement)
+    (let . let-statement)
+    (let* . let*-statement)
+    (lambda . lambda-statement)
+    (cond . cond-statement)
+    (setq . assignment-statement)
+    (if . if-then-else-statement)
+    (when . if-then-statement)
+    (unless . if-else-statement)
+    (while . while-statement)
+    (dolist . dolist-statement)
+    (dotimes . dotimes-statement)
+    (defun . function-definition)
+    (defsubst . function-definition)
+    (defmacro . macro-definition)
+    (defvar . variable-definition)
+    (defcustom . variable-definition))
+  "Alist of special form names to languide statement types.
+Any not listed in here are regarded as funcalls.")
 
-;;; I did have some problems with this, but can't reproduce them. If
-;;; this doesn't work, try the version above.
+(defvar languide-lisp-defunoids
+  '(defun defmacro defvar defconst defcustom)
+  "Defun and similar form names.
+Languide uses this to tell whether something is a definition form.")
 
 (defmodal languide-region-type (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   (from to)
@@ -741,7 +635,8 @@ languide-region-detail-level says how much incidental information to include."
   (setq languide-region-detail-string nil)
   (cond
    ((save-excursion (goto-char from)
-		    ;; this tests whether the selection is a single expression
+		    ;; this tests whether the selection is a single,
+		    ;; non-bracketed, expression
 		    (skip-to-actual-code to)
 		    (and (not (looking-at "("))
 			 (save-excursion
@@ -755,6 +650,7 @@ languide-region-detail-level says how much incidental information to include."
 			     (goto-char to)
 			     (skip-to-actual-code-backwards from)
 			     (eq (point) expr-1-end)))))
+    ;; Now try to classify or describe the non-bracketed single expression
     (let* ((start-char (char-after from))
 	   (start-syntax (char-syntax start-char))
 	   (surround-start (safe-scan-lists from -1 1))
@@ -773,7 +669,7 @@ languide-region-detail-level says how much incidental information to include."
 						      (buffer-substring-no-properties
 						       (1+ from)
 						       (1- (safe-scan-sexps from 1))))))
-	(if (or (and (memq functor '(defun defmacro defvar defconst defcustom))
+	(if (or (and (memq functor languide-lisp-defunoids)
 		     (eq which-member 4))
 		(and (eq functor 'defmodal)
 		     (eq which-member 5)))
@@ -790,7 +686,7 @@ languide-region-detail-level says how much incidental information to include."
        ((or (eq start-syntax ?w)
 	    (eq start-syntax ?_))
 	(cond
-	 ((and (memq functor '(defun defmacro defvar defconst defcustom defmodel defmodal))
+	 ((and (memq functor languide-lisp-defunoids)
 	       (eq which-member 2))
 	  'defun-name)
 	 ((and (memq functor '(when unless))
@@ -806,6 +702,7 @@ languide-region-detail-level says how much incidental information to include."
 	(cond
 	 ((and (zerop (nth 0 pps))	; same level at both ends
 	       (>= (nth 6 pps) 0))	; no dip in level between ends
+	  ;; we are on a bracketed expression or a series of expressions
 	  (let* ((n-parts (count-sexps from to))
 		 (f-start (safe-scan-lists from 1 -1))
 		 (f-end (and f-start
@@ -830,7 +727,7 @@ languide-region-detail-level says how much incidental information to include."
 				 (count-sexps sf-start (1- surrounding-end))))
 		 (which-s-member (and sf-start
 				      (count-sexps sf-start from))))
-	    ;; (message "functor %S; surrounding-functor %S, of which we are %S of %S" functor surrounding-functor which-s-member s-members)
+	    ;; (message "functor %S; surrounding-functor %S, of which we are %S..%S of %S" functor surrounding-functor which-s-member (1- (+ which-s-member n-parts)) s-members)
 	    (cond
 	     ((eq surrounding-functor nil)
 	      ;; could be an individual let binding, or something like
@@ -863,12 +760,18 @@ languide-region-detail-level says how much incidental information to include."
 	     ((eq which-s-member 0)
 	      'functor)
 	     ((eq surrounding-functor 'cond)
-	      'cond-clause)
+	      (if (= n-parts 1)
+		  'cond-clause
+		'cond-clauses))
 	     ((eq functor 'defun) defun-body)
-	     ((and (eq surrounding-functor 'defun)
+	     ((and (memq surrounding-functor languide-lisp-defunoids)
 		   (eq which-s-member 3))
 	      'defun-arglist)
-	     ((memq surrounding-functor '(let let*))
+	     ((and (memq surrounding-functor '(let let* flet))
+		   (or (and (eq which-s-member 2)
+			    (eq n-parts 1))
+		       (and (= which-s-member 3)
+			    (= n-parts (- s-members 2)))))
 	      (cond
 	       ((eq which-s-member 2)
 		(if (eq n-parts 1)
@@ -922,8 +825,19 @@ languide-region-detail-level says how much incidental information to include."
 		    (setq languide-region-detail-string (format "%d parts" n-parts)))
 		  'if-then-else-tail))
 	       (t t)))
-	     (t t))))
+	     ((and (memq surrounding-functor '(progn save-excursion save-window-excursion))
+		   (= n-parts (1- s-members)))
+	      'progn-body)
+	     (t
+	      (if (= n-parts 1)
+		  (or (cdr (assoc functor languide-lisp-form-functors))
+		      'funcall-statement)
+		t)
+	      ))))
 	 (t
+	  (message "scraps %S..%S" from to)
+	  ;; we are on something that is neither an expression nor a
+	  ;; series of expressions
 	  (when (> languide-region-detail-level 1)
 	    (cond
 	     ((zerop (nth 0 pps))
@@ -1015,27 +929,6 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
 		    r ")"))
   (begin-end "(save-window-excursion\n" ")"))
 
-(defstatement while-do (emacs-lisp-mode lisp-interaction-mode)
-  "Emacs-lisp \"while\" special form"
-  ;; (keyword "while")
-  (head "(while" (expression-contents))
-  (body "(while" (expression) (skip-to-actual-code) (expressions))
-  (create (template & > "(while " p n>
-		    r ")"))
-  (begin-end ("(while ". "\n") ")")
-  (begin-end-with-dummy "(while true " ")"))
-
-(defstatement unless (lisp-mode emacs-lisp-mode lisp-interaction-mode)
-  "Emacs-lisp \"unless\" special form."
-  ;; (keyword "unless")
-  (head "(unless" (expression-contents))
-  (body "(unless" (expression) (skip-to-actual-code) (expression-contents))
-  (create (precondition (require 'cl))
-	  (template & > "(unless " p n>
-		    r ")"))
-  (begin-end ("(unless " . "\n") ")")
-  (begin-end-with-dummy "(unless false " ")"))
-
 (defstatement condition-chain (lisp-mode emacs-lisp-mode lisp-interaction-mode)
   ""
   ;; (keyword "cond")
@@ -1091,12 +984,36 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
   (head "(if" (expression))
   (body "(if" (expression) (skip-to-actual-code) (expression))
   (tail "(if" (expression) (expression) (skip-to-actual-code) (expressions))
-  (add-head (template & > "(if " r ")" n>))
+  (add-head (template & > "(if " r n>))
+  (add-trailer (template ")" >))
   (create (template & > "(if " p n>
 		    r n>
 		    p ")"))
   (begin-end ("(if " . "\n") ")")
   (begin-end-with-dummy "(if true " ")"))
+
+(defstatement unless (lisp-mode emacs-lisp-mode lisp-interaction-mode)
+  "Emacs-lisp \"unless\" special form."
+  ;; (keyword "unless")
+  (head "(unless" (expression-contents))
+  (body "(unless" (expression) (skip-to-actual-code) (expression-contents))
+  (create (precondition (require 'cl))
+	  (template & > "(unless " p n>
+		    r ")"))
+  (begin-end ("(unless " . "\n") ")")
+  (begin-end-with-dummy "(unless false " ")"))
+
+(defstatement while-do (emacs-lisp-mode lisp-interaction-mode)
+  "Emacs-lisp \"while\" special form"
+  ;; (keyword "while")
+  (head "(while" (expression-contents))
+  (body "(while" (expression) (skip-to-actual-code) (expressions))
+  (add-head (template & > "(while " r n>))
+  (add-trailer (template ")" >))
+  (create (template & > "(while " p n>
+		    r ")"))
+  (begin-end ("(while ". "\n") ")")
+  (begin-end-with-dummy "(while true " ")"))
 
 (defstatement and (lisp-mode emacs-lisp-mode lisp-interaction-mode scheme-mode)
   "And expression."
@@ -1137,3 +1054,7 @@ Assumes being at the end of a group of bindings, ready to insert a binding."
 (provide 'languide-lisp-like)
 
 ;;; end of languide-lisp-like.el
+
+(provide 'languide-lisp-like)
+
+;;; languide-lisp-like.el ends here
