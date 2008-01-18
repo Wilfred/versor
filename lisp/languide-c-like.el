@@ -1,8 +1,15 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2007-08-21 10:56:20 jcgs>
-;;
+;;; Time-stamp: <2007-12-11 17:27:24 jcgs>
+
 ;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
-;;
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: editing
+
+;; This file is NOT part of GNU Emacs.
+
 ;; This file is part of emacs-versor.
 ;;
 ;; emacs-versor is free software; you can redistribute it and/or modify
@@ -25,8 +32,8 @@
 ;; todo: make use of cc-mode (would have to understand it first)
 
 (defun languide-c-back-to-possible-ender (bod)
-  "Move point back to be at something that might end a C statement,
-and is outside a comment or string, relative to BOD.
+  "Move point back to be at something that might end a C statement.
+It must be outside a comment or string, relative to BOD.
 BOD is Beginning Of Defun, which is taken to be not in a comment or string."
   (let ((in-comment-or-string t))
     ;; keep looking for the possible start of a statement, and checking that
@@ -38,25 +45,28 @@ BOD is Beginning Of Defun, which is taken to be not in a comment or string."
 	)
        (t
 	(re-search-backward "[{;}]"
-			    bod		; (point-min)
+			    bod	      ; (point-min)
 			    t)	      ; leaves point at start of match
 	;; having found a character that can end a C statement,
 	;; we now parse from the start of the defun up to the
 	;; position of the character, to see whether the character
 	;; is in code or in string-or-comment
 	(let ((result (save-excursion (parse-partial-sexp bod (point)
-							  0 ; target-depth
+							  nil ; target-depth
 							  nil ; stop-before
 							  nil ; state
 							  nil ; stop-comment
 							  ))))
-	  (setq in-comment-or-string (or
-				      ;; emacs19 doesn't give us that handy 8th element!
-				      (nth 8 result)
-				      (if (nth 3 result) t nil)	; only want a number in in-comment-or-string if it tells us a character position; this one gives us a character code
-				      (nth 4 result)
-				      (languide-c-inside-for-control)
-				      ))
+	  (setq in-comment-or-string
+		(or
+		 ;; emacs19 doesn't give us that handy 8th element!
+		 (nth 8 result)
+		 ;; only want a number in in-comment-or-string if it
+		 ;; tells us a character position; this one gives us a
+		 ;; character code
+		 (if (nth 3 result) t nil)
+		 (nth 4 result)
+		 (languide-c-inside-for-control)))
 	  (if in-comment-or-string
 	      (if (numberp in-comment-or-string)
 		  (goto-char in-comment-or-string)
@@ -537,8 +547,11 @@ this does not have to work."
   "Return a block end."
   "}")
 
-(defmodal language-conditional-needs-unifying (c-mode java-mode perl-mode) ()
+(defmodal languide-conditional-needs-unifying
+  (c-mode java-mode perl-mode)
+  (from to)
   "Whether the conditional statement needs its dependent statements unified for it."
+  ;; todo: can improve on this --- and it should probably take FROM and TO args
   t)
 
 (defmodal statement-container (c-mode perl-mode java-mode) ()
@@ -1206,6 +1219,11 @@ languide-region-detail-level says how much incidental information to include."
 			      (if is-under-bracketed-control
 				  (intern (concat (symbol-name is-under-bracketed-control) "-body"))
 				'sole-content-of-block))
+			  (let ((type (save-excursion
+					(goto-char real-start)
+					(identify-statement nil))))
+			    (when type
+				(setq languide-region-detail-string (format "%S" type))))
 			  'whole-statement)))
 		  ;; not single statement
 		  (if is-under-bare-control
