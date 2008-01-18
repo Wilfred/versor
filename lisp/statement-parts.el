@@ -1,5 +1,5 @@
 ;;;; statement-parts.el -- navigate around parts of statements
-;;; Time-stamp: <2007-08-21 12:26:34 jcgs>
+;;; Time-stamp: <2007-12-11 18:00:54 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -47,13 +47,24 @@
   "Navigate to the container of the current statement."
   (interactive)
   (versor-as-motion-command current-item
-   (navigate-this-whole) ; in case of assumptions made when moving outwards
-   (let ((end (statement-container)))
-     (when navigate-container-whole-statement
-       (previous-statement 1)
-       (setq navigated-latest-part 'container)
-       (versor-set-current-item (point) end)
-       (versor-display-highlighted-choice "container" (languide-parts))))))
+    (navigate-this-whole) ; in case of assumptions made when moving outwards
+    (let ((end (statement-container)))
+      (when navigate-container-whole-statement
+	(previous-statement 1)
+	(setq navigated-latest-part 'container)
+	(versor-set-current-item (point) end)
+	(versor-display-highlighted-choice "container" (languide-parts))
+	(cons (point) end)))))
+
+(defun locate-this-container ()
+  "Locate the container of the current statement.
+Return a cons of the start and end of it.
+Like navigate-this-container, but without the versor motion code."
+  (interactive)
+  (navigate-this-whole) ; in case of assumptions made when moving outwards
+  (let ((end (statement-container)))
+    (previous-statement 1)
+    (cons (point) end)))
 
 (defun get-statement-part (type part)
   "For the major mode, get statement description of TYPE, PART thereof."
