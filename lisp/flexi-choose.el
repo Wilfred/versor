@@ -1,12 +1,26 @@
 ;;;; flexi-choose.el -- choose from a list, using pedals or similar
-;;; Time-stamp: <2006-08-02 12:07:43 john>
+;;; Time-stamp: <2007-12-31 20:38:16 jcgs>
+
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: around 2001
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
 
 ;; if this is loaded before we are, put it into our menu
+
+;;; Commentary:
+;; 
+
 (require 'languide)
 (require 'cl)
 
+;;; Code:
 (defun read-from-minibuffer-with-kill-ring (prompt)
-  "Read a string from the minibuffer, with kill-ring as history."
+  "Read a string from the minibuffer, using PROMPT, with `kill-ring' as history."
   (read-from-minibuffer prompt
 			nil		; initial-contents
 			nil		; keymap
@@ -14,23 +28,25 @@
 			'kill-ring))
 
 (defvar in-completing-read-with-history-hack nil
-  "Non-nil when in completing-read-with-history-hack.
+  "Non-nil when in `completing-read-with-history-hack'.
 This is used by number commands in my voice software,
 to decide whether to throw out to this package, or
 alternatively to set the prefix arg.
 It is also used to see whether to do some clever things
 with completion, subverting it to do filtering of choices.")
 			
-(defun completing-read-with-history-hack (prompt 
+(defun completing-read-with-history-hack (prompt
 					  history-var default
 					  choices-list &optional choices-alist extras)
   "With PROMPT and using HISTORY-VAR and DEFAULT, choose from CHOICES-LIST.
-This function has to construct an alist internally; if you have one ready,
-you can give it as optional argument CHOICES-ALIST. Or if you only have the alist ready,
-you can give that, passing in nil for choices-list, which it will then construct for you. 
-You can give some extra possibilities for completion with the optional argument EXTRAS.
-For example, in the hierarchical chooser, this is used to pass in the original choices
-along with the hierarchical level chunks. It should be an alist."
+This function has to construct an alist internally; if you have
+one ready, you can give it as optional argument CHOICES-ALIST.  Or
+if you only have the alist ready, you can give that, passing in
+nil for choices-list, which it will then construct for you.  You
+can give some extra possibilities for completion with the
+optional argument EXTRAS.  For example, in the hierarchical
+chooser, this is used to pass in the original choices along with
+the hierarchical level chunks.  It should be an alist."
   (if (and choices-list (null choices-alist))
       (setq choices-alist (mapcar 'list choices-list))
     (when (and choices-alist (null choices-list))
@@ -55,10 +71,10 @@ along with the hierarchical level chunks. It should be an alist."
   "A history hack variable.")
 
 (defvar choose-singletons-silently t
-  "*If non-nil, choose-using-history will, when given a single choice, skip asking the user.")
+  "*If non-nil, `choose-using-history' will, when given a single choice, skip asking the user.")
 
 (defun choose-by-number (n)
-  "In the context of choose-using-history, select the Nth item."
+  "In the context of `choose-using-history', select the Nth item."
   (interactive "p")
   (message "Choosing %d by number from %S" n choices-hack-history)
   (throw 'chosen (nth (- (length choices-hack-history) n 1) choices-hack-history)))
@@ -68,9 +84,10 @@ along with the hierarchical level chunks. It should be an alist."
 This uses the minibuffer with a history hack like that done in the
 tmm package.
 If optional HELPSTRING is given, pop that up in a temporary buffer.
-You can give some extra possibilities for completion with the optional argument EXTRAS.
-For example, in the hierarchical chooser, this is used to pass in the original choices
-along with the hierarchical level chunks. It should be an alist."
+You can give some extra possibilities for completion with the
+optional argument EXTRAS.  For example, in the hierarchical
+chooser, this is used to pass in the original choices along with
+the hierarchical level chunks.  It should be an alist."
   (if (and choose-singletons-silently
 	   (or
 	    (null (cdr choices))
@@ -540,3 +557,7 @@ With optional LIMIT argument, only looking recently used buffers."
 (provide 'flexi-choose)
 
 ;;;; end of flexi-choose.el
+
+(provide 'flexi-choose)
+
+;;; flexi-choose.el ends here
