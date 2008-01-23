@@ -1,9 +1,16 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2007-07-20 17:41:19 jcgs>
+;;; Time-stamp: <2008-01-17 16:35:20 jcgs>
 ;;
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
+
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -21,40 +28,131 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+;;; Commentary:
+
+;; Some internal functions for operations that aren't typically there already,
+;; or that normal Emacs does slightly differently from what we want.
+
 (require 'cl)
 (require 'modal-functions)
 
-
-;; some internal functions for operations that aren't typically there already,
-;; or that normal emacs does slightly differently from what we want
+;;; Code:
 
 (defun versor-forward-paragraph (&optional n)
-  "Like forward-paragraph, but don't end up on a blank line."
+  "As `forward-paragraph' with versor wrapping, but don't end on a blank line.
+Optional argument N is how many paragraphs to move forward."
   (interactive "p")
-  (forward-paragraph n)
-  ;; (message "forward-paragraph %d; then forward over blank lines" n)
-  (if (> n 0)
-      (while (and (looking-at "^\\s-*\\(\\s<.*\\)?$")
-		  (not (eobp)))
-	;; (message "skipping blank line at start of paragraph")
-	(forward-line 1))))
+  (versor-as-motion-command current-item
+    (if (and current-item
+	     (versor-overlay-end current-item))
+	(goto-char (versor-overlay-end current-item))
+      (forward-paragraph n))
+    ;; (message "forward-paragraph %d; then forward over blank lines" n)
+    (if (> n 0)
+	(while (and (looking-at "^\\s-*\\(\\s<.*\\)?$")
+		    (not (eobp)))
+	  ;; (message "skipping blank line at start of paragraph")
+	  (forward-line 1)))
+    (skip-to-actual-code)
+    (let ((start (point)))
+      (versor-complete-paragraph)
+      (versor-set-current-item start
+			       (save-excursion
+				 (end-of-paragraph-text)
+				 (versor-adjust-end-of-paragraph 1))))))
+
+(defmodel versor-complete-paragraph ()
+  "Handle false incomplete paragraphs.
+For example, a LaTeX \\begin{whatever} on a line of its own will
+look like a paragraph in its own right, but in fact there is more
+to come.")
+
+(defmodal versor-complete-paragraph (fundamental-mode) ()
+  "Does nothing.")
+
+(defmodal versor-complete-paragraph (latex-mode) ()
+  "Handles \\begin to stop it looking like a whole paragraph."
+  (while (looking-at "\\\\begin{.+}")
+    (beginning-of-line 2)))
+
+(defun non-comment-between (a b)
+  "Return whether there is any non-comment between A and B."
+  (save-excursion
+    (goto-char a)
+    (while (and (< (point) b)
+		(looking-at "^\\s-*\\(\\s<.*\\)?$"))
+      (beginning-of-line 2))
+    (< (point) b)))
 
 (defun versor-backward-paragraph (&optional n)
-  "Like backward-paragraph, but don't end up on a blank line."
+  "As `backward-paragraph' with versor wrapping, but don't end on a blank line.
+Optional argument N is how many paragraphs to go back."
   (interactive "p")
-  ;; (message "versor-backward-paragraph starting at %d" (point))
-  (backward-paragraph (1+ n))
-  ;; (message "backward-paragraph %d gone to %d; then forward over blank lines" n (point))
-  (when (> n 0)
-    (while (and (looking-at "^\\s-*\\s<.*$")
-		(not (bobp)))
-      (previous-line 1))		; respect goal column
-    (while (looking-at "^\\s-*$")
-      (next-line 1))))			; respect goal column
+  ;; todo: handle start-of-paragraph markup
+  (versor-as-motion-command current-item
+    ;; first, move back into the separator before the current paragraph
+    (backward-paragraph)
+    ;; now, keep going back a real (non-comment) paragraph
+    (let ((apparent-end (point))
+	  (got-some-real-text nil))
+      (while (> n 0)
+	(backward-paragraph)
+	;; if it's just a comment, or some skippable markup, go back further
+	(while (and (not (bobp))
+		    (or (setq got-some-real-text (versor-on-false-paragraph-end))
+			(not (non-comment-between (point) apparent-end))))
+	  (unless got-some-real-text
+	    (setq apparent-end (point)))
+	  (backward-paragraph))
+	(setq n (1- n)
+	      apparent-end (point)))
+      (skip-to-actual-code)
+      ;; todo: move to handle false beginnings
+      (while (versor-on-false-paragraph-start)
+	(beginning-of-line 0))
+      (skip-to-actual-code)
+      (versor-set-current-item (point)
+			       (save-excursion
+				 (versor-complete-paragraph)
+				 (end-of-paragraph-text)
+				 (versor-adjust-end-of-paragraph 1))))))
 
-(defun versor-end-of-paragraph (&optional arg)
-  "Move to the end of the paragraph."
-  (end-of-paragraph-text))
+(defmodel versor-on-false-paragraph-end ()
+  "Return whether we are on text that looks like a paragraph end, but isn't.")
+
+(defmodal versor-on-false-paragraph-end (fundamental-mode) ()
+  "Return whether we are on text that looks like a paragraph end, but isn't."
+  nil)
+
+(defmodal versor-on-false-paragraph-end (latex-mode) ()
+  "Return whether we are on text that looks like a paragraph end, but isn't."
+  (looking-at "\\\\end{.+}"))
+
+(defmodel versor-on-false-paragraph-start ()
+  "Return whether we are on text that looks like a paragraph start, but isn't.")
+
+(defmodal versor-on-false-paragraph-start (fundamental-mode) ()
+  "Return whether we are on text that looks like a paragraph start, but isn't."
+  nil)
+
+(defmodal versor-on-false-paragraph-start (latex-mode) ()
+  "Return whether we are on text that looks like a paragraph start, but isn't."
+  (looking-at "\\\\begin{.+}"))
+
+(defmodel versor-adjust-end-of-paragraph (&optional arg)
+  "Adjust to the end of the paragraph.")
+
+(defmodal versor-adjust-end-of-paragraph (fundamental-mode) (&optional arg)
+  "Adjust to the end of the paragraph."
+  (point))
+
+(defmodal versor-adjust-end-of-paragraph (latex-mode) (&optional arg)
+  "Adjust to the end of the paragraph."
+  (beginning-of-line 2)
+  (while (versor-on-false-paragraph-end)
+    (beginning-of-line 2))
+  (point))
 
 ;; todo: add tex, latex, bibtex ideas of paragraphs, perhaps going via generic-text, or building on the built-in ones in-place?
 
@@ -215,15 +313,11 @@ Makes a two-part selection, of opening and closing brackets."
 	(error nil))))
   (when versor-show-depth
     (current-depth (point) t))
-  ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
 	(end (save-excursion (safe-forward-sexp 1) (point))))
-    ;; TODO: should probably be versor-set-current-item
-    (make-versor-overlay start (1+ start))
-    ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-    ;; TODO: should probably be versor-add-to-current-item when I've written one
+    (versor-set-current-item start (1+ start))
     (when end
-      (versor-extra-overlay (1- end) end))
+      (versor-add-to-current-item(1- end) end))
     (cons start end)))
 
 (defmodal versor-backward-up-list (lisp-mode emacs-lisp-mode lisp-interaction-mode) (arg)
@@ -231,7 +325,6 @@ Makes a two-part selection, of opening and closing brackets."
 Makes a two-part selection, of opening and closing brackets."
   (interactive "p")
   (safe-backward-up-list arg)
-  ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (let ((start (point))
 	(end (save-excursion (safe-forward-sexp 1) (point-marker))))
     (when (and versor-reformat-automatically
@@ -245,12 +338,10 @@ Makes a two-part selection, of opening and closing brackets."
 	      (delete-trailing-whitespace)))
 	(error nil)))
     (when versor-show-depth
-      (current-depth (point) t)) ;; TODO: should probably be versor-set-current-item
-    (make-versor-overlay start (1+ start))
-    ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-    ;; TODO: should probably be versor-add-to-current-item when I've written one
+      (current-depth (point) t))
+    (versor-set-current-item start (1+ start))
     (when end
-      (versor-extra-overlay (1- end) end))
+      (versor-add-to-current-item (1- end) end))
     (prog1
 	(cons start (marker-position end))
       (move-marker end nil))))
@@ -307,14 +398,10 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
 	(re-search-backward "[[({]" (line-beginning-position) t))
       (progn
 	(safe-backward-up-list arg)
-	;; (message "main overlay at %d..%d" (point) (1+ (point)))
 	(let ((start (point))
 	      (end (save-excursion (forward-sexp 1) (point))))
-	  ;; TODO: should probably be versor-set-current-item
-	  (make-versor-overlay start (1+ start))
-	  ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-	  ;; TODO: should probably be versor-add-to-current-item when I've written one
-	  (versor-extra-overlay (1- end) end)
+	  (versor-set-current-item start (1+ start))
+	  (versor-add-to-current-item (1- end) end)
 	  (cons start end)))
     (py-goto-block-up)
     (let ((start (point)))
@@ -332,14 +419,11 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
     ;; if we were at the end of the last expression, try going to the start of it
     (previous-sexp 1)
     (safe-down-list args))
-  ;; (message "main overlay at %d..%d" (point) (1+ (point)))
   (if (looking-at "\\s(")
       (save-excursion
 	(versor-set-current-item (point) (1+ (point)))
 	(when (safe-forward-sexp 1)
-	  ;; (message "extra overlay at %d..%d" (1- (point)) (point))
-	  ;; TODO: should probably be versor-add-to-current-item when I've written one
-	  (versor-extra-overlay (1- (point)) (point))))
+	  (versor-add-to-current-item (1- (point)) (point))))
     (when versor-show-depth
       (current-depth (point) t))    (let ((start (point)))
       (when (safe-forward-sexp 1)
@@ -348,11 +432,15 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
 
 (defmodal versor-down-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
   "Like down-list, but with versor stuff around it, and for HTML block structure."
-  (nested-blocks-enter)
-  (let ((start (point)))
-    (next-texp 1)
-    (versor-set-current-item start (point))
-    (goto-char start)))
+  (cond
+   ((at-paragraph-start-p (point))
+    (forward-word))
+   (t
+    (nested-blocks-enter)
+    (let ((start (point)))
+      (next-texp 1)
+      (versor-set-current-item start (point))
+      (goto-char start)))))
 
 (defmodal versor-down-list (sgml-mode xml-mode) (arg)
   "Like down-list, but with versor stuff around it, and for SGML/XML block structure."
@@ -371,14 +459,11 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
 	  ;; if we were at the end of the last expression, try going to the start of it
 	  (previous-sexp 1)
 	  (safe-down-list args))
-	;; (message "main overlay at %d..%d" (point) (1+ (point)))
 	(if (looking-at "\\s(")
 	    (save-excursion
 	      (versor-set-current-item (point) (1+ (point)))
 	      (when (safe-forward-sexp 1)
-		;; (message "extra overlay at %d..%d" (1- (point)) (point))
-		;; TODO: should probably be versor-add-to-current-item when I've written one
-		(versor-extra-overlay (1- (point)) (point))))
+		(versor-add-to-current-item (1- (point)) (point))))
 	  (let ((start (point)))
 	    (when (safe-forward-sexp 1)
 	      (versor-set-current-item start (point))
@@ -459,18 +544,18 @@ kinds of Lisp modes."
 	    ;; we move to the start of a regexp, and let the surrounding
 	    ;; macro versor-as-motion-command in versor-next call
 	    ;; versor-set-current-item for us.
-  (versor-set-current-item (safe-scan-sexps (point) -1)
-			   ;; where
-			   (if (eq versor-allow-move-to-end-of-last t)
-			       where
-			     (progn
-			       (goto-char where)
-			       ;; (message "Looking forward from %d" where)
-			       ;; (skip-to-actual-code)
-			       (skip-syntax-forward "^)")
-			       (point)
-			       ))
-			   )))
+	    (versor-set-current-item (safe-scan-sexps (point) -1)
+				     ;; where
+				     (if (eq versor-allow-move-to-end-of-last t)
+					 where
+				       (progn
+					 (goto-char where)
+					 ;; (message "Looking forward from %d" where)
+					 ;; (skip-to-actual-code)
+					 (skip-syntax-forward "^)")
+					 (point)
+					 ))
+				     )))
       (if versor-move-out-when-at-end
 	  (progn
 	    (safe-up-list)
@@ -480,11 +565,24 @@ kinds of Lisp modes."
 (defvar debug-texp nil
   "*Whether texp movement should explain what it's doing.")
 
+(defun at-paragraph-start-p (start)
+  "Return whether we are at the start of a paragraph.
+START indicates the earliest place to look back to."
+  ;; todo: make this understand various start-of-paragraph markup
+  (and (bolp)
+       (save-excursion
+	 (goto-char (min (save-excursion
+			   (beginning-of-line 0)
+			   (back-to-indentation)
+			   (point))
+			 start))
+	 (looking-at paragraph-start))))
+
 (defun next-texp (n)
   "Move to the Nth next text expression.
 Treat tagged markup blocks like bracketted expressions.
 Treat paragraphs (in languages where they are marked by blank lines) as though
-they had markup tags. Likewise, treat sentences as blocks."
+they had markup tags.  Likewise, treat sentences as blocks."
   ;; todo: skip comments
   (while (> n 0)
     (when debug-texp (message "next-texp(%d)" n))
@@ -497,21 +595,27 @@ they had markup tags. Likewise, treat sentences as blocks."
 	   ((memq major-mode '(html-helper-mode html-mode))
 	    (looking-at "<[^/]"))
 	   ((eq major-mode 'latex-mode)
-	    (looking-at "\\\\[a-z]+"))))
+	    (looking-at "\\\\begin"))))
 	(when debug-texp (message "next-texp: tagged block %s" (match-string 0)))
 	(skip-to-actual-code)
 	(nested-blocks-forward))
-       ;; paragraphs
+       ;; other tags
        ((save-excursion
-	  (goto-char (max (save-excursion
-			    (beginning-of-line 0)
-			    (back-to-indentation)
-			    (point))
-			  start))
-	  (looking-at paragraph-start))
+	  (skip-to-actual-code)
+	  (cond
+	   ((eq major-mode 'latex-mode)
+	    (looking-at "\\\\[a-z]+"))))
+	(when debug-texp (message "next-texp: tag %s" (match-string 0)))
+	(skip-to-actual-code)
+	(when (looking-at "\\\\\\([a-z]+\\)")
+	  (goto-char (match-end 0))
+	  (while (looking-at "[\[\{]")
+	    (forward-sexp 1))))
+       ;; paragraphs
+       ((at-paragraph-start-p start)
 	(when debug-texp (message "next-texp: paragraph"))
 	(forward-paragraph)
-	(skip-to-actual-code))
+	(skip-to-actual-code-backwards))
        ;; sentences
        ((save-excursion
 	  (skip-syntax-backward " " start)
@@ -804,8 +908,9 @@ Like backward-word but skips comments."
 
 (defun versor-next-word (n)
   "Move forward a word, or, with argument, that number of words.
-Like forward-word but leaves point on the first character of the word,
-and never on the space or punctuation before it; and skips comments."
+Like `forward-word' but leaves point on the first character of the word,
+and never on the space or punctuation before it; and skips comments.
+Argument N is the number of words to move forward."
   (interactive "p")
   (let ((was-in-comment (in-comment-p)))
     (while (> n 0)
@@ -819,8 +924,11 @@ and never on the space or punctuation before it; and skips comments."
   (skip-syntax-forward "^w"))
 
 (defun versor-end-of-word (n)
-  "Move to the end of the current word, or, with argument, that number of words."
+  "Move to the end of the current word, or, with argument, that number of words.
+Argument N is the number of words to move forward."
   (interactive "p")
+  (when (looking-at "\\>")
+    (forward-word 1))
   (forward-word (1- n))
   (skip-syntax-forward "w"))
 
@@ -908,6 +1016,14 @@ Stay within the current sentence."
   (versor-as-motion-command item
     (versor-backward-without-sticking-at-comments
      backward-sentence n)))
+
+(defun versor-forward-sentence (n)
+  "Like `forward-sentence', but with some versor wrapping.
+Argument N is how many times to do it."
+  ;; todo: set the selection explicitly
+  (interactive "p")
+  (versor-as-motion-command item
+    backward-sentence n))
 
 ;;;; tempo markers
 
@@ -1005,17 +1121,17 @@ PROPERTIES is given as an alist."
 (defun versor-table-starter ()
   "Return the table starter regexp for the current major mode."
   (or (get major-mode 'table-starter)
-      (error "No table starter for %S") major-mode))
+      (error "No table starter for %S" major-mode)))
 
 (defun versor-table-ender ()
   "Return the table ender regexp for the current major mode."
   (or (get major-mode 'table-ender)
-      (error "No table ender for %S") major-mode))
+      (error "No table ender for %S" major-mode)))
 
 (defun versor-row-starter ()
   "Return the row starter regexp for the current major mode."
   (or (get major-mode 'row-starter)
-      (error "No row starter for %S") major-mode))
+      (error "No row starter for %S" major-mode)))
 
 (defun versor-row-ender ()
   "Return the row ender regexp for the current major mode."
@@ -1032,7 +1148,7 @@ PROPERTIES is given as an alist."
 (defun versor-cell-starter ()
   "Return the cell starter regexp for the current major mode."
   (or (get major-mode 'cell-starter)
-      (error "No cell starter for %S") major-mode))
+      (error "No cell starter for %S" major-mode)))
 
 (defun versor-cell-ender ()
   "Return the cell ender regexp for the current major mode."
@@ -1095,15 +1211,17 @@ If so, it is called on the other two arguments."
 	  (skip-to-actual-code))))))
 
 (defun versor-next-cell (n)
-  "Move to the next cell."
+  "Move to the Nth next cell."
   ;; todo: limit to within this row? or at least not include the row markup line
   (interactive "p")
   (let ((direct-action (versor-cell-next)))
+    (message "versor-next-cell: direct=%S" direct-action)
     (if direct-action
 	(funcall direct-action n)
       (forward-char 1) ; so we can search for next starter even if already on one
       (let* ((starter (versor-cell-starter))
 	     (ender (versor-cell-ender)))
+	(message "starter=%S ender=%S" starter ender)
 	(while (> n 0)
 	  (message "Searching from %d for starter %S" (point) starter)
 	  (if (not (re-search-forward-callable starter (point-max) t))
@@ -1120,7 +1238,9 @@ If so, it is called on the other two arguments."
 	      (re-search-forward-callable (versor-cell-starter) (point-max) t)
 	      (goto-char (1- (match-beginning 0))))
 	    (message "got %d as end position" (point))
-	    (versor-set-current-item starter-start (point)))
+	    (versor-set-current-item
+	     starter-end ;;starter-start
+	     (point)))
 	  (goto-char starter-end)
 	  (skip-to-actual-code)
 	  (message "went to starter-end %d and skipped to %d" starter-end (point)))))))
@@ -1171,9 +1291,10 @@ If so, it is called on the other two arguments."
 	  (skip-to-actual-code))))))
 
 (defun versor-next-row (n)
-  "Move to the next row."
+  "Move to the Nth next row."
   (interactive "p")
   (let ((direct-action (versor-row-next)))
+    (message "versor-next-row: direct=%S" direct-action)
     (if direct-action
 	(funcall direct-action n)
       (forward-char 1)
@@ -1184,7 +1305,7 @@ If so, it is called on the other two arguments."
 	     (row-starter (versor-row-starter)))
 	(while (> n 0)
 	  (if (re-search-forward-callable row-starter limit t)
-	      (decf n)		
+	      (decf n)
 	    (setq n 0)))
 	(let ((start-ender (point))
 	      (start-starter (match-beginning 0)))
@@ -1364,3 +1485,7 @@ If so, it is called on the other two arguments."
 (provide 'versor-base-moves)
 
 ;;;; end of versor-base-moves.el
+
+(provide 'versor-base-moves)
+
+;;; versor-base-moves.el ends here
