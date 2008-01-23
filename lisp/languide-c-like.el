@@ -1,7 +1,7 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2007-12-11 17:27:24 jcgs>
+;;; Time-stamp: <2008-01-22 17:25:25 jcgs>
 
-;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008  John C. G. Sturdy
 
 ;; Author: John C. G. Sturdy <john@cb1.com>
 ;; Maintainer: John C. G. Sturdy <john@cb1.com>
@@ -94,7 +94,7 @@ is liable to return the wrong result."
     (= (- b a)
        (skip-chars-forward " \t\n\r" b))))
 
-(defmodal move-into-previous-statement (c-mode perl-mode java-mode) ()
+(defmodal move-into-previous-statement (c-mode c++-mode perl-mode java-mode) ()
   "Move into the previous C (etc) statement.
 Need only work if already at or just before the start of a statement."
   (interactive)
@@ -103,7 +103,7 @@ Need only work if already at or just before the start of a statement."
       (backward-sexp 1)
     (backward-char 1)))
 
-(defmodal move-into-next-statement (c-mode perl-mode java-mode) ()
+(defmodal move-into-next-statement (c-mode c++-mode perl-mode java-mode) ()
   "Move into the next C (etc) statement.
 Need only work if already at or just beyond the end of a statement."
   (interactive)
@@ -256,7 +256,7 @@ Return the type if we spotted it."
 	(read-char)
 	(delete-overlay o)))))
 
-(defmodal beginning-of-statement-internal (c-mode perl-mode) ()
+(defmodal beginning-of-statement-internal (c-mode c++-mode perl-mode) ()
   "Move to the beginning of a C or Perl statement.
 Return the type if obvious."
   (mapcar 'delete-overlay debug-overlays)
@@ -343,7 +343,7 @@ Return the type if obvious."
       ;; we don't know what type it is
       possible-type)))
 
-(defmodal end-of-statement-internal (c-mode perl-mode java-mode) (hint)
+(defmodal end-of-statement-internal (c-mode c++-mode perl-mode java-mode) (hint)
   "Move to the end of a C, Perl or Java statement. HINT suggests a statement type."
   (let ((old (point))
 	;; get beginning of defun, so we can see whether we have landed in a
@@ -472,12 +472,22 @@ Return the type if obvious."
 	  )
   "A regexp for a common kind of C arg.")
 
-(defmodal identify-statement (c-mode) (default)
+
+(defvar c-statement-keywords-regexp
+  (concat
+   "\\("
+   (mapconcat 'symbol-name
+	      '(do for while if return switch continue default case class)
+	      "\\)\\|\\(")
+   "\\)")
+  "Regexp matching common C keywords.")
+
+(defmodal identify-statement (c-mode c++-mode) (default)
   "Identify the current statement, or return DEFAULT.
 We must be at the start of the statement already, otherwise
 this does not have to work."
   (cond
-   ((looking-at "\\(do\\)\\|\\(for\\)\\|\\(while\\)\\|\\(if\\)\\|\\(return\\)\\|\\(switch\\)\\|\\(continue\\)\\|\\(default\\)\\|\\(case\\)")
+   ((looking-at c-statement-keywords-regexp)
     (let ((keyword-string (buffer-substring-no-properties (match-beginning 0) (match-end 0))))
       (cond
        ((string= keyword-string "if")
@@ -531,30 +541,30 @@ this does not have to work."
     'defun)
    (t default)))
 
-(defmodal insert-compound-statement-open (c-mode java-mode perl-mode) ()
+(defmodal insert-compound-statement-open (c-mode c++-mode java-mode perl-mode) ()
   "Insert a block start."
   (languide-insert "{\n"))
 
-(defmodal compound-statement-open (c-mode java-mode perl-mode) ()
+(defmodal compound-statement-open (c-mode c++-mode java-mode perl-mode) ()
   "Return a block start."
    "{")
 
-(defmodal insert-compound-statement-close (c-mode java-mode perl-mode) ()
+(defmodal insert-compound-statement-close (c-mode c++-mode java-mode perl-mode) ()
   "Insert a block end."
   (languide-insert "\n}\n"))
 
-(defmodal compound-statement-close (c-mode java-mode perl-mode) ()
+(defmodal compound-statement-close (c-mode c++-mode java-mode perl-mode) ()
   "Return a block end."
   "}")
 
 (defmodal languide-conditional-needs-unifying
-  (c-mode java-mode perl-mode)
+  (c-mode c++-mode java-mode perl-mode)
   (from to)
   "Whether the conditional statement needs its dependent statements unified for it."
   ;; todo: can improve on this --- and it should probably take FROM and TO args
   t)
 
-(defmodal statement-container (c-mode perl-mode java-mode) ()
+(defmodal statement-container (c-mode c++-mode perl-mode java-mode) ()
   "Move to the end of the container of the current statement."
   ;; needs to do the "not in string, not in comment" stuff, so we need
   ;; the Beginning Of Defun to compare against
@@ -629,7 +639,7 @@ Return the position at the end of the initializer."
 	  start))
     start))
 
-(defmodal variables-in-scope (c-mode) (whereat)
+(defmodal variables-in-scope (c-mode c++-mode) (whereat)
   "Return the list of variables in scope at WHEREAT."
   (save-excursion
     (goto-char whereat)
@@ -690,7 +700,7 @@ Return the position at the end of the initializer."
 	  ))
       variables)))
 
-(defmodal variable-bindings-in-region (c-mode java-mode)  (from to)
+(defmodal variable-bindings-in-region (c-mode c++-mode java-mode)  (from to)
   "Return a list of the bindings between FROM and TO.
 Each element is a list of:
   name
@@ -739,7 +749,7 @@ Each element is a list of:
 	(backward-char 1))
       variables)))
 
-(defmodal variable-references-in-region (c-mode java-mode) (from to)
+(defmodal variable-references-in-region (c-mode c++-mode java-mode) (from to)
   "Return a list of the variable references between FROM and TO.
 Each element is a list of:
   name
@@ -772,11 +782,11 @@ Each element is a list of:
 		  (push (cons name (point)) results)))))))
     (nreverse results)))
 
-(defmodal static-variable-p (c-mode java-mode perl-mode) (name where)
+(defmodal static-variable-p (c-mode c++-mode java-mode perl-mode) (name where)
   "Return whether a static variable called NAME is visible at WHERE."
   nil)
 
-(defmodal move-to-enclosing-scope-last-variable-definition (c-mode java-mode perl-mode)
+(defmodal move-to-enclosing-scope-last-variable-definition (c-mode c++-mode java-mode perl-mode)
   (&optional allow-conversions)
   "Move to the end of the nearest set of variable bindings.
 This is the place at which you would naturally insert a new
@@ -797,7 +807,7 @@ This lets clever implementations put the definition as far out as possible."
 	open)
     nil))
 
-(defmodal variable-declaration-texts  (c-mode java-mode) (name type initial-value)
+(defmodal variable-declaration-texts  (c-mode c++-mode java-mode) (name type initial-value)
   "Return the texts for a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
 TYPE and INITIAL-VALUE may be null, but the NAME is required.
 The result is a list of three strings: any preceding whitespace,
@@ -820,7 +830,7 @@ the actual declaration, and any following whitespace."
 	   ""))
 	""))
 
-(defmodal insert-variable-declaration (c-mode java-mode) (name type initial-value)
+(defmodal insert-variable-declaration (c-mode c++-mode java-mode) (name type initial-value)
   "Insert a definition for a variable called NAME, of TYPE, with INITIAL-VALUE.
 Assumes we are at the obvious point to add a new variable.
 TYPE and INITIAL-VALUE may be null, but the NAME is required."
@@ -869,7 +879,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 		  (symbol-name name)
 		"")))))))
 
-(defmodal insert-function-declaration (c-mode java-mode) (name result-type arglist body &optional docstring)
+(defmodal insert-function-declaration (c-mode c++-mode java-mode) (name result-type arglist body &optional docstring)
   "Insert a function definition for a function called NAME, returning RESULT-TYPE, taking ARGLIST, and implemented by BODY."
   (languide-insert "\n" result-type " " name)
   (let ((arglist-start (point)))
@@ -911,7 +921,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 	  body
 	  "}\n"))
 
-(defmodal ambient-defun-name (c-mode) (where)
+(defmodal ambient-defun-name (c-mode c++-mode) (where)
   "Give the name of the function defined around WHERE."
   (save-excursion
     (goto-char where)
@@ -919,7 +929,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
     (let ((end (scan-sexps (point) -1)))
       (buffer-substring-no-properties (scan-sexps end -1) end))))
 
-(defmodal function-call-string (c-mode java-mode perl-mode) (name arglist where)
+(defmodal function-call-string (c-mode c++-mode java-mode perl-mode) (name arglist where)
   "Return a function call for a function called NAME taking ARGLIST. WHERE gives context."
   (let ((at-statement-start (save-excursion
 			      ;; This is to see whether this is a procedure call statement,
@@ -939,7 +949,7 @@ TYPE and INITIAL-VALUE may be null, but the NAME is required."
 		";\n"
 	      ""))))
 
-(defmodal languide-find-surrounding-call (c-mode java-mode perl-mode) ()
+(defmodal languide-find-surrounding-call (c-mode c++-mode java-mode perl-mode) ()
   "Return a list of the function call syntax around point.
 Each entry is a cons of start and end positions. For most languages
 there will be two or three entries, the function name, the
@@ -963,7 +973,7 @@ descending order of character position."
 		(throw 'found (list function-name open-bracket (cons (1- (point)) (point))))))))
 	nil))))
 
-;; (defmodal function-arglist-boundaries (c-mode java-mode perl-mode) (&optional where)
+;; (defmodal function-arglist-boundaries (c-mode c++-mode java-mode perl-mode) (&optional where)
 ;;   "Return a cons of the start and end of the argument list surrounding WHERE,
 ;; or surrounding point if WHERE is not given.")
 
@@ -1055,7 +1065,7 @@ The modifier can be structure accessors, etc."
 		  structure-types-cache)
 	    (cdr (assoc modifier-arg members))))))))
 
-(defmodal deduce-expression-type (c-mode java-mode) (value-text where)
+(defmodal deduce-expression-type (c-mode c++-mode java-mode) (value-text where)
   "Given VALUE-TEXT, try to deduce the type of it.
 Second arg WHERE gives the position, for context."
   (cond
@@ -1071,7 +1081,7 @@ Second arg WHERE gives the position, for context."
    ((string-match "\".*\"" value-text)
     (cond
      ((eq major-mode 'java-mode) "String")
-     ((eq major-mode 'c-mode) "char *")))
+     ((eq major-mode 'c-mode c++-mode) "char *")))
    ((string-match "\\([a-z][a-z0-9_]*\\)(" value-text)
     ;; (message "\"%s\" appears to be a function call" value-text)
     (let* ((function-type (type-of-c-function (match-string-no-properties 1 value-text)))
@@ -1108,7 +1118,7 @@ Second arg WHERE gives the position, for context."
 		    (not . "!"))))
       (symbol-name operator)))
 
-(defmodal add-expression-term (c-mode java-mode perl-mode)
+(defmodal add-expression-term (c-mode c++-mode java-mode perl-mode)
   (operator argument from to)
   "Wrap an expression with OPERATOR and ARGUMENT around the region between FROM and TO."
   (goto-char from)
@@ -1121,7 +1131,7 @@ Second arg WHERE gives the position, for context."
     (unless unitary
       (languide-insert ")"))))
 
-(defmodal move-before-defun (c-mode java-mode perl-mode) ()
+(defmodal move-before-defun (c-mode c++-mode java-mode perl-mode) ()
   "Move to before the current function definition."
   (c-mark-function))			; pollutes mark ring -- sorry
 
@@ -1136,7 +1146,7 @@ Second arg WHERE gives the position, for context."
 	     (looking-at "\\(if\\)\\|\\(while\\)\\|\\(for\\)")
 	     (intern (match-string-no-properties 0))))))
 
-(defmodal languide-region-type (c-mode java-mode perl-mode) (from to)
+(defmodal languide-region-type (c-mode c++-mode java-mode perl-mode) (from to)
   "Try to work out what type of thing the code between FROM and TO is.
 Results can be things like if-then-body, if-then-else-tail, progn-whole,
 while-do-head, defun-body, and so on. If one of these is returned, the
@@ -1243,7 +1253,7 @@ languide-region-detail-level says how much incidental information to include."
 			'sequence
 		      nil)))))))))))
 
-(defstatement comment (c-mode)
+(defstatement comment (c-mode c++-mode)
   "Comment"
   (head "/\\* *")
   (body "/\\* *" (upto " *\\*/"))
@@ -1264,19 +1274,19 @@ languide-region-detail-level says how much incidental information to include."
   (tail "$")
   (create (template "# " r n)))
 
-(defstatement comment (c-mode)
+(defstatement comment (c-mode c++-mode)
   "Comment"
   (head "/\\* *")
   (body "/\\* *" (upto " *\\*/"))
   (tail " *\\*/")
   (create (template "/* " r " */")))
 
-(defstatement progn (c-mode java-mode perl-mode)
+(defstatement progn (c-mode c++-mode java-mode perl-mode)
   "Sequential execution statement."
   (head "{")
   (body "{" (statements)))
 
-(defstatement if-then (c-mode java-mode perl-mode)
+(defstatement if-then (c-mode c++-mode java-mode perl-mode)
   "If statement without else clause."
   (head "if" (expression-contents))
   (body "if" (expression) (statement-contents))
@@ -1289,7 +1299,7 @@ languide-region-detail-level says how much incidental information to include."
   (begin-end "if () {" end "}")
   (begin-end-with-dummy "if (1) {" end "}"))
 
-(defstatement if-then-else (c-mode java-mode perl-mode)
+(defstatement if-then-else (c-mode c++-mode java-mode perl-mode)
   "If statement with else clause."
   (head "if" (expression-contents))
   (body "if" (expression) (statement-contents))
@@ -1309,7 +1319,7 @@ languide-region-detail-level says how much incidental information to include."
   (begin-end "if () {" "} else {}")
   (begin-end-with-dummy "if (1) {" "} else {}"))
 
-(defstatement while-do (c-mode java-mode perl-mode)
+(defstatement while-do (c-mode c++-mode java-mode perl-mode)
   "While statement."
   (head "while" (expression-contents))
   (body "while" (expression) (statement-contents))
@@ -1321,7 +1331,7 @@ languide-region-detail-level says how much incidental information to include."
   (begin-end "while () {" "}")
   (begin-end-with-dummy "while (1) {" "}"))
 
-(defstatement do-while (c-mode java-mode perl-mode)
+(defstatement do-while (c-mode c++-mode java-mode perl-mode)
   "Do-While statement."
   (head "do" (statement) "while" (expression))
   (body "do" (statement-contents))
@@ -1331,7 +1341,7 @@ languide-region-detail-level says how much incidental information to include."
 	     (remember "{") (expressions) (remember "}"))
   (create (template & > "do {" r "} while (" p ")" n>)))
 
-(defstatement for (c-mode java-mode perl-mode)
+(defstatement for (c-mode c++-mode java-mode perl-mode)
   "For statement."
   (head "for" (expression-contents))
   (body "for" (expression) (statement-contents))
@@ -1340,7 +1350,7 @@ languide-region-detail-level says how much incidental information to include."
   (create (template & > "for (" p ";" p ";" p ") {" n>
 		    r "}")))
 
-(defstatement switch (c-mode java-mode)
+(defstatement switch (c-mode c++-mode java-mode)
   "Switch statement"
   (head "switch" (expression-contents))
   (body "switch" (expression) (statement-contents))
@@ -1349,7 +1359,7 @@ languide-region-detail-level says how much incidental information to include."
   (create (template & > "switch (" p ";" p ";" p ") {" n>
 		    r "}")))
 
-(defstatement defun (c-mode java-mode)
+(defstatement defun (c-mode c++-mode java-mode)
   "Function definition"
   (head (upto "{"))
   (body "{" (statements))
@@ -1381,7 +1391,7 @@ languide-region-detail-level says how much incidental information to include."
   (framework (remember "my") (remember "(") (expressions) (remember ")"))
   (create (template & > "my (" p ")" n)))
 
-(defstatement variable-declaration (c-mode java-mode)
+(defstatement variable-declaration (c-mode c++-mode java-mode)
   "Local variable"
   ;; todo: recognize local variables with and without initial values, as separate statement types
   (head "[;=]" (start-of-match) (from-start-of-statement))
@@ -1389,40 +1399,49 @@ languide-region-detail-level says how much incidental information to include."
   (framework (remember "=") (remember ";"))
   (create (template & > " " p ";" n)))
 
-(defstatement assignment (perl-mode c-mode java-mode)
+(defstatement assignment (perl-mode c-mode c++-mode java-mode)
   "Assignment"
   (head "=" (start-of-match) (from-start-of-statement))
   (body "=" (upto ";"))
   (framework (remember "=") (remember ";"))
   (create (template & > (p "Variable: ") " = " r ";")))
 
-(defstatement function-call (perl-mode c-mode java-mode)
+(defstatement function-call (perl-mode c-mode c++-mode java-mode)
   "Function call"
   (head (expression))
   (body (expression) (expression-contents))
   (framework (remember "(") (expressions) (remember ")"))
   (create (template & > (p "Function name: ") "(" r ")")))
 
-(defstatement return (c-mode java-mode)
+(defstatement return (c-mode c++-mode java-mode)
   "Return, with optional result"
   (head "return" (start-of-match) (from-start-of-statement))
   (body "return" (upto ";"))
   (framework (remember "return") (expression) (remember ";"))
   (create (template & > "return" r ";")))
 
-(defstatement and (perl-mode c-mode java-mode)
+(defstatement and (perl-mode c-mode c++-mode java-mode)
   "And expression."
   (begin-end "( " " && )")
   (begin-end-with-dummy "( " " && 1)"))
 
-(defstatement or (perl-mode c-mode java-mode)
+(defstatement or (perl-mode c-mode c++-mode java-mode)
   "Or expression."
   (begin-end "(" " || )")
   (begin-end-with-dummy "(" " || 0)"))
 
-(defstatement not (perl-mode c-mode java-mode)
+(defstatement not (perl-mode c-mode c++-mode java-mode)
   "Not expression."
   (begin-end "(!" ")"))
+
+(defstatement class (c++-mode
+		     ;; todo: is the java syntax the same?
+		     java-mode)
+  "Class definition."
+  (head "class" (expression))
+  (body "class"
+	"{" "public:" (upto "private:"))
+  (tail "class" "{" "private:" (expressions)))
 
 ;; now define the whole statements, systematically
 (mapcar (lambda (mode)
@@ -1435,7 +1454,7 @@ languide-region-detail-level says how much incidental information to include."
 					      )
 				      (cdr statement)))))
 		    statements)))
-	'(perl-mode c-mode java-mode))
+	'(perl-mode c-mode c++-mode java-mode))
 
 (provide 'languide-c-like)
 
