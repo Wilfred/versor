@@ -1,5 +1,5 @@
 ;;; versor-custom.el -- versatile cursor
-;;; Time-stamp: <2007-07-19 12:12:42 jcgs>
+;;; Time-stamp: <2007-12-11 15:16:28 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -105,7 +105,7 @@ and going forward from the last meta-level takes you to the first one."
   :group 'versor-editing
   :type 'boolean)
 
-(defcustom versor-delay-deletions t
+(defcustom versor-defer-deletions t
   "Whether versor should delay deletions of whitespace until point moves away.
 This lets you start typing things in the whitespace, cancelling the deletion."
   :group 'versor-editing
@@ -196,7 +196,7 @@ default, using the variable languide-header-line-format.)"
   :type 'boolean
   :group 'versor-status)
 
-(defcustom region-type-description-always nil
+(defcustom region-type-description-always t
   "Whether to show the region type even if it is banal."
   :type 'boolean
   :group 'versor-status)
@@ -226,6 +226,17 @@ This should be set when using it from within emacspeak."
   "*Whether to try to display the whole item after each movement.
 This recenters the text, if possible, so both the start and the end
 of it are visible."
+  :group 'versor
+  :type 'boolean)
+
+(defcustom versor-show-both-ends-of-item
+  t
+
+  "*Whether to do special things if needed to show both ends of item after move.
+If nil, this is not done.
+If 'window, split the window and put one end in each.
+If any other value, hide the middle and display
+`versor-hiding-middle-banner' before the hidden part."
   :group 'versor
   :type 'boolean)
 
