@@ -1,9 +1,13 @@
 ;;;; versor-local.el -- select navigation dimensions per mode or per buffer
-;;; Time-stamp: <2007-07-17 12:04:50 john>
-;;
-;; emacs-versor -- versatile cursors for GNUemacs
-;;
-;; Copyright (C) 2004, 2006  John C. G. Sturdy
+;;; Time-stamp: <2007-08-28 16:11:50 jcgs>
+;; This file is NOT part of GNU Emacs.
+
+;; Copyright (C) 2004, 2006, 2007  John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: convenience
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -21,11 +25,17 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+;;; Commentary:
+;; 
+;; emacs-versor -- versatile cursors for GNUemacs
+
 (require 'buffer-select-hooks)
 (require 'cl)
 
 ;;;; our variables
 
+;;; Code:
 (defvar versor-this-buffer-meta-level nil
   "The remembered meta-level for this buffer.")
 
@@ -37,24 +47,40 @@
 
 ;;;; entry points
 
-(defun versor-mode-change-function (old-mode)
-  "Select dimension if necessary, as a hook on changing modes."
+(defun versor-mode-change-function (old-mode &optional even-if-per-buffer)
+  "Select dimension if necessary, as a hook on changing modes.
+Given OLD-MODE because of calling convention, but doesn't use it.
+With optional second arg EVEN-IF-PER-BUFFER, set the dimensions
+according to mode even if they are normally per-buffer -- this
+is used in setting the dimensions from a `find-file' hook."
   (when (and versor-auto-change-for-modes
-	     (not versor-per-buffer))
+	     (or even-if-per-buffer
+		 (not versor-per-buffer)))
     ;; now get the meta-level and level for the new major mode
     (condition-case evar
-	(let ((new-pair (assoc major-mode versor-mode-current-levels)))
+	(let* ((new-pair (assoc
+			  (if (and versor-text-in-code
+				   (versor-am-in-text))
+			      (symbol-name major-mode)
+			    major-mode)
+			  versor-mode-current-levels))
+	       (new-meta-level (cadr new-pair))
+	       (new-level (cddr new-pair)))
 	  (when (and new-pair
-		     (numberp (cadr new-pair))
-		     (numberp (cddr new-pair)))
-	    (setq versor-meta-level (cadr new-pair)
-		  versor-level (cddr new-pair))
-	    ;; (message "Versor spotted mode change to %s, using %d %d" major-mode versor-meta-level versor-level)
+		     (numberp new-meta-level)
+		     (numberp new-level))
+	    (setq versor-meta-level new-meta-level
+		  versor-level new-level
+		  ;; indicate that we don't have a different
+		  ;; per-buffer setting for this buffer
+		  versor-this-buffer-meta-level new-meta-level
+		  versor-this-buffer-level new-level)
 	    (versor-set-status-display t)))
       (error nil))))
 
 (defun versor-buffer-change-function (old-buffer)
-  "Select dimension if necessary, as a hook on changing buffers."
+  "Select dimension if necessary, as a hook on changing buffers.
+Given OLD-BUFFER as a calling convention, but doesn't use it."
   (when versor-per-buffer
     (condition-case evar
 	(progn
@@ -69,11 +95,14 @@
 	    (setq versor-level versor-this-buffer-level)
 	    (versor-trim-level))
 	  (versor-set-status-display nil nil nil t))
-      (error (message "error %S in versor-buffer-change-function" evar) 
+      (error (message "error %S in versor-buffer-change-function" evar)
 	     nil))))
 
 (defun versor-display-modal-levels (&optional label marked)
-  "Display which levels are currently used for each mode."
+  "Display which levels are currently used for each mode.
+Optional LABEL names the display buffer.
+Optional MARKED gives a major mode to asterisk -- the current
+one is used if none is specified."
   (interactive)
   (when (null marked) (setq marked (list major-mode)))
   (let* ((lengths (mapcar 'length
@@ -114,7 +143,10 @@
       )))
 
 (defun versor-popup-modal-levels (&optional label marked)
-  "Briefly display the modal levels. Mostly for debugging."
+  "Briefly display the modal levels.  Mostly for debugging.
+Optional LABEL names the display buffer.
+Optional MARKED gives a major mode to asterisk -- the current
+one is used if none is specified."
   (save-window-excursion
     (sit-for 2)
     (versor-display-modal-levels label marked)
@@ -126,7 +158,10 @@
 
 (add-hook 'buffer-selection-hook 'versor-buffer-change-function)
 
+;; give the buffer the right initial dimensions
+(add-hook 'find-file-hook (lambda ()
+			    (versor-mode-change-function nil t)))
+
 (provide 'versor-local)
 
-;;;; end of versor-local.el
-
+;;; versor-local.el ends here
