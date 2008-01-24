@@ -1,6 +1,15 @@
 ;;;; versor-names.el -- part of dimensional navigation
-;;; Time-stamp: <2006-12-17 21:33:21 jcgs>
+;;; Time-stamp: <2007-08-23 13:08:50 jcgs>
 ;;
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
+
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
 ;; Copyright (C) 2004, 2006  John C. G. Sturdy
@@ -24,8 +33,13 @@
 ;;; This is not needed for using versor just through the cursor keys
 ;;; or pedals, but is used by versor-voice and versor-menu
 
+
+;;; Commentary:
+;; 
+
+;;; Code:
 (defvar versor-level-names-cache nil
-  "A cache used internally by versor-level-names.")
+  "A cache used internally by `versor-level-names'.")
 
 (defun versor-meta-level-names ()
   "Return an alist of the meta-level names, consed with the numbers."
@@ -86,9 +100,10 @@
       nil)))
 
 (defun versor-find-level-by-single-name (name)
-  "Return the index of the level called NAME as a cons of (meta-level . level).
-If this occurs in several meta-levels, including the current one, use the occurrece
-in the current one."
+  "Return the index of the level named NAME as a cons of (meta-level . level).
+
+If this occurs in several meta-levels, including the current one,
+use the occurrece in the current one."
   (let* ((meta-level-index versor-meta-level))
     (catch 'found
       (while t
@@ -149,7 +164,7 @@ in the current one."
 
 (defun versor-all-level-names (&optional include-meta)
   "Return the list of level names.
-With non-nil arg, include meta-level names."
+With non-nil optional arg INCLUDE-META, include meta-level names."
   (let ((names nil))
     (dotimes (meta-level-index (length moves-moves))
       (if (> meta-level-index 0)
@@ -160,9 +175,11 @@ With non-nil arg, include meta-level names."
 		(pushnew (car (aref meta-level level-index)) names :test 'string=))))))
     (sort names 'string<)))
 
-(defvar versor-all-names-grid nil)
+(defvar versor-all-names-grid nil
+  "A cache for the result of the function `versor-all-names-grid'.")
 
 (defun versor-all-names-grid ()
+  "Return a grid of all the level names."
   (when (null versor-all-names-grid)
   (let ((n (length moves-moves))
 	(versor-meta-level 1))
@@ -172,10 +189,10 @@ With non-nil arg, include meta-level names."
   versor-all-names-grid)
 
 (defvar versor-all-names-grid-widths nil
-  "The column widths needed for versor-all-names-grid")
+  "The column widths needed for the function `versor-all-names-grid'.")
 
 (defun versor-all-names-grid-widths ()
-  "Return the column widths needed for versor-all-names-grid"
+  "Return the column widths needed for the function `versor-all-names-grid'."
   (if versor-all-names-grid-widths
       versor-all-names-grid-widths
     (setq versor-all-names-grid-widths
@@ -195,10 +212,10 @@ With non-nil arg, include meta-level names."
 	    widths))))
 
 (defvar versor-all-names-grid-formats nil
-  "The column formats needed for versor-all-names-grid")
+  "The column formats needed for the function `versor-all-names-grid'.")
 
 (defun versor-all-names-grid-formats ()
-  "Return the column formats needed for versor-all-names-grid"
+  "Return the column formats needed for the function `versor-all-names-grid'."
   (if versor-all-names-grid-formats
       versor-all-names-grid-formats
     (setq versor-all-names-grid-formats
@@ -208,3 +225,7 @@ With non-nil arg, include meta-level names."
 (provide 'versor-names)
 
 ;;; end of versor-names.el
+
+(provide 'versor-names)
+
+;;; versor-names.el ends here
