@@ -1,5 +1,14 @@
 ;;;; languide-python.el -- languide definitions for python
-;;; Time-stamp: <2007-08-11 14:43:48 jcgs>
+;;; Time-stamp: <2007-12-11 17:27:24 jcgs>
+
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2007?
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -15,9 +24,14 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
+
+;;; Commentary:
+;; 
+
 (require 'cl)
 (require 'modal-functions)
 
+;;; Code:
 (defmodal move-into-previous-statement (python-mode) ()
   "Move into the previous python statement.
 Need only work if already at or just before the start of a statement."
@@ -118,7 +132,7 @@ this does not have to work."
   "Return a block end."
   "")
 
-(defmodal language-conditional-needs-unifying (python-mode) ()
+(defmodal languide-conditional-needs-unifying (python-mode) ()
   "Whether the conditional statement needs its dependent statements unified for it."
   t)
 
@@ -129,11 +143,11 @@ this does not have to work."
   (point))
 
 (defmacro py-add-var-names (vars)
-  "Helper macro for variables-in-scope."
+  "Helper macro for `variables-in-scope'.  VARS is the accumulator variable."
   `(let ((varnames (split-string (match-string-no-properties 1) "[, ]+")))
      (while varnames
        (unless (assoc (car varnames) ,vars)
-	 (setq vars (cons (list (car varnames)) ,vars)))
+	 (setq ,vars (cons (list (car varnames)) ,vars)))
        (setq varnames (cdr varnames)))))
 
 (defmodal variables-in-scope (python-mode) (whereat)
@@ -304,7 +318,7 @@ whitespace).
 If it is not recognizable as anything in particular, but ends at the
 same depth as it starts, and never goes below that depth in between,
 that is, is something that could be made into a compound statement or
-expression, return t. 
+expression, return t.
 Otherwise return nil.
 May set languide-region-detail-string to a string giving the user incidental
 information; otherwise should clear it to nil.
@@ -426,3 +440,7 @@ languide-region-detail-level says how much incidental information to include."
 (provide 'languide-python)
 
 ;;; end of languide-python.el
+
+(provide 'languide-python)
+
+;;; languide-python.el ends here
