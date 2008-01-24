@@ -1,9 +1,9 @@
 ;;;; versor-menu.el -- part of dimensional navigation
-;;; Time-stamp: <2007-07-20 15:41:03 jcgs>
+;;; Time-stamp: <2007-10-27 22:51:54 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
-;; Copyright (C) 2004, 2005, 2006  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;; 
@@ -75,7 +75,8 @@ The menu keymap is passed as the only argument to each function.")
     ("language operations" . versor-languide-menu)
     ("versor control" . versor-control-menu)
     ("describe" . dwim-help)
-    ("search for next %s" . versor-search)
+    ("search for next %s" . versor-search-forward)
+    ("search for previous %s" . versor-search-backward)
     ("find" . dwim-find-at-point)
     ("select surrounding" . versor-select-surrounding)
     ("mark %s" . versor-mark)
