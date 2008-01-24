@@ -1,5 +1,5 @@
 ;;;; languide-functional.el -- languide definitions for functional languages such as Haskell
-;;; Time-stamp: <2007-08-11 14:43:48 jcgs>
+;;; Time-stamp: <2007-12-11 17:27:24 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -57,7 +57,7 @@ this does not have to work."
 (defmodal compound-statement-close (haskell-mode literate-haskell-mode) ()
   "Return a block end.")
 
-(defmodal language-conditional-needs-unifying (haskell-mode literate-haskell-mode) ()
+(defmodal languide-conditional-needs-unifying (haskell-mode literate-haskell-mode) ()
   "Whether the conditional statement needs its dependent statements unified for it.")
 
 (defmodal statement-container (haskell-mode literate-haskell-mode) ()
