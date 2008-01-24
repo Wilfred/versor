@@ -1,6 +1,15 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2007-07-20 17:41:55 jcgs>
+;;; Time-stamp: <2008-01-23 12:27:44 jcgs>
 ;;
+;; Copyright (C) 2007, 2008, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: 2004
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
+
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
 ;; Copyright (C) 2004, 2006, 2007  John C. G. Sturdy
@@ -21,8 +30,13 @@
 ;; along with emacs-versor; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+;;; Commentary:
+;; 
+
 (require 'versor-names)
 
+;;; Code:
 (mapcar 'makunbound '(versor-current-level-name moves-moves versor-meta-level versor-level))
 
 (mapcar (lambda (nb-command) (autoload nb-command "nested-blocks" nil t))
@@ -30,20 +44,20 @@
 	  nested-blocks-leave-backwards nested-blocks-enter))
 
 (defvar versor-meta-level 1
-  "The current versor meta-level, as an index into moves-moves")
+  "The current versor meta-level, as an index into `moves-moves'.")
 
 (defvar versor-level 1
-  "The current versor level, as an index into (aref moves-moves versor-meta-level)")
+  "The current versor level, as an index into (aref moves-moves versor-meta-level).")
 
 (defvar versor-meta-level-shadow nil
-  "If non-nil, the value to use instead of versor-meta-level.
-Bound in versor-do-dynamic-menu because otherwise we end up with the
+  "If non-nil, the value to use instead of `versor-meta-level'.
+Bound in `versor-do-dynamic-menu' because otherwise we end up with the
 wrong meta-level, as we have just come out of some menuing code.
 Other uses for this might be found.")
 
 (defvar versor-level-shadow nil
-  "If non-nil, the value to use instead of versor-level.
-Bound in versor-do-dynamic-menu because otherwise we end up with the
+  "If non-nil, the value to use instead of `versor-level'.
+Bound in `versor-do-dynamic-menu' because otherwise we end up with the
 wrong level, as we have just come out of some menuing code.
 Other uses for this might be found.")
 
@@ -56,12 +70,12 @@ Other uses for this might be found.")
   `(aref (aref moves-moves ,meta-level) 0))
 
 (defun versor-make-movemap-set (name &rest movemaps)
-  "Make a set of movemaps called NAME from the remaining arguments.
+  "Make a set of move-maps called NAME from the remaining args MOVEMAPS..
 The lowest-level (finest-grain) movemap should come first.
 Any nil elements are not included.
 A movemap-set represents a metalevel of movements.
 Also, all the movemap-sets are grouped together using another movemap-set,
-called moves-moves, which is the root variable of the versor system."
+called `moves-moves', which is the root variable of the versor system."
   (if (memq nil movemaps)
       (let ((mm nil))
 	(while movemaps
@@ -93,8 +107,8 @@ Move maps are grouped together by versor-make-movemap-set."
   (list name))
 
 (defun versor-define-move (movemap move command)
-  "In MOVEMAP define MOVE to do COMMAND. Analogous to define-key.
-See the definition of versor-make-movemap for details of move maps."
+  "In MOVEMAP define MOVE to do COMMAND.  Analogous to `define-key'.
+See the definition of `versor-make-movemap' for details of move maps."
   (let ((pair (assoc move movemap)))
     (if pair
 	(rplacd pair command)
@@ -107,14 +121,14 @@ See the definition of versor-make-movemap for details of move maps."
   "In MOVEMAP define each of MOVE-COMMAND-SPECS.
 We can't just splice MOVE-COMMAND-SPECS into the map because that would
 not interact properly with any existing definitions in the map.
-See the definition of versor-make-movemap for details of move maps."
-  (mapcar 
+See the definition of `versor-make-movemap' for details of move maps."
+  (mapcar
    (function
     (lambda (k-c)
       (versor-define-move movemap (first k-c) (second k-c))))
    move-command-specs))
 
-(mapcar (function 
+(mapcar (function
 	 (lambda (name)
 	   (set (intern (concat "movemap-" name))
 		(versor-make-movemap name))))
@@ -155,10 +169,8 @@ See the definition of versor-make-movemap for details of move maps."
 			))
 
 (versor-define-moves movemap-default-lines
-		     '((color "black")
-		       (other-color "gray")
-		       (:background "black")
-		       (:foreground "white")
+		     '((color "gray")
+		       (:background "gray")
 		       (start-of-item move-beginning-of-this-line)
 		       (first beginning-of-buffer)
 		       (previous previous-line)
@@ -196,8 +208,7 @@ See the definition of versor-make-movemap for details of move maps."
 			))
 
 (versor-define-moves movemap-lines
-		     '((color "black")
-		       (other-color "gray")
+		     '((color "gray")
 		       (:background "black")
 		       (:foreground "white")
 		       (first beginning-of-buffer)
@@ -261,6 +272,8 @@ See the definition of versor-make-movemap for details of move maps."
 		       (last navigate-this-body)
 		       (start-of-item skip-to-actual-code)
 		       (end-of-item latest-statement-navigation-end)
+		       (surround locate-this-container)
+		       (extension-offset 1)
 		       (dwim versor-dwim-lispishly)))
 
 (versor-define-moves movemap-statements
@@ -273,6 +286,7 @@ See the definition of versor-make-movemap for details of move maps."
 		       (last end-of-defun) ;;;;;;;;;;;;;;;; make this go back one statement from the end of the defun
 		       (end-of-item latest-statement-navigation-end)
 		       (start-of-item skip-to-actual-code)
+		       (surround locate-this-container)
 		       (dwim versor-dwim-lispishly)))
 
 (versor-define-moves movemap-defuns
@@ -300,13 +314,13 @@ See the definition of versor-make-movemap for details of move maps."
 		       ;; versor-indicate-current-item works when the
 		       ;; things it calls don't explicitly set the item
 		       ;; boundaries for it:
-		       (first versor-backward-phrase) 
+		       (first versor-backward-phrase)
 		       (previous versor-previous-word)
 		       (next versor-next-word)
 		       (start-of-item skip-to-actual-code)
 		       (end-of-item versor-end-of-word)
 		       (last versor-forward-phrase)
-		       (delete versor-delete-word)
+		       ;; (delete versor-delete-word)
 		       (transpose transpose-words)
 		       (dwim versor-dwim-textually)))
 
@@ -500,8 +514,8 @@ See the definition of versor-make-movemap for details of move maps."
 			   ;; moves-markers
 			   )
   "The map of meta-moves.
-See versor-make-movemap-set for the description of move map sets.
-Note that this is a reuse of that data type at a different level. ")
+See `versor-make-movemap-set' for the description of move map sets.
+Note that this is a reuse of that data type at a different level.")
 
 (defmacro versor-current-meta-level ()
   "The current meta-level, as an array."
@@ -521,16 +535,16 @@ With optional LEVEL-OFFSET, add that to the level first."
   (cdr (assoc action level)))
 
 (defvar versor-current-over-level-name (first (versor-current-level 1))
-  "The name of the current versor level, for display in the global-mode-string")
+  "The name of the current versor level, for display in the `global-mode-string'.")
 
 (defvar versor-current-level-name (first (versor-current-level))
-  "The name of the current versor level, for display in the global-mode-string")
+  "The name of the current versor level, for display in the `global-mode-string'.")
 
 (defvar versor-current-meta-level-name (aref (versor-current-meta-level) 0)
-  "The name of the current versor meta-level, for display in the global-mode-string")
+  "The name of the current versor meta-level, for display in the `global-mode-string'.")
 
 (defun versor-trim-level ()
-  "Ensure that versor-level is in range."
+  "Ensure that `versor-level' is in range."
   (let ((max (1- (length (versor-current-meta-level)))))
     (when (> versor-level max)
       (setq versor-level
@@ -540,7 +554,7 @@ With optional LEVEL-OFFSET, add that to the level first."
 	    (if versor-level-wrap max 1)))))
 
 (defun versor-trim-meta-level ()
-  "Ensure that versor-meta-level is in range."
+  "Ensure that `versor-meta-level' is in range."
   (let ((max (1- (length moves-moves))))
     (when (> versor-meta-level max)
       (setq versor-meta-level
@@ -598,15 +612,24 @@ Like assoc, return the element of list for which it matches."
    (t t)))
 
 (defun versor-mode-levels-triplet (spec)
-  "Convert SPEC to the form needed for versor-mode-current-levels.
-SPEC is a list of mode name (as symbol), meta-level and level names (as strings).
-The result is (mode . (meta . level)) with meta and level as numbers.
-This is a convenience function for use with mapcar for your .emacs to
-produce a ready-made starting point for versor-mode-current-levels."
-  (cons (first spec)
-	(versor-find-level-by-double-name (second spec) (third spec))))
+  "Convert SPEC to the form needed for `versor-mode-current-levels'.
 
-(defvar versor-mode-current-levels 
+SPEC is a list of mode name (as symbol), meta-level and level
+names (as strings).
+
+The result is (mode . (meta . level)) with meta and level as
+numbers.
+
+This is a convenience function for use with mapcar for your
+.emacs to produce a ready-made starting point for
+`versor-mode-current-levels'."
+  (let ((result
+	 (cons (first spec)
+	       (versor-find-level-by-double-name (second spec) (third spec)))))
+    (message "versor-mode-levels-triplet %S --> %S" spec result)
+    result))
+
+(defvar versor-mode-current-levels
   (mapcar 'versor-mode-levels-triplet
 	  '((emacs-lisp-mode "structural" "exprs")
 	    ("emacs-lisp-mode" "text" "words")
@@ -625,13 +648,18 @@ produce a ready-made starting point for versor-mode-current-levels."
 	    ))
   "Alist of mode name symbols to the current meta-level and level for that mode.
 Used by versor-local, but defined in versor-dimensions.
-To enable per-mode switching of versor dimensions, set the variable
-versor-auto-change-for-modes non-nil.
+
+To enable per-mode switching of versor dimensions, load the
+library `versor-local' and set the variable
+`versor-auto-change-for-modes' non-nil.
+
 As well as mode name symbols, you can put strings naming the modes;
 these specify the meta-level and level to use for embedded strings
 within that mode (such as string literals, and comments).
-To enable the separate handling of embedded text, set 
-versor-text-in-code non-nil.")
+To enable the separate handling of embedded text, set
+`versor-text-in-code' non-nil.")
+
+(require 'versor-local) (defvar versor-am-in-text-in-code nil) (versor-display-modal-levels)
 
 (defvar versor-equivalent-commands
   '(
@@ -639,7 +667,7 @@ versor-text-in-code non-nil.")
     ;; equivalent
     (backward-paragraph . versor-backward-paragraph)
     (backward-up-list . versor-backward-up-list)
-    (kill-word . versor-delete-word)
+    ;; (kill-word . versor-delete-word)
     (down-list . versor-down-list)
     (forward-paragraph . versor-end-of-paragraph)
     (forward-word . versor-end-of-word)
@@ -700,7 +728,7 @@ versor-text-in-code non-nil.")
     transpose-words
     versor-backward-paragraph
     versor-backward-up-list
-    versor-delete-word
+    ;; versor-delete-word
     versor-down-list
     versor-dwim-lispishly
     versor-dwim-textually
@@ -727,12 +755,13 @@ versor-text-in-code non-nil.")
   "Commands that Versor uses directly as actions.")
 
 (defun versor-find-in-current-dimension (command &optional level-offset)
-  "Return the versor command that would run COMMAND in the current dimension."
+  "Return the versor command that would run COMMAND in the current dimension.
+With optional LEVEL-OFFSET, add that to the dimension number to look in."
   (car (rassoc command (versor-current-level level-offset))))
 
 (defun versor-command-for-action (action &optional next-level)
   "Return the versor command that would do ACTION in the current level.
-With optional second arg non-nil, look in the next level up instead."
+With optional second arg NEXT-LEVEL non-nil, look in the next level up instead."
   (cdr (assoc action
 	      (if next-level
 		  '((first . versor-over-start)
@@ -752,3 +781,7 @@ With optional second arg non-nil, look in the next level up instead."
 (provide 'versor-dimensions)
 
 ;;;; end of versor-dimensions.el
+
+(provide 'versor-dimensions)
+
+;;; versor-dimensions.el ends here
