@@ -1,5 +1,14 @@
 ;;;; statement-cache.el -- cache statement data for statement-navigation.el
-;;; Time-stamp: <2007-08-20 18:15:15 jcgs>
+;;; Time-stamp: <2007-08-23 11:32:48 jcgs>
+
+;; Copyright (C) 2007, John C. G. Sturdy
+
+;; Author: John C. G. Sturdy <john@cb1.com>
+;; Maintainer: John C. G. Sturdy <john@cb1.com>
+;; Created: around 2004
+;; Keywords: convenience
+
+;; This file is NOT part of GNU Emacs.
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
