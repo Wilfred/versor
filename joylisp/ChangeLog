@@ -1,0 +1,98 @@
+2008-01-30  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c, joylisp.h: make Button_Name construct a name even
+	when the joystick doesn't name its buttons.
+
+2008-01-22  John Sturdy  <jcgs@ezekiel.csis.ul.ie>
+
+	* joystick.el (joystick-gamepad-setup): We shouldn't be killing or
+	yanking in Info buffers, so re-use the buttons
+
+2008-01-17  John Sturdy  <jcgs@ezekiel.csis.ul.ie>
+
+	* joylisp.c (main): Output error message as sexp if unable to find
+	joystick.
+
+2007-12-13  John Sturdy  <jcgs@hosea>
+
+	* joystick.el (jse): Improved checking of whether a button has a
+	binding: it now tries to follow the keymap tree.  This is
+	necessary to allow buttons that are not bound as the first event
+	of a sequence, to be read as a subsequent event in a sequence.
+
+2007-12-12  John Sturdy  <jcgs@hosea>
+
+	* joystick.el (jse): Make the joystick event into a list only when
+	there are arguments to include.  This seems to be necessary to
+	make joystick buttons work as command prefixes.  I don't yet know
+	what it will break, but I vaguely remember having specific reason
+	to make the events be lists (perhaps before I started this
+	ChangeLog file).
+
+2007-10-25  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c (main): Further work on multiple joysticks in one
+	controller.
+
+2007-10-17  John Sturdy  <jcgs@hosea>
+
+	* joystick.el (joystick-gamepad-setup): in joystick buffer-list,
+	and joystick dired, rebind the hat keys that would otherwise bring
+	up the other of those two.  And while I'm at it, make them do
+	something useful. too.
+
+2007-10-16  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c (main): argument parser now uses getopt
+
+	* joystick.el (joystick-label-modified): Improvements to label
+	generation.
+
+	* joylisp.c (draw_diagram): Improvements to label parsing.
+	Centred the label text.
+
+2007-10-14  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c (main): Improved on-the-fly labelling; used polygon
+	fill for the main shape.
+
+2007-10-12  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c (draw_diagram): basic X display
+	(draw_diagram): added on-the-fly labelling from Emacs
+
+	* joystick.el (joystick-gamepad-setup): moved window size control
+	and speed control, added dired
+
+2007-10-07  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c: use floating point for countdowns etc
+
+2007-09-27  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c (main): add some output for beginning and end of
+	initialization
+
+	* joystick.el (joystick-gamepad-setup): tidy up some of the more
+	systematic button-binding
+
+2007-09-24  John Sturdy  <jcgs@hosea>
+
+	* joystick.el (in-other-window): Added commands for moving point
+	in other windows --- might as well use up the spare analog
+	joystick.  And since the analog joysticks have a button in them,
+	used that to work on the second other window.
+
+2007-09-07  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c (main): Include joystick name when reporting back
+	speed.
+
+	* joystick.el (joystick-start): Allow multiple joysticks active at
+	once.
+
+2007-09-06  John Sturdy  <jcgs@hosea>
+
+	* joystick.el (joystick-diagram-replace-label): Improve the
+	joystick help system
+

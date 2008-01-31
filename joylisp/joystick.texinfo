@@ -1,0 +1,1602 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename joystick.info
+@settitle Emacs Joystick Interface manual
+@direntry
+* joystick::			Emacs Joystick Interface.
+@end direntry
+@iftex
+@finalout
+@afourpaper
+@end iftex
+@c %**end of header
+@titlepage
+@sp 10
+@title{Emacs Joystick Interface}
+@subtitle{Especially for gamepads}
+@author{by J. C. G. Sturdy}
+@c The following two commands start the copyright page.
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2005, 2006, 2007 John C. G. Sturdy
+
+Published by John C. G. Sturdy.
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+@end titlepage
+@node Top, Motivation, (dir), (dir)
+@top Emacs Joystick Interface
+
+@c store these by makeinfo, copying them into subdirs of htdocs, tarring them up and doing
+@c scp htdocs.tar.gz jcg_sturdy@emacs-versor.sourceforge.net:/home/groups/e/em/emacs-versor
+@c then log in to emacs-versor.sourceforge.net and unpack them
+@c ssh -l jcg_sturdy emacs-versor.sourceforge.net
+@c cd /home/groups/e/em/emacs-versor
+@c tar xvzf htdocs.tar.gz
+@ifinfo
+This file documents the Emacs Joystick Interface.
+
+This document applies to version 0.1 of joystick.el.
+@end ifinfo
+
+The Emacs Joystick Interface lets you use a gamepad or a joystick to
+control many functions of Emacs.  Commands from the device appear as
+events in Emacs' input stream, much like function keys or menu entries.
+
+You can, of course, make your own bindings, just as for normal keys, but
+a fairly rich set of bindings is provided.
+
+A help command is provided, that draws a diagram of a gamepad and labels
+it with the current bindings.
+
+The Emacs Joystick Interface uses a small C program to talk to the Linux
+Joystick Interface.
+
+@menu
+* Motivation::                  Why use a gamepad with Emacs?
+* Introduction::                What the interface does
+* Familiarization::             Trying it out
+* The hat and stick axes::      Digital and analog joysticks
+* The buttons::                 Button commands
+* Making your own bindings::    What the events look like
+* Implementation details::      How it works
+* Compatibility::               What it works with
+* Acknowledgements::            Where ideas and code came from
+* Future plans::                Suggested further work
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+@end detailmenu
+@end menu
+ 
+@node  Motivation, Introduction, Top, Top
+@comment  node-name,  next,  previous,  up
+@chapter Motivation
+
+Sometimes Emacs is accused of causing RSI.  This isn't fair; the problem
+is not with Emacs, but with taking a typewriter-style keyboard (designed
+in the 19th century, for typing letters) a long way beyond what it is
+designed for, and using it as a controller.
+
+It makes much more sense to control Emacs with something designed as a
+controller; furthermore, a controller designed for comfortable, fast,
+intensive use.  In fact, something designed after, rather than before,
+the idea of ergonomics was widespread.
+
+In this chapter, we look briefly at why a better input device helps, and
+then explain why an extended navigation and command ``language'' is also
+helpful (although trying it, or watching a demonstration, is likely to
+be more effective than any explanation).
+
+@menu
+* Anatomical ergonomics::       Why it's better for the hands
+* Cognitive ergonomics::        Why it's better for the brain
+* Efficiency::                  Why it works better
+* Other considerations::        Why not?
+@end menu
+
+@node  Anatomical ergonomics, Cognitive ergonomics, Motivation, Motivation
+@comment  node-name,  next,  previous,  up
+@section Anatomical ergonomics
+
+A conventional keyboard forces the wrists into an uncomfortable and
+inefficient position, in which the tendons move round a much sharper
+curve than otherwise necessary, while under tension, which makes them to
+rub against the tendon sheaths on the inside of the curve, sometimes
+causing tendonitis or tenosynovitis.  This is why split, and tented,
+keyboards are improvements on the conventional design.  Like a split and
+tented keyboard, a gamepad is designed to put your arms and hands at a
+comfortable angle.
+
+Emacs uses chording a lot (and it is the way to get the maximum use out
+of a given number of buttons, or for that matter from a limited number
+of fingers -- for example, 8 buttons allows 8 inputs as single buttons,
+or 255 as chords), but it is awkward to do with a keyboard, and some
+people find it a strain on the hands, which is why some Emacs users
+recommend using pedals for the modifiers.  A gamepad's design makes it
+very convenient for chording, because the fingers are already in
+position over the buttons, or very near them, and never have to stretch
+to reach them.
+
+It may seem extreme to arrange special hardware for using an editor, but
+people happily enough do it for a game.  Getting the hardware right for
+a workstation that you use all day is even more important.
+
+@node  Cognitive ergonomics, Efficiency, Anatomical ergonomics, Motivation
+@comment  node-name,  next,  previous,  up
+@section Cognitive ergonomics
+
+The Emacs Joystick Interface can be used by itself, or with a package
+called ``Versor'' (short for ``Versatile Cursor'') which lets you switch
+between different dimensions of navigation (words, sexps, lines, etc)
+very easily, and also builds some editing commands on top of that.
+
+Emacs has long provided movement by words, sexps, and so on, but they
+are not typically bound to single (unmodified) keys, such as the arrow
+keys, and so are either underused, or involve relatively contorted hand
+movements to use them.
+
+Versor puts a related pair of movements on the cursor keys (or, with the
+joystick, onto the hat switch and joystick movements) and uses the same
+keys, with a modifier, to switch between different forms of movement.
+
+Versor also provides feedback by highlighting the whole selection in
+colour, and defines editing operations (such as ``copy'') which act on
+the highlighted selection.  (Using other commands immediately removes
+the versor highlight, so it's not conspicuous when you're not actively
+using it.)
+
+This makes it easy to select and operate on meaningful units of text,
+without having to make character-by-character movements to select each
+end of the unit.
+
+Some further operations are provided, such as selecting the selectable
+unit around the current selection, with the old current selection
+becoming a gap in the new selection, which is often useful for selecting
+control constructs in source code; and likewise, a command for inserting
+a two-part copied or deleted selection around the current selection.
+
+@node  Efficiency, Other considerations, Cognitive ergonomics, Motivation
+@comment  node-name,  next,  previous,  up
+@section Efficiency
+
+All the operations described here can be done with the deftness and
+fluidity of a gamer, rather than with the relatively cumbersome
+movements of character/line arrow keys or the fiddliness of moving a
+mouse or touchpad to exactly the right place.
+
+The author has not yet done systematic tests of time, or number of
+keystrokes, or of number of corrections, needed to do a sample of source
+code edits, but plans to do so sometime, and will include the results
+here.  Casual observation suggests that the gamepad system is swift and
+comfortable, and a quick test suggests it is about twice as fast as
+using the most advanced commands supplied in the Emacs distribution, and
+about five times as fast as editing at the level of characters and lines.
+
+@node  Other considerations,  , Efficiency, Motivation
+@comment  node-name,  next,  previous,  up
+@section Other considerations
+
+USB gamepads are reasonably cheap (under 30 euros, pounds, dollars, etc,
+for a basic unit, at the time of writing; and sometimes under 10).  And
+you can also use them for playing games; you might even already have one
+for such purposes.
+
+They connect via USB, which is almost universally available, including
+on laptops (which are ergonomically particularly unpleasant for the
+hands).  And they are small enough to be taken with you if you're
+travelling with a laptop.
+
+The Linux Joystick Driver is included in at least some GNU/Linux
+distributions, and available for others.
+
+With the joystick driver, it is possible to operate Emacs with one hand
+tied behind your back, although the author hopes that this will not be a
+deciding factor for most people: it is entirely possible to use it with
+neither hand tied behind your back.
+
+(Apologies for those not familiar with the English phrase ``He can do it
+with one hand tied behind his back'', which means ``He can do it very
+easily''.)
+
+@node Introduction, Familiarization, Motivation, Top
+@chapter Introduction
+
+The Emacs Joystick Interface makes a joystick or gamepad appear as extra
+keys.  It is possible to do sophisticated chording, as the interface
+program arranges for buttons to appear as modifiers automatically
+whenever they are used as modifiers.
+
+The shoulder buttons are used for most of the chording, as they are
+ergonomically most convenient for this.
+
+@menu
+* Joystick axes::               The analog joysticks and the hat switch
+* Buttons::                     The buttons
+* Chording::                    Combinations of buttons
+@end menu
+
+@node Joystick axes, Buttons, Introduction, Introduction
+@comment  node-name,  next,  previous,  up
+@section Joystick axes
+
+By default, the joystick axes (including the hat switch) provide a
+stream of events, at an interval determined, for analog joysticks, by
+how far the joystick has been moved in that axis.  For the hat switch,
+the stream of events starts slowly and accelerates up to a set level.
+
+Different events are provided for the two directions of each axis.
+Following Emacs' convention, these are called `next' (for down the
+screen or to the right) and `previous' (for up the screen or to the
+left).
+
+It is possible to set the axes to behave in other ways. @ref{Driver
+commands}, for details.
+
+The names of the axes are supplied by the driver program that talks to
+the Linux Joystick Interface.
+
+@node Buttons, Chording, Joystick axes, Introduction
+@comment  node-name,  next,  previous,  up
+@section Buttons
+
+The buttons on the joystick or gamepad are sent through as keys
+(strictly speaking, as events).
+
+Their names are supplied by the driver program that talks to the Linux
+Joystick Interface.
+
+Each button, used by itself, provides two types of events, one when it
+is pressed (for example, @key{Trigger-down}) and one when it is released
+(for example, @key{Trigger-up}).  Because it is possible to use buttons
+for @ref{Chording}, command actions are normally done on the @key{-up}
+event.
+
+@node  Chording,  , Buttons, Introduction
+@comment  node-name,  next,  previous,  up
+@section Chording
+
+If you press a button and hold it down, and press another button, the
+first button appears as a modifier to the second one.  Following the
+Emacs convention of using @key{S-} for `shift', etc, an abbreviated
+version of the first button's name is prepended to the second button's
+name.  For how the abbreviation is made, see @ref{Making your own
+bindings}.
+
+Having used a button as a modifier for another one, you will typically
+not want it to act as a command in its own right when released.
+Therefore, the driver program issues a different event when a button is
+released having been used as a modifier to another: it suffixes
+@key{-release} instead of @key{-up} to the button name.
+
+For example, if you press @key{BaseBtn}, hold it and press and release
+@key{Trigger}, then release @key{BaseBtn}, you get the sequence:
+@key{BaseBtn-down} @key{BaBt-Trigger-down} @key{BaBt-Trigger-up}
+@key{BaseBtn-release}.
+
+Any number of buttons may be pressed at once. (The number of buttons
+supported is limited to the number of bits in a long integer on your
+system.  This does not appear to be a real problem in devices designed
+for human use!)  The order in which the modifier names appear is fixed:
+it is not necessarily the order in which they were pressed.  This might
+change in a future version; it would be more powerful, at the cost of a
+yet steeper and longer learning curve.  It would also make the interface
+program considerably more complicated, and mean duplicated entries in
+the bindings, for when you didn't want to distinguish between orders of
+pressing modifers.  (The order is actually that of the numbers used to
+represent the buttons in the device driver.)
+
+@node Familiarization, The hat and stick axes, Introduction, Top
+@comment  node-name,  next,  previous,  up
+@chapter Familiarization and learning
+
+@menu
+* Starting and trying::         First steps with gamepad/versor
+* Learning::                    Handling the learning curve
+* Acheiving fluent fluidity::   The most crucial points to learn
+@end menu
+
+@node  Starting and trying, Learning, Familiarization, Familiarization
+@comment  node-name,  next,  previous,  up
+@section Starting and trying
+
+To start the interface, compile the program @file{joylisp.c} and place
+the resulting executable on your path.
+
+If using the joystick with Versor (@pxref{Cognitive ergonomics}), call
+@code{versor-setup} with @code{'joystick} as one of its arguments.
+
+If using the joystick without Versor, load @file{joystick.el} and do
+@kbd{M-x joystick-start}.
+
+Now try moving around with the hat switch and the analog joysticks;
+after that, it is probably best to work your way through the following
+chapters, @ref{The hat and stick axes} and @ref{The buttons}.
+
+If the system's behaviour seems confusing, in terms of how it overloads
+buttons as commands and modifiers, it may be helpful to run the
+@command{joystick} or @command{xjoystick} program directly from a
+terminal, and observe the output as you press buttons.  The program
+takes textual commands on its standard input; type ``quit'' to make it
+exit.  For details of the commands the program accepts, @ref{Driver
+commands}.
+
+@node  Learning, Acheiving fluent fluidity, Starting and trying, Familiarization
+@comment  node-name,  next,  previous,  up
+@section Learning
+
+The whole gamepad/versor/languide system is quite large, and may take a
+while to learn.  Writing out a diagram of what buttons do, and sticking
+it over your monitor, may be helpful (this is how the author learnt
+it).  Future versions of this manual may contain such a diagram for you
+to print out.
+
+@c todo: make the diagram
+
+The author plans to make a demonstration and teaching video.
+
+@node  Acheiving fluent fluidity,  , Learning, Familiarization
+@comment  node-name,  next,  previous,  up
+@section Acheiving fluent fluidity
+
+@c todo: put in xrefs for these commands
+
+From the author's own experience, the biggest improvements in
+productivity come when it becomes natural to use multi-part selections
+(``surround'' and ``move by depth''); and ``insert around'' and
+``replace'', particularly with the kill ring as the data source.
+
+The commands ``versor-search-forward'' and ``versor-search-backward''
+(bound to hat switch right and left using the ``find'' face button as a
+modifier) can save a lot of time.
+
+@node  The hat and stick axes, The buttons, Familiarization, Top
+@comment  node-name,  next,  previous,  up
+@chapter The hat and stick axes
+
+@menu
+* Hat switch::                  The 8-way digital joystick
+* Left analog::                 The left analog joystick
+* Right analog::                The right analog joystick
+@end menu
+
+@node  Hat switch, Left analog, The hat and stick axes, The hat and stick axes
+@comment  node-name,  next,  previous,  up
+@section The hat switch
+
+The hat switch is the main way of moving in discrete steps, which can be
+characters and lines, or can be other dimensions such as words, sexps.
+
+The buttons (particularly the shoulder buttons) can be used as modifiers
+for the hat switch.
+
+Held down, the hat switch repeats, gradually accelerating.
+
+@menu
+* Hat movement::                Moving with the hat switch
+* Other hat movements::         Moving in other units
+* Hat buffer selection::        Using the buffer menu
+* Hat file selection::          Using dired
+* Alterations::                 Altering the current selection
+@end menu
+
+@node  Hat movement, Other hat movements, Hat switch, Hat switch
+@comment  node-name,  next,  previous,  up
+@subsection Hat movement
+
+If using the joystick package with the ``versor'' system
+(@pxref{versor,,,versor,The Versor manual}), the hat switch steps in
+whatever the current units of motion are.
+
+The movements on the X and Y axes are related, with the Y axis being a
+``broader'' movement than the X axis; for example, if the X axis moves
+by words, the Y axis moves by phrases; and if the X axis moves by
+phrases, the Y axis moves by sentences.
+ 
+The current units of motion --- Versor calls them ``dimensions'' --- can
+be changed by using the hat switch the bottom right shoulder button held
+down as a modifer.
+
+Using the hat switch with bottom right button held down makes the X axis
+select from the scale of movements of the same kind (e.g. characters,
+words, phrases, sentences, paragraphs) and the Y axis changes the kind
+of movement (lines/columns, text, bracket structure, statement
+structure, tabular).
+
+Used without versor, the hat switch moves point by one character or line
+at a time.
+
+@node  Other hat movements, Hat buffer selection, Hat movement, Hat switch
+@comment  node-name,  next,  previous,  up
+@subsection Other hat movements
+
+Pressing two shoulder buttons on the same side of the square, while
+using the hat switch, selects a different type of hat switch movement,
+such as structural (sexps, depth), textual (words, sentences) etc.
+
+@multitable {@key{5,6}} {both bottom} {the kind of movement}
+@item @key{5,6}
+@tab both left
+@tab words/sentences
+@item @key{7,8}
+@tab both right
+@tab sexps/depth
+@item @key{5,7}
+@tab both top
+@tab chars/lines
+@item @key{6,8}
+@tab both bottom
+@tab statements/defuns
+@end multitable
+
+This works regardless of whether you are using Versor.  However, if
+Versor is used, the movement results in a new Versor selection; if not,
+the plain cursor moves in the appropriate dimension.
+
+@node  Hat buffer selection, Hat file selection, Other hat movements, Hat switch
+@comment  node-name,  next,  previous,  up
+@subsection Hat buffer selection
+
+Holding the bottom left shoulder button (@key{PinkieBtn}) while using
+the vertical axis of the hat switch will bring up the buffer list.  (The
+list does not appear until the button and the hat switch are both
+pressed; otherwise the buffer list would make a nuisance of itself when
+you use the button without the hat switch).
+
+You can then move up and down the list, using the hat switch, and select
+the buffer you want by releasing @key{PinkieBtn}.
+
+Pressing @key{ThumbBtn} (which normally deletes the region or
+selection), while still holding @key{PinkieBtn} down, will mark a buffer
+for deletion on finishing the buffer list.
+
+If you want more than one buffer selected, use the top left button
+(while still holding @key{PinkieBtn} down) to mark the extra buffer(s).
+
+@node Hat file selection, Alterations, Hat buffer selection, Hat switch
+@comment  node-name,  next,  previous,  up
+@subsection Hat file selection
+
+Holding the bottom left shoulder button (@key{PinkieBtn}) while using
+the horizontal axis of the hat switch will bring up dired, and move
+between the entries.
+
+Releasing @key{PinkieBtn} will find the file point is on.
+
+Pressing @key{ThumbBtn} (which normally deletes the region or
+selection), while still holding @key{PinkieBtn} down, will mark a file
+for deletion on finishing dired.
+
+Pressing @key{TopBtn} (which normally inserts something) while holding
+@key{PinkieBtn} down will insert a subdirectory at point.
+
+Using the vertical axis of the hat switch while in dired will go up or
+down levels of the tree (if any subdirectories have been inserted).
+
+@node  Alterations,  , Hat file selection, Hat switch
+@comment  node-name,  next,  previous,  up
+@subsection Alterations
+
+If you press and hold the top left and bottom right shoulder buttons
+together, and start using the hat switch, the contents of the current
+versor selection will change in various ways, some of them hopefully
+appropriate.
+
+For example, if you have selected a reference to a local variable in a
+source file, using the hat switch left and right axis will switch
+between all the local variables in scope at that point in the program;
+using the up and down axes will switch to other kinds of possible values
+--- the range of possibilities is dependent on the context (such as the
+major mode, and whether a tags file is active).
+
+@node  Left analog, Right analog, Hat switch, The hat and stick axes
+@comment  node-name,  next,  previous,  up
+@section The left analog stick
+
+The left analog stick moves point in the intuitively obvious way, with
+the displacement of the stick from its centre setting the speed.
+
+If you are using the analog joystick with versor, the movements are
+still in real X and Y co-ordinates, but the versor selectable item
+(word, sentence, sexp, defun, etc) nearest point becomes the versor
+selection.
+
+The significant difference, apart from being analog, is that the repeat
+rate is still in terms of cartesian co-ordinates on the screen, which is
+probably easier for the eye/brain/hand combination to predict over time,
+whereas the hat switch repeat is in terms of words, sexps, etc, and it
+is harder to get a feel for how far it will go with a certain amount of
+holding the control down.
+
+@node  Right analog,  , Left analog, The hat and stick axes
+@comment  node-name,  next,  previous,  up
+@section The right analog stick
+
+The right analog stick moves point in the next window in the current
+Emacs frame, without switching into that window.  (If there is only one
+window, a second window, showing another buffer, is created.)
+
+@c todo: xref these buttons
+The buttons for copying, killing and yanking text check whether the most
+recent movement was in the other window, and in that case act in that
+window.  This makes it easier to copy text between windows.
+
+The analog sticks also each contain a push-button.  The right analog
+stick, with the button pressed, moves the point in a third window, again
+making such a window if there isn't one.
+
+@node  The buttons, Making your own bindings, The hat and stick axes, Top
+@comment  node-name,  next,  previous,  up
+@chapter The buttons
+
+This section lists what each of the buttons does, as commands in their
+own right.  It also mentions their use as modifiers, which sometimes
+relates in an obvious way to their use as commands.
+
+@menu
+* Trigger group::               The buttons on the top of the gamepad
+* Shoulder buttons::            The buttons on the far edge of the pad
+* The slow/turbo buttons::      The tricky little buttons near the middle
+@end menu
+
+@node  Trigger group, Shoulder buttons, The buttons, The buttons
+@comment  node-name,  next,  previous,  up
+@section The trigger button group
+
+The trigger button group (or ``face buttons'' -- typically a
+diamond-shaped group on the right-hand half of the top surface of a
+gamepad) do some basic editing actions.  They can also be used to choose
+statement types when inserting statements.
+
+@multitable {@key{Number}} {@key{Position}} {@key{ThumbBtn2}} {command name} {statement type}
+@item Number
+@tab Position
+@tab Name
+@tab Command
+@tab Statement type
+@item @key{1}
+@tab @key{left}
+@tab @key{Trigger}
+@tab Copy
+@tab Bind
+@item @key{2}
+@tab @key{top}
+@tab @key{ThumbBtn}
+@tab Kill
+@tab Conditional
+@item @key{3}
+@tab @key{bottom}
+@tab @key{ThumbBtn2}
+@tab Find
+@tab Call
+@item @key{4}
+@tab @key{right}
+@tab @key{TopBtn}
+@tab Yank
+@tab Iteration
+@end multitable
+
+If you are using Versor with the gamepad, you can use the button that
+normally does ``Yank'' (@key{TopBtn}, button number 4, the right-most of
+the trigger buttons) as a modifier for the hat switch, which then
+inserts before, after, around, or in place of, the current selection.
+
+``Insert Before'', ``Insert After'', ``Insert Around'' and ``Replace''
+must all be followed by another button which indicates what type of
+thing to insert (typically something from the kill ring, or a statement,
+or a kind of bracket).
+
+``Insert Around'' places two successive items from the kill ring (or
+other data source) before and after the current selection.
+
+Such successive items on the kill ring may be generated by copying or
+killing a multi-part selection. @ref{Surround}.
+
+``Replace'' places the inserted item in place of the current selection.
+If the selection is a multi-part one, successive items are used to
+replace the parts.
+
+The ``Find'' button may be used as a modifier for the hat switch left
+and right movements.  This searches for previous and subsequent
+occurrences of the text in the current selection.
+
+@menu
+* Insertion directions::        Selecting where to insert
+* Insertion types::             Selecting what to insert
+* Languide commands::           Language-guided editing
+* Other face button commands::       More trigger-group button commands
+@end menu
+
+@node  Insertion directions, Insertion types, Trigger group, Trigger group
+@comment  node-name,  next,  previous,  up
+@subsection Insertion directions
+
+These directions are meant to be roughly mnemonic, in terms of the
+``expressions'' / ``depth'' pair of Versor dimensions.  They are
+selected by using the hat switch in conjunction with the ``yank/insert''
+button.
+
+@menu
+* Insert Before::               Inserting before the selection
+* Insert After::                Inserting after the selection
+* Insert Around::               Inserting before and after the selection
+* Replace::                     Inserting in place of the selection
+@end menu
+
+@node  Insert Before, Insert After, Insertion directions, Insertion directions
+@comment  node-name,  next,  previous,  up
+@subsubsection Insert Before
+
+``Insert Before'' inserts something before the current selection.  The
+following button or key determines what is inserted; for the types of
+insertions, see the menu in @xref{Insertion types}.  Whitespace between
+the new text and the original text is adjusted automatically.
+
+@node  Insert After, Insert Around, Insert Before, Insertion directions
+@comment  node-name,  next,  previous,  up
+@subsubsection Insert After
+
+``Insert After'' inserts something after the current selection.  The
+following button or key determines what is inserted; for the types of
+insertions, see the menu in @xref{Insertion types}.  Whitespace between
+the new text and the original text is adjusted automatically.
+
+@node Insert Around, Replace, Insert After, Insertion directions
+@comment  node-name,  next,  previous,  up
+@subsubsection Insert Around
+
+``Insert Around'' inserts something before the current selection and
+something after it, typically related in some sensible way, such as a
+pair of bracketing characters, or two successive items from the data
+source; in the common case of this being the kill ring. this is as
+results from copying a two-part selection; @ref{Surround}.
+The following button or key determines what is inserted; for the types
+of insertions, see the menu in @xref{Insertion types}.  Whitespace
+between the new text and the original text is adjusted automatically.
+
+@node  Replace,  , Insert Around, Insertion directions
+@comment  node-name,  next,  previous,  up
+@subsubsection Replace
+
+``Replace'' inserts something in place of the current selection.  The
+following button or key determines what is inserted; for the types of
+insertions, see the menu in @xref{Insertion types}.
+
+If the selection is a multi-part one, such as that resulting from a
+Surround operation (@pxref{Surround}), the parts of it are
+replaced with successive items from the data source, as for ``Insert
+Around'' (@pxref{Insert Around}).
+
+@node  Insertion types, Languide commands, Insertion directions, Trigger group
+@comment  node-name,  next,  previous,  up
+@subsection Insertion types
+
+All the directional insertion commands need to be told what kind of
+thing to insert, using another button.
+
+@menu
+* Inserting from the kill ring::  Inserting one or more saved items
+* Inserting brackets::          Inserting or wrapping with brackets
+* Inserting expressions::       Wrapping with operators
+* Inserting statements::        Inserting / wrapping with, control structures
+* Other insertions::            Other kinds of insertion
+@end menu
+
+@node  Inserting from the kill ring, Inserting brackets, Insertion types, Insertion types
+@comment  node-name,  next,  previous,  up
+@subsubsection Inserting from the kill ring
+
+Any of the ``kill'' keys or buttons will insert the top item of the kill
+ring.
+
+In the case of ``Insert Around'' (@pxref{Insert Around}), the top two
+items are inserted, one before the selection and the other after it.
+Likewise, for ``Replace'' (@pxref{Replace}), if the selection is a
+multi-part one, multiple items are used to replace the parts.
+
+@node  Inserting brackets, Inserting expressions, Inserting from the kill ring, Insertion types
+@comment  node-name,  next,  previous,  up
+@subsubsection Inserting brackets
+
+The shoulder keys used to force movement by bracketed constructs may be
+used to insert brackets around (or before, or after, or instead of) the
+selection.
+
+Hold the lower right shoulder button, and press and release the upper
+one, for ordinary parentheses.
+
+Hold the upper right shoulder button, and press and release the lower
+one, for square brackets.
+
+Hold both lower shoulder buttons, and press and release the upper right
+one, for curly braces.
+
+@node  Inserting expressions, Inserting statements, Inserting brackets, Insertion types
+@comment  node-name,  next,  previous,  up
+@subsubsection Inserting expressions
+
+@c todo: fill in
+
+@node  Inserting statements, Other insertions, Inserting expressions, Insertion types
+@comment  node-name,  next,  previous,  up
+@subsubsection Inserting statements
+
+Statements may be inserted before, after, around, or in place of, the
+current selection.
+
+@multitable {@key{Number}} {@key{Position}} {@key{ThumbBtn2}} {main statement type} {other statement type}
+@item Number
+@tab Position
+@tab Name
+@tab Main statement type
+@tab Other statement type
+@item @key{1}
+@tab @key{left}
+@tab @key{Trigger}
+@tab Variable declaration
+@tab Assignment
+@item @key{2}
+@tab @key{top}
+@tab @key{ThumbBtn}
+@tab if-then
+@tab if-then-else
+@item @key{3}
+@tab @key{bottom}
+@tab @key{ThumbBtn2}
+@tab function call
+@tab function definition
+@item @key{4}
+@tab @key{right}
+@tab @key{TopBtn}
+@tab Iteration
+@tab Fancy iteration
+@end multitable
+
+The ``Main statement type'' may be selected by using that button with
+@key{PinkieBtn} (the lower left shoulder button) as a modifier, and the ``Other
+statement type'' using @key{PinkieBtn} and @key{TopBtn2} (both left-hand
+shoulder buttons) as the modifiers.
+
+The same layout of statement buttons is used for outwardly similar, but
+more ``electric'', insertions by the Languide (language-guided editing)
+package; see @ref{Languide commands}.
+
+@node  Other insertions,  , Inserting statements, Insertion types
+@comment  node-name,  next,  previous,  up
+@subsubsection Other insertions
+
+Pressing the bottom trigger button (@key{ThumbBtn2}, @key{3}) --- that
+normally runs a ``find'' command --- to select an insertion type inserts
+the latest search string.
+
+@node  Languide commands, Other face button commands, Insertion types, Trigger group
+@comment  node-name,  next,  previous,  up
+@subsection Languide commands
+
+Languide (Language-guided editing) commands may be accessed by pressing
+@key{Trigger} with @key{PinkieBtn} as a modifier.  A further button must
+be pressed to select a Languide operation.  The button bindings are,
+wherever possible, generally similar to those for inserting
+statements. @ref{Inserting statements}.
+
+@c todo: fill in the list of languide commands
+
+@menu
+* Languide variable commands::     Handling variables and scope
+* Languide conditional commands::  Adding conditionals
+* Languide function commands::     Handling functions and calls
+* Languide iteration commands::    Adding iteration
+* Languide hat switch commands::   Scope and structure
+* Other Languide commands::        Descriptions
+@end menu
+
+@node  Languide variable commands, Languide conditional commands, Languide commands, Languide commands
+@comment  node-name,  next,  previous,  up
+@subsubsection Languide variable commands
+
+The @key{Trigger} button (@key{1}, the left button of the face buttons)
+runs commands related to variables.
+
+With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+takes the current selection as the initialization expression for a local
+variable, creates the variable and its initialization, and puts the
+variable name in place of the original selection, leaving the variable
+name at the top of the kill ring.
+
+An isearch-like interface is used to select one of several possible
+binding points for the variable, if Languide finds several.
+@c todo: implement this using the gamepad, and document it here
+
+This operation is meant for when you want to re-use an expression.
+
+With @key{TopBtn2} (upper left shoulder button) as a modifier, it does
+this but with a global variable instead of a local one.
+
+@node  Languide conditional commands, Languide function commands, Languide variable commands, Languide commands
+@comment  node-name,  next,  previous,  up
+@subsubsection Languide conditional commands
+
+The @key{ThumbBtn} (@key{2}, the top button of the face buttons) does
+some operations connected with making code conditional.
+
+With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+makes the current selection conditional.  If it is possible to do this
+by adding a condition to an existing ``if'' statement, it does so,
+otherwise it wraps the selection in an ``if'' statement in the
+programming language of the current major mode.
+
+With @key{PinkieBtn} and @key{TopBtn2} (both left shoulder buttons) as
+modifiers, it makes the current selection into the body of an
+``if-then-else'' statement in the programming language of the current
+major mode.
+
+@node  Languide function commands, Languide iteration commands, Languide conditional commands, Languide commands
+@comment  node-name,  next,  previous,  up
+@subsubsection Languide function commands
+
+@key{ThumbBtn2}, the lower face button, runs commands relating to
+functions and calls.
+
+By itself, it converts the current selection to a function, prompting
+for the name.  It tries to create a suitable argument list
+automatically, by looking for variables that are used within the
+selection but are bound further out.  The new function goes just before
+the one containing the selection (for typical programming languages),
+and the selection is replaced with a call to that function.  A template
+for a call to the function is left on the top of the kill ring, as this
+command is meant for when you want to re-use a block of code from
+somewhere else..
+
+With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+creates a function to suit the function call represented by the current
+selection.
+
+With @key{TopBtn2} (upper left shoulder button) as a modifier, it wraps
+the current selection with the syntax for a function call.
+
+With @key{PinkieBtn} and @key{TopBtn2} (both left shoulder buttons) as
+modifiers, it removes the function call syntax surrounding the
+selection.
+
+@node  Languide iteration commands, Languide hat switch commands, Languide function commands, Languide commands
+@comment  node-name,  next,  previous,  up
+@subsubsection Languide iteration commands
+
+@key{TopBtn}, the right-most of the face buttons, runs commands relating
+to iteration.
+
+With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+wraps the current selection with a ``while'' loop in the programming
+language of the current major mode.
+
+With @key{PinkieBtn} and @key{TopBtn2} (both left shoulder buttons) as
+modifiers, it wraps the current selection with a ``for'' loop in the
+programming language of the current major mode.
+
+@node  Languide hat switch commands, Other Languide commands, Languide iteration commands, Languide commands
+@comment  node-name,  next,  previous,  up
+@subsubsection Languide hat switch commands
+
+The hat switch ``up'' key unifies the statements that make up the
+current selection, by wrapping them in the ``statement sequence'' syntax
+of the programming language of the current major mode, thus making them
+into a single compound statement.
+
+The hat switch ``down'' key removes a control structure surrounding the
+current selection.
+
+The hat switch ``left'' key moves point to the scoping point surrounding
+the selection.
+
+The hat switch ``right'' key comments out the current selection.
+
+@node  Other Languide commands,  , Languide hat switch commands, Languide commands
+@comment  node-name,  next,  previous,  up
+@subsubsection Other Languide commands
+
+@key{BaseBtn3} (the small button near the hat switch) shows a
+description of the current selection.
+
+@node  Other face button commands,  , Languide commands, Trigger group
+@comment  node-name,  next,  previous,  up
+@subsection Other face button commands
+
+@node  Shoulder buttons, The slow/turbo buttons, Trigger group, The buttons
+@comment  node-name,  next,  previous,  up
+@section The shoulder buttons
+
+The shoulder buttons are the buttons on the surface of the gamepad that
+normally faces away from you.
+
+@multitable {@key{Number}} {lower right} {Command description} {As modifier which might be longer}
+@item Number
+@tab Buttons
+@tab Command
+@tab As modifier
+@item 5
+@tab upper left
+@tab other-window
+@item 6
+@tab lower left
+@tab next-buffer
+@tab Modifies Hat to scroll buffer list
+@item 7
+@tab upper right
+@tab surround (v)
+@tab extend (v)
+@item 8
+@tab lower right
+@tab mark
+@end multitable
+
+@menu
+* Window selection::            Moving between windows
+* Buffer selection::            Switching buffers within a window
+* Extend and Surround::         More complex selections
+* Command history::             Repeating recent commands
+* Menus::                       Menus using the joystick
+* Extended commands::           M-x using the joystick
+@end menu
+
+@node  Window selection, Buffer selection, Shoulder buttons, Shoulder buttons
+@comment  node-name,  next,  previous,  up
+@subsection Window selection
+
+The upper left shoulder button by itself selects the next window.  Used with the
+lower left button as a modifier, it makes the current window be the only
+window.
+
+@node  Buffer selection, Extend and Surround, Window selection, Shoulder buttons
+@comment  node-name,  next,  previous,  up
+@subsection Buffer selection
+
+The lower left shoulder button by itself selects the next buffer in the
+current window.
+
+Used with the lower right button as a modifier, it selects the previous
+buffer instead.
+
+Used with the upper left button as a modifier, it deletes the current
+window.
+
+@node  Extend and Surround, Command history, Buffer selection, Shoulder buttons
+@comment  node-name,  next,  previous,  up
+@subsection Versor Extend and Surround, and Insert Around
+
+It is possible to stretch the selection to cover more than one unit of
+navigation, and also possible to make a selection with multiple,
+separate, parts.
+
+Copying a two-part selection is particularly useful with @ref{Insert
+Around}, which inserts two items from a data source such as the kill
+ring..
+
+@menu
+* Surround::                    Selecting around the selection
+* Extend::                      Extending the selection
+@end menu
+
+@node  Surround, Extend, Extend and Surround, Extend and Surround
+@comment  node-name,  next,  previous,  up
+@subsubsection Surround
+
+The top right shoulder button runs the command ``Surround'', which is
+part of the Versor system.  It selects the potential selection around
+the current selection, omitting the current selection.  For example, you
+could select some sexps using movement and extension, and then instead
+select the sexp around the current selection.  Further ``surround''
+commands move the selection outwards, keeping the original hole in the
+selection from the first ``Surround''.
+
+``Surround'' results in a two-part selection.  If you copy or kill this,
+it will appear on the kill ring as two successive items.
+
+If you extend a two-part selection, the gap inside it is not affected.
+
+@c todo: xref to and from this more
+
+You can insert a two-part copy (such as that done by ``Surround'' then
+``copy'') around the selection, using ``Insert Around''.  @xref{Insert
+Around}.  Also, if you do ``Replace'' when there is a two-part
+selection, both parts are replaced. @xref{Replace}.
+
+Used together, ``Extend'', ``Surround'' and ``Insert Around'' let you do
+such operations as copying the control structure around a group of
+statements and wrapping it around another group of statements.
+
+@node  Extend,  , Surround, Extend and Surround
+@comment  node-name,  next,  previous,  up
+@subsubsection Extend
+
+@c todo: xref to and from this more
+
+The top right shoulder button, as a modifier to the hat switch, is used
+to extend the Versor selection, and to make a selection surrounding, but
+not including, the current one (i.e. with a gap in it, where the
+selection was).
+
+``Extend'' modifies the hat movements to extend the Versor
+selection.  For example, if you are working with statements, a right
+movement of the hat switch will add the next statement to the selection,
+or a left movement will add the previous statement.
+
+Once you have started to extend in one direction, going the other way
+will reduce the selection, rather than extend the other way.  For
+example, if you have started to extend forwards by pressing @key{left}
+on the hat switch, pressing @key{right} will retract the selection; and
+vice versa if you start the extension backwards.
+
+If you want to extend in both directions, you can use the up and down
+movements of the hat switch for the second direction.  This is useful
+when starting with a selection resulting from some other operation such
+as ``Surround'', more than for when navigating normally.
+
+@node  Command history, Menus, Extend and Surround, Shoulder buttons
+@comment  node-name,  next,  previous,  up
+@subsection Command history
+
+@c todo: move this to be with buffer and file selection, and xref it from here
+
+The upper left shoulder button as a modifier for the vertical axis of
+the hat switch brings up the command history.  Use the hat switch to
+navigate to the item you want, then release the shoulder button to
+select.
+
+@node  Menus, Extended commands, Command history, Shoulder buttons
+@comment  node-name,  next,  previous,  up
+@subsection Menus
+
+The upper right shoulder button, with the lower right button as a
+modifier, pops up the text mode menu system.  The lower right button
+must be held down while navigating to the desired menu entry; releasing
+it performs the selected action.
+
+The hat switch navigates the menu, with the @key{Trigger} button
+(leftmost trigger button) or the upper right shoulder button to select
+at each stage, and releasing.the lower right shoulder button selects the
+eventual action.
+
+@node  Extended commands,  , Menus, Shoulder buttons
+@comment  node-name,  next,  previous,  up
+@subsection Extended commands
+
+The lower right shoulder button, with the upper right button as a
+modifier, runs @code{execute-extended-command}, that is, @key{M-x}.  The
+hat switch may then be used to move from character to character, and to
+bump characters up and down; whether they go to the next character, or
+the next one that makes sense in the completion context, depends on
+whether there is a completion context.  Again, @key{Trigger} executes
+the command; @key{ThumbBtn} (topmost trigger button) deletes a
+character, and @key{TopBtn} (rightmost trigger button) does completion.
+
+@c todo: fix the code, and check the doc
+.
+@node  The slow/turbo buttons,  , Shoulder buttons, The buttons
+@comment  node-name,  next,  previous,  up
+@section The slow/turbo buttons
+
+@c todo: more detail; and split into subsections
+
+The small button near the trigger group modifies the hat switch to
+change the repeat rate.
+
+The small button near the hat switch brings up a help diagram when
+pressed, and removes the diagram when released.  If pressed with any
+modifier in effect, it modifies the bindings shown on the diagram.
+
+@node  Making your own bindings, Implementation details, The buttons, Top
+@comment  node-name,  next,  previous,  up
+@chapter Making your own bindings
+
+The short versions of button names (used as prefixes when the buttons
+are used as modifiers) are made by taking all uppercase letters in the
+original name, all lowercase letters immediately following an uppercase
+letter, and all digits.  Thus, for example, @key{BaseBtn2}, used as a
+modifier, appears as @key{BaBt2-}.  (This shortening algorithm provides
+a reasonable level of shortening without ambiguity and without special
+cases.)
+
+You can use the command @kbd{M-x joystick-indicate-next-event} followed
+by a joystick button or axis combination, to find out what the event is
+called, even if it is not bound to any command.  (Normally, the function
+that transfers commands from the joystick driver program to the Emacs
+event queue suppresses events that are not bound.)
+
+Perhaps the best way to get a feel for what is going on is to stop the
+Emacs joystick process (@kbd{M-x joystick-stop}) and run the driver
+program @file{joylisp} interactively in a terminal, and try playing
+around with the gamepad controls.  You can type @kbd{quit} at the
+program to make it exit, and can type a variety of commands at it
+(@ref{Driver commands} for details).
+
+@node Implementation details, Compatibility, Making your own bindings, Top
+@comment  node-name,  next,  previous,  up
+@chapter Implementation details
+
+This chapter documents the program that converts events between the
+Linux Joystick Device format and a simple Lisp-based protocol.  It also
+documents that protocol.
+
+@menu
+* Starting the driver program::  Command line arguments
+* Protocol::                    The Lisp emitted by the program
+* Driver commands::             Shell-style commands to the program
+@end menu
+
+@node  Starting the driver program, Protocol, Implementation details, Implementation details
+@comment  node-name,  next,  previous,  up
+@section Starting the driver program
+
+@c todo: update this for new arguments
+
+This is normally done for you by @code{joystick-start} in the
+accompanying Emacs-Lisp file @file{joystick.el}.  In case you want to
+use this in some other application, here are the details anyway.
+
+There are two versions of the joylisp program, @command{joylisp} and
+@command{xjoylisp}.  The latter version draws an animated diagram of a
+gamepad, with optional labelling of the buttons and axes, for training
+purposes.
+
+Usage: @command{joylisp [device [device-event-label [device-non-event-label]]]}
+
+The "device" argument is the joystick device to read, such as
+@file{/dev/js0}.
+
+The optional @code{device-event-label} argument is something to put at
+the start of each event s-exp instead of @code{"jse '"} (which stands
+for JoyStick Event).  This is partly in case you have several
+joystick-like devices on the same system, and also lets you give
+something without the space and quote, so that each type of event runs a
+different Lisp function.
+
+The optional @code{device-non-event-label} argument is something to put
+at the start of each non-event s-exp instead of @code{"joystick-"}.
+This is partly in case you have several joystick-like devices on the
+same system.  The default is such that each type of non-event
+(declarations etc) runs a different Lisp function.
+
+@node  Protocol, Driver commands, Starting the driver program, Implementation details
+@comment  node-name,  next,  previous,  up
+@section Protocol
+
+The driver program emits sexps, which are evaluated by a process filter
+in Emacs.  This mostly puts an event into the Emacs event queue ---
+roughly speaking, it pretends you pressed a novel kind of function key.
+Doing it this way means that the commands are run in the normal command
+loop environment, rather than inside the process filter.
+
+Some of these sexps result from the user operating the device controls,
+and some of them are replies to commands given to the interface
+program.  @ref{Driver commands}.
+
+@menu
+* axis-acceleration::           Reporting the acceleration setting
+* axis-max-speed::              Reporting the acceleration limit
+* error::                       Reporting an error
+* octant::                      Using the joysticks for letters
+* joystick-current-tick-rate::  Reporting the basic speed
+* axis-sensitivity::            Reporting the analog speed scale
+* hatspeed report::             Reporting the hat speed scale
+* timestamp::                   Recording when events occur
+* jse::                         Pressing buttons, etc
+* Setup messages::              Passing back driver information
+@end menu
+
+
+@node axis-acceleration, axis-max-speed, Protocol, Protocol
+@subsection axis-acceleration
+
+(axis-acceleration axis acceleration)
+
+@node axis-max-speed, error, axis-acceleration, Protocol
+@subsection axis-max-speed
+
+(axis-max-speed axis max-speed)
+
+@node error, octant, axis-max-speed, Protocol
+@subsection error
+
+(error message)
+
+@node octant, joystick-current-tick-rate, error, Protocol
+@subsection octant
+
+(octant )
+
+@node joystick-current-tick-rate, axis-sensitivity, octant, Protocol
+@subsection joystick-current-tick-rate
+
+(joystick-current-tick-rate )
+
+@node axis-sensitivity, hatspeed report, joystick-current-tick-rate, Protocol
+@subsection axis-sensitivity
+
+(axis-sensitivity )
+
+@node hatspeed report, timestamp, axis-sensitivity, Protocol
+@subsection hatspeed
+
+(hatspeed )
+
+@node timestamp, jse, hatspeed report, Protocol
+@subsection timestamp
+
+(timestamp )
+
+@node jse, Setup messages, timestamp, Protocol
+@subsection jse
+
+(jse )
+
+@node Setup messages,  , jse, Protocol
+@subsection Setup messages
+
+(begin-init )
+
+(declare-version )
+
+(declare-buttons )
+
+(declare-axes )
+
+(declare-name )
+
+(declare-button )
+
+(declare-axis )
+
+(init-done )
+
+@node Driver commands,  , Protocol, Implementation details
+@comment  node-name,  next,  previous,  up
+@section Commands to the driver program
+
+The program accepts "shell-style" commands on stdin.  The commands
+are as follows:
+
+@menu
+* acceleration::                Setting or querying axis acceleration
+* acknowledge::                 Setting command acknowledgement
+* hatspeed::                    Setting the speed of hat axes
+* labels::                      Setting the labels on the display
+* numeric-mods::                Setting the modifier format
+* maxspeed::                    Setting the limit for acceleration
+* quit::                        Tell the program to quit
+* rumble::                      Make the device rumble
+* sensitivity::                 Setting or querying axis sensitivity
+* shock::                       Make the device shock
+* show-ticking::                Enable ticking
+* signed::                      Make the axis output values signed
+* stamped::                     Enable timestamps
+* tickrate::                    Set the tick rate
+* timing::                      Use timing for axes (normal)
+* updown::                      Use up and down events
+@end menu
+
+@node  acceleration, acknowledge, Driver commands, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection acceleration
+@itemize @bullet
+@item acceleration ratio
+@end itemize
+
+For every axis event, increase the sensitivity by the given
+ratio.  Normal speed is resumed when the axis is next centred.
+
+@node  acknowledge, hatspeed, acceleration, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection acknowledge
+@itemize @bullet
+@item acknowledge [arg]
+@end itemize
+
+With arg == 0, turn command acknowledgment off; otherwise turn
+it on.
+
+@node  hatspeed, labels, acknowledge, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection hatspeed
+@itemize @bullet
+@item hatspeed
+@item hatspeed value
+@item hatspeed channel
+@item hatspeed channel value
+@end itemize
+
+Set the hat speed.  This is the same as `sensitivity', but only
+applies to axes that are described as hat switch axes.  (These
+are `all-or-nothing' joystick axes, so you may well want to
+make them less sensitive than the ordinary ones.)
+
+@node  labels, numeric-mods, hatspeed, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection labels
+
+This command applies only to @command{xjoylisp}, and not to
+@command{joylisp}; see @ref{Starting the driver program}.
+
+@c update this to match the real syntax
+
+The rest of the command line is taken as a @code{|} separated list of
+labels, for button 0, button 1, and so on, for the current combination
+of modifier buttons.  This is then remembered.
+
+@node  numeric-mods, maxspeed, labels, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection numeric-mods
+@itemize @bullet
+@item numeric-mods
+@item symbolic-mods
+@end itemize
+
+Set the modifier representation to numeric or symbolic.
+
+@node  maxspeed, quit, numeric-mods, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection maxspeed
+@itemize @bullet
+@item maxspeed value
+@end itemize
+
+Set the maximum sensitivity (limit of acceleration) to value.
+
+@node  quit, rumble, maxspeed, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection quit
+@itemize @bullet
+@item quit
+@end itemize
+
+Quit the joystick-to-lisp program.
+
+@node  rumble, sensitivity, quit, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection rumble
+@itemize @bullet
+@item rumble
+@end itemize
+
+Make the joystick / keypad rumble.  Not implemented, as there's
+no mention of this in the joystick driver documentation.
+
+@node  sensitivity, shock, rumble, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection sensitivity
+@itemize @bullet
+@item sensitivity
+@item sensitivity value
+@item sensitivity axis value
+@item sensitivity axis
+@end itemize
+ 
+With no args, or with only an axis name, report all or one of
+the sensitivities.
+
+With a value, and with or without an axis name, set one or all
+of the sensitivities.
+
+Value should be a floating-point value between 0.0 and 1.0; it
+is the proportion of internal ticks for which full displacement
+of the joystick in this output will produce an event in
+`timing' mode.  So, for example, if you set an axis'
+sensitivity to 0.25, it will produce an event at most once
+every 4 ticks.
+
+@node  shock, show-ticking, sensitivity, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection shock
+@itemize @bullet
+@item shock
+@end itemize
+
+Make the joystick / keypad give the user a shock.  Not
+implemented, as there's no mention of this in the joystick
+driver documentation.  Also, this is just a joke entry from a
+James Bond film, but I wouldn't be surprised if someone really
+makes one sometime.
+
+@node  show-ticking, signed, shock, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection show-ticking
+@itemize @bullet
+@item show-ticking [arg]
+@end itemize
+
+With arg == 0, don't show every internal tick.
+Otherwise, show all the internal ticks.
+Mostly meant for debugging.
+
+@node  signed, stamped, show-ticking, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection signed
+@itemize @bullet
+@item signed
+@end itemize
+
+Output the joystick displacement as a signed value.  See also
+`timing' and `updown'.
+
+@node  stamped, tickrate, signed, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection stamped
+@itemize @bullet
+@item stamped [arg]
+@end itemize
+
+With arg == 0, don't send timestamps before each event.
+Otherwise, send a timestamp before each event.
+
+@node  tickrate, timing, stamped, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection tickrate
+@itemize @bullet
+@item tickrate [ticks-per-second]
+@end itemize
+
+With argument, set the ticks per second (for the `timing'
+output) to ticks-per-second.
+
+With no argument, report the current tick rate.
+
+If you set this to a larger value (and you'll probably want to
+turn `sensitivity' down in that case), you get finer
+discrimination of the joystick position, at the expense of
+using more CPU time.  Still, that probably won't be much.
+
+@node  timing, updown, tickrate, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection timing
+@itemize @bullet
+@item timing
+@end itemize
+
+When a joystick axis is off-center, send a stream of events, at
+a rate determined by how far off-center it is.  This is the
+default.  See also `signed' and `updown'.  The scale of the
+individual axis is set with the `sensitivity' command, and the
+overall rate of the system is set with `tickrate'.
+
+@node  updown,  , timing, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection updown
+@itemize @bullet
+@item updown
+@end itemize
+
+Output the joystick displacement as an unsigned value, and give
+the sign by issuing different event types.  See also `signed'
+and `timing' output modes.
+
+@node  Compatibility, Acknowledgements, Implementation details, Top
+@comment  node-name,  next,  previous,  up
+@chapter Compatibility
+
+The author has not yet made extensive tests of this on different
+platform configurations.  Here is a description of one on which it is
+known to work.
+
+A GNU/Linux installation including the joystick driver is needed.  The
+author used Fedora 7.
+
+A USB gamepad with ten buttons is needed.  Such devices are probably all
+conceptually similar.  The author used a ``Logic3 Rumble Pad'', mostly
+because it was quite cheap.  Reviews of this device are very varied,
+particularly concerning its robustness.
+
+As far as the author is aware, no particularly recent features or fixes
+in Emacs are required.  The system was developed on GNU Emacs 22.1.50.1,
+but it may well work back to 20.0 or earlier.  It's probably
+incompatible with XEmacs, but might not take that much work to make it
+compatible.
+
+@node  Acknowledgements, Future plans, Compatibility, Top
+@comment  node-name,  next,  previous,  up
+@chapter Acknowledgements and permissions
+
+The general idea (of receiving s-exps from the process, and sending
+simple line commands to it) came from Barry Jaspan's @file{vr.el}, which
+listens to a glue program using Dragon's voice input API, and the code
+(in particular, the process filter function) started off from fragments
+of that.
+
+The @file{COPYING} file provided with @file{vr.el} states:
+
+@quotation
+Permission is hereby granted for personal, non-commercial use and
+modification of this software.  Non-commercial use means use by an
+individual for personal benefit, whether on their own time or at work.
+Redistribution of this software as source code or as executable
+programs in its original or modified form is prohibited.
+
+Users are encouraged to enhance this software and submit their changes
+back the author for inclusion in future releases.
+
+Portions of this software were developed using the Dragon
+NaturallySpeaking Software Development Kit sample applications as
+reference material, Copyright 1999 Dragon Systems, Inc.
+@end quotation
+
+However, very little of @file{joystick.el} came from @code{vr.el}, and
+that has now been re-written, so the author asserts that he is free to
+place @file{joystick.el} under the GPL.
+
+The glue program @file{joylisp.c} is based on @file{jstest.c} which is
+Copyright (C) 1996-1999 Vojtech Pavlik (Sponsored by SuSE) and released
+under GPL2.
+
+
+@node  Future plans,  , Acknowledgements, Top
+@comment  node-name,  next,  previous,  up
+@chapter Future plans
+
+Here we list some suggested things to add to the joystick system.  Feel
+welcome to deprive the author of them!  All the code is GPL'ed.
+
+@itemize @bullet
+
+@item Demonstration/tutorial video
+
+This would be much better with the X version of the driver program, as
+mentioned above; see mentions to @command{xjoylisp} in @ref{Starting the
+driver program}.
+
+@item Haptic feedback
+
+The idea of this would be to use the gamepad's ``rumble'' facility to
+indicate crossing defun boundaries, and perhaps make comments and inline
+string literals feel different to move over, from actual code.
+
+The author would be grateful on any information about how to access the
+rumble facility.  It does not appear to be supported by the current
+version of the Linux joystick driver (as of 2007).
+
+@item Extended gamepad, and interface
+
+The originator of the system plans to take a couple of gamepads apart to
+make one with extra buttons, with a miniature USB hub inside it to
+combine the connections.  The design and instructions will, of course,
+be published on the web.  This will require an extended version of
+@file{joylisp.c}, capable of taking more than one joystick device, and
+combining them so that all the buttons can modify all the controls.  The
+rudiments of this work are now in @file{joylisp.c}.
+
+The main extra buttons (probably transplanted shoulder buttons) would be
+on the underside of the handles, giving a good enough chording facility
+to allow typing of characters (probably using the braille encoding, as
+that is well-established and fairly easy to learn).  This would make it
+very rare to need the conventional keyboard at all.
+
+@item Remote operation over the network
+
+It would be better to use a network socket, rather than a pipe, to
+communicate between the driver program and Emacs, so you can use a
+joystick on the machine you're using as an X server, rather than having
+to have it on the same machine as your Emacs session.  Unfortuntely, the
+author hasn't been able to find how to make the socket interface not
+collect up a largish amount of text before sending it --- the pipe
+interface sends it faster.  The author would welcome help or advice on
+this.
+
+@item Comparison with conventional editing
+
+The author plans to compare the time taken to do some (hopefully
+representative) pieces of source code editing, with the joystick and
+with a plain, keyboard-based Emacs.  Number of keystrokes (or other
+input gestures) needed should also be compared, and perhaps the number
+of corrections, undos, etc.
+
+@item Ports to other platforms
+
+It is probably quite easy to port the glue program to non-Linux
+platforms.  The author has no plans to do this himself, but would
+encourage, and probably advise or help, anyone who is interested in
+doing it themselves.
+
+@end itemize
+
+@contents
+@bye
