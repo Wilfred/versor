@@ -1,3 +1,21 @@
+2008-02-04  John Sturdy  <john.sturdy@ul.ie>
+
+	* joystick.el (jse): Accept chords from the controller process.
+
+	* joylisp.h, joylisp.c (js_do_button_event): Output chords as well
+	as modifiers-action groups.
+
+2008-02-01  John Sturdy  <john.sturdy@ul.ie>
+
+	* joystick.el (in-other-window): Comment out debugging message.
+
+	* joylisp.c (get_joystick_config): Output a description of the
+	unlabelled buttons, if we can't get the labelling.
+
+2008-01-30 John Sturdy  <john.sturdy@ul.ie>
+	* Move into emacs-versor as a new module, joylisp.  Release on
+	sourceforge.
+	
 2008-01-30  John Sturdy  <jcgs@hosea>
 
 	* joylisp.c, joylisp.h: make Button_Name construct a name even
