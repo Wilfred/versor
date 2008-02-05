@@ -31,7 +31,7 @@
    accompanying Emacs-Lisp file `joystick.el'.  In case you want to
    use this in some other application, here are the details anyway.
 
-   Usage: joylisp [device [device-event-label [device-non-event-label]]]
+   Usage: joylisp [--device device] [--event event-label] [--name non-event-label]
 
    This program converts joystick events to Lisp s-expressions, and
    sends them to stdout.
@@ -39,17 +39,17 @@
    The "device" argument is the joystick device to read, such as
    /dev/js0.
 
-   The optional "device-event-label" argument is something to put at
-   the start of each event s-exp instead of "jse '" (which stands for
+   The optional "event-label" argument is something to put at the
+   start of each event s-exp instead of "jse '" (which stands for
    JoyStick Event).  This is partly in case you have several
    joystick-like devices on the same system, and also lets you give
    something without the space and quote, so that each type of event
    runs a different Lisp function.
 
-   The optional "device-non-event-label" argument is something to put
-   at the start of each non-event s-exp instead of "joystick-".  This
-   is partly in case you have several joystick-like devices on the
-   same system.  The default is such that each type of non-event
+   The optional "non-event-label" argument is something to put at the
+   start of each non-event s-exp instead of "joystick-".  This is
+   partly in case you have several joystick-like devices on the same
+   system.  The default is such that each type of non-event
    (declarations etc) runs a different Lisp function.
 
    Buttons
@@ -920,8 +920,23 @@ get_joystick_config(struct joystick *stick)
 	 stick->version & 0xff);
 
   if (stick->nbuttons > 0 && stick->btnmap[0] < BTN_MISC) {
+    int lowest = 0xffff;
+    int highest = 0;
     output("(%sdeclare-unlabelled-buttons \"%s\" %d)\n",
 	   stick->name, stick->device, stick->nbuttons);
+    for (i = 0; i < stick->nbuttons; i++) {
+      int button = stick->btnmap[i];
+      if (button > highest) {
+	highest = button;
+      }
+      if (button < lowest) {
+	lowest = button;
+      }
+      output("(%sunlabelled-button \"%s\" %d %d)\n",
+	     stick->name, stick->device, i, button);
+    }
+    output("(%sunlabelled-button-range \"%s\" %d %d)\n",
+	   stick->name, stick->device, lowest, highest);
   } else {
     stick->buttons_to_init = stick->nbuttons;
     stick->button_labels_good = 1;
@@ -1010,6 +1025,8 @@ js_do_button_event(struct controller *controller,
     controller->buttons_down |= (1 << event->number);
     set_modifiers_buffer(controller);
 
+    /* add the button to the chord we are collecting */
+    controller->chord |= (1 << event->number);
   } else {
 
     /* value == 0: button has been released */
@@ -1031,6 +1048,13 @@ js_do_button_event(struct controller *controller,
 	   modifiers_buf,
 	   Button_Name(stick, event->number),
 	   action);
+
+    if (controller->buttons_down == 0) {
+      output("(%schord %d)\n",
+	     stick->name,
+	     controller->chord);
+      controller->chord = 0;
+    }
   }
 
 #ifdef DIAGRAM
@@ -1200,6 +1224,7 @@ main (int argc, char **argv)
   the_controller.buttons_down = 0;
   the_controller.used_modifiers = 0;
   the_controller.symbolic_modifiers = 1;
+  the_controller.chord = 0;
   the_controller.sticks = (struct joystick**)malloc(16*sizeof(struct joystick**));
 
   set_modifiers_buffer(&the_controller);
