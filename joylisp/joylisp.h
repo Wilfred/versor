@@ -150,6 +150,13 @@ typedef struct controller {
      is released).  So, we need to remember which buttons have been
      actually used as modifiers. */
   unsigned long used_modifiers;
+  /* Instead of commands with optional modifiers, some users might
+     want to know the total chord pressed -- for example, for getting
+     the gamepad to double as a braille or GKOS keyboard.  We record
+     all the buttons that have been pressed since there were last no
+     buttons pressed, and next time that there are no buttons we
+     pressed, we report all the buttons that have been pressed. */
+  unsigned long chord;
 
   int symbolic_modifiers;
 
