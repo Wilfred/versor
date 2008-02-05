@@ -658,7 +658,7 @@ Optionally with ALLOW-ALL, allow a completion \"all\"."
 This means with the current buffer being the buffer of the other window.
 If there is no other window, make one and put the next buffer there."
   `(let ((original-window (selected-window)))
-     (message "original-window %S" original-window)
+     ;; (message "original-window %S" original-window)
      (when (<= (count-windows) ,window-offset)
        (set-window-buffer (split-window) (other-buffer)))
      (let ((window-to-use original-window))
@@ -960,32 +960,55 @@ still following prefix trees.")
 
 (defun jse (event-type &rest event-args)
   "Process a joystick event, with EVENT-TYPE and perhaps some EVENT-ARGS."
-  (unless jse-latest-keymap
-    (setq jse-latest-keymap (current-global-map)))
-  (let* ((event-vector (vector event-type))
-	 (binding (lookup-key jse-latest-keymap event-vector)))
-    (if (or binding
-	    jse-allow-all-events
-	    (key-binding event-vector)
-	    (and (boundp 'versor-insertion-kind-alist)
-		 (assoc event-type versor-insertion-kind-alist)))
-	(setq unread-command-events
-	      (nreverse (cons
-			 (if (or jse-always-list
-				 event-args)
-			     (cons
-			      event-type
-			      event-args)
-			   event-type)
-			 (nreverse unread-command-events)))
-	      jse-latest-keymap (if (keymapp binding)
-				    binding
-				  nil))
-      (when joystick-log
-	(message "%S not bound" event-type))))
-  (when joystick-indicate-next-event
-    (message "Event %S %S" event-type event-args)
-    (setq joystick-indicate-next-event nil)))
+  (unless joystick-reading-chords
+    (unless jse-latest-keymap
+      (setq jse-latest-keymap (current-global-map)))
+    (let* ((event-vector (vector event-type))
+	   (binding (lookup-key jse-latest-keymap event-vector)))
+      (if (or binding
+	      jse-allow-all-events
+	      (key-binding event-vector)
+	      (and (boundp 'versor-insertion-kind-alist)
+		   (assoc event-type versor-insertion-kind-alist)))
+	  (setq unread-command-events
+		(nreverse (cons
+			   (if (or jse-always-list
+				   event-args)
+			       (cons
+				event-type
+				event-args)
+			     event-type)
+			   (nreverse unread-command-events)))
+		jse-latest-keymap (if (keymapp binding)
+				      binding
+				    nil))
+	(when joystick-log
+	  (message "%S not bound" event-type))))
+    (when joystick-indicate-next-event
+      (message "Event %S %S" event-type event-args)
+      (setq joystick-indicate-next-event nil))))
+
+(defvar joystick-reading-chords nil
+  "Whether the joystick is reading chords.
+This is an alternative way of reading groups of button presses,
+instead of the normal modifier-and-action system.  It's unlikely
+to make sense to use the two at exactly the same time, so this
+variable lets you switch between them.  When it is non-nil,
+chord-typing processing is done instead of command processing,
+for example for typing characters using Braille or GKOS key
+chords.")
+
+(defun joystick-chord (chord)
+  "Handle a joystick chord represented by CHORD.
+Chord outputs are generated after the action outputs,
+whenever a chord is completely released."
+  (interactive "NChord (as number): ")
+  (when joystick-reading-chords
+    ;; (message "Got chord %d" chord)
+
+    ;; Fill in your own code here if you want to do something with
+    ;; chord typing
+    ))
 
 (defun joystick-do-nothing ()
   "Do nothing.
