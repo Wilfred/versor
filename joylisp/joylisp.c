@@ -905,9 +905,9 @@ get_joystick_config(struct joystick *stick)
   ioctl(fd, JSIOCGVERSION, &stick->version);
   ioctl(fd, JSIOCGAXES, &stick->naxes);
   ioctl(fd, JSIOCGBUTTONS, &stick->nbuttons);
-  ioctl(fd, JSIOCGNAME(NAME_LENGTH), stick->brand_name);
-  ioctl(fd, JSIOCGAXMAP, stick->axmap);
-  ioctl(fd, JSIOCGBTNMAP, stick->btnmap);
+  ioctl(fd, JSIOCGNAME(NAME_LENGTH), &stick->brand_name);
+  ioctl(fd, JSIOCGAXMAP, &stick->axmap);
+  ioctl(fd, JSIOCGBTNMAP, &stick->btnmap);
 
   output("(%sbegin-init \"%s\")\n",
 	 stick->name,
@@ -1207,6 +1207,7 @@ struct joystick
 	      unsigned int number)
 {
   struct joystick *stick = (struct joystick*)malloc(sizeof(struct joystick));
+  int i;
 
   stick->device = device;
   stick->event_name = event_name;
@@ -1218,6 +1219,10 @@ struct joystick
   stick->button_names = NULL;
   stick->btn_abbrevs = NULL;
   stick->axis_names = NULL;
+
+  for (i = 0; i <= ABS_MAX; i++) {
+    stick->axmap[i] = i;
+  }
 
   return stick;
 }
