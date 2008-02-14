@@ -291,13 +291,14 @@
 
 #include "joylisp.h"
 
-static char *short_options = "a::d:e:n:vg:";
+static char *short_options = "a::d:e:n:p:vg:";
 
 static struct option long_options[] = {
 #ifdef DIAGRAM
   {"autoraise", optional_argument, 0, 'a'},
 #endif
   {"device", required_argument, 0, 'd'},
+  {"prefix", required_argument, 0, 'p'},
   {"geometry", required_argument, 0, 'g'},
   {"event", required_argument, 0, 'e'},
   {"name", required_argument, 0, 'n'},
@@ -423,20 +424,19 @@ static char modifiers_buf[512];
 /* abbreviations of button names */
 static char modifier_names[512];
 
-static char *btn_abbrevs[KEY_MAX - BTN_MISC + 1];
-
 static void
 set_modifiers_buffer(struct controller *controller)
 /* fill in modifiers_buf according to buttons_down */
 {
-  if (controller->buttons_down) {
+  if ((controller->btn_abbrevs)	/* not set up until all sticks inited */
+      && (controller->buttons_down)) {
     if (controller->symbolic_modifiers) {
       unsigned int i = 0;
       unsigned int mods = controller->buttons_down;
       char *dest = modifiers_buf;
       while (mods) {
 	if (mods & 1) {
-	  char *src = btn_abbrevs[i];
+	  char *src = controller->btn_abbrevs[i];
 	  while (*src) {
 	    *dest++ = *src++;
 	  }
@@ -986,11 +986,22 @@ get_joystick_config(struct joystick *stick)
 
   /* make abbreviations of button names */
   {
-    char *next = modifier_names;
+    if (stick->btn_abbrevs != NULL) {
+      free(stick->btn_abbrevs);
+    }
+    stick->btn_abbrevs = (char**)malloc(stick->nbuttons * sizeof(char*));
     for (i = 0; i < stick->nbuttons; i++) {
+      char *next = modifier_names;
       char prev;
+      char *prefix = stick->prefix;
       char *button_name = Button_Name(stick, i);
-      btn_abbrevs[i] = next;
+      prev = *prefix;
+      for (; *prefix != '\0'; prefix++) {
+	if (isupper(*prefix) || isupper(prev) || isdigit(*prefix)) {
+	  *next++ = *prefix;
+	}
+	prev = *prefix;
+      }
       prev = *button_name;
       for (; *button_name != '\0'; button_name++) {
 	if (isupper(*button_name) || isupper(prev) || isdigit(*button_name)) {
@@ -999,6 +1010,8 @@ get_joystick_config(struct joystick *stick)
 	prev = *button_name;
       }
       *next++ = '\0';
+      stick->btn_abbrevs[i] = (char*)malloc(strlen(modifier_names)+1);
+      strcpy(stick->btn_abbrevs[i], modifier_names);
     }
   }
 }
@@ -1013,39 +1026,42 @@ js_do_button_event(struct controller *controller,
   if (event->value) {
 
     /* value != 0: button has been pressed */
-    output("(%s%s%s-down)\n",
+    output("(%s%s%s%s-down)\n",
 	   stick->event_name,
 	   modifiers_buf,
+	   stick->prefix,
 	   Button_Name(stick, event->number));
 
     /* all the current modifiers have now been used */
     controller->used_modifiers |= controller->buttons_down;
 
     /* add to buttons_down after output, so it doesn't modify itself */
-    controller->buttons_down |= (1 << event->number);
+    controller->buttons_down |= (1 << (event->number + stick->button_event_base));
     set_modifiers_buffer(controller);
 
     /* add the button to the chord we are collecting */
-    controller->chord |= (1 << event->number);
+    controller->chord |= (1 << (event->number + stick->button_event_base));
   } else {
 
     /* value == 0: button has been released */
 
     char *action = ((1 << event->number) & controller->used_modifiers) ? "release" : "up";
 
+    unsigned long mask =  ~(1 << (event->number + stick->button_event_base));
     /* mark all the modifiers that have been used */
     controller->used_modifiers |= controller->buttons_down;
 
     /* take it out of used_modifiers, as it's no longer an active modifier */
-    controller->used_modifiers &= ~(1 << event->number);
+    controller->used_modifiers &= mask;
 
     /* remove from buttons_down before output, so it doesn't modify itself */
-    controller->buttons_down &= ~(1 << event->number);
+    controller->buttons_down &= mask;
     set_modifiers_buffer(controller);
 
-    output("(%s%s%s-%s)\n",
+    output("(%s%s%s%s-%s)\n",
 	   stick->event_name,
 	   modifiers_buf,
+	   stick->prefix,
 	   Button_Name(stick, event->number),
 	   action);
 
@@ -1145,9 +1161,10 @@ js_do_axis_event(struct controller *controller,
       if ((value == 0.0)
 	  || (stick->axes[which_axis]->countdown == 0.0)
 	  ) {
-	output("(%s%s%s%s)\n",
+	output("(%s%s%s%s%s)\n",
 	       stick->event_name,
 	       modifiers_buf,
+	       stick->prefix,
 	       Axis_Name(stick, which_axis),
 	       action);
       }
@@ -1162,16 +1179,18 @@ js_do_axis_event(struct controller *controller,
       stick->axes[which_axis]->action = action;
     } else {
       if (has_value) {
-	output("(%s%s%s%s %d)\n",
+	output("(%s%s%s%s%s %d)\n",
 	       stick->event_name,
 	       modifiers_buf,
+	       stick->prefix,
 	       Axis_Name(stick, which_axis),
 	       action,
 	       value);
       } else {
-	output("(%s%s%s%s)\n",
+	output("(%s%s%s%s%s)\n",
 	       stick->event_name,
 	       modifiers_buf,
+	       stick->prefix,
 	       Axis_Name(stick, which_axis),
 	       action);
       }
@@ -1181,15 +1200,72 @@ js_do_axis_event(struct controller *controller,
 
 /* Allocate and return a new joystick structure. */
 struct joystick
-*new_joystick(char *device, char *event_name, char *name)
+*new_joystick(char *device,
+	      char *event_name,
+	      char *name,
+	      char *prefix,
+	      unsigned int number)
 {
   struct joystick *stick = (struct joystick*)malloc(sizeof(struct joystick));
 
   stick->device = device;
   stick->event_name = event_name;
   stick->name = name;
+  stick->prefix = prefix;
+  stick->number = number;
+  stick->button_event_base = 0;
+  stick->axis_event_base = 0;
+  stick->button_names = NULL;
+  stick->btn_abbrevs = NULL;
+  stick->axis_names = NULL;
 
   return stick;
+}
+
+void 
+check_init_complete(struct controller *controller, int which_stick)
+{
+  if ((controller->sticks[which_stick]->buttons_to_init == 0) &&
+      (controller->sticks[which_stick]->axes_to_init == 0)) {
+    output("(%sinit-done \"%s\")\n",
+	   controller->sticks[which_stick]->name,
+	   controller->sticks[which_stick]->device);
+    controller->sticks[which_stick]->buttons_to_init =
+      controller->sticks[which_stick]->axes_to_init = -1;
+    if (--controller->sticks_to_init == 0) {
+      /* last stick initialized */
+      int istick;
+      int highest_button = 0;
+      int highest_axis = 0;
+      int latest_global_abbrev = 0;
+
+      if (controller->btn_abbrevs != NULL) {
+	free(controller->btn_abbrevs);
+      }
+      controller->btn_abbrevs = (char**)malloc(highest_button * sizeof(char*));
+
+      for (istick = 0;
+	   istick < controller->n_sticks;
+	   istick++) {
+	struct joystick *stick = controller->sticks[istick];
+	int ibutton;
+
+	stick->button_event_base = highest_button;
+	highest_button += stick->nbuttons;
+
+	for (ibutton = 0;
+	     ibutton < stick->nbuttons;
+	     ibutton++) {
+	  controller->btn_abbrevs[latest_global_abbrev++] = stick->btn_abbrevs[ibutton];
+	}
+
+	stick->axis_event_base = highest_axis;
+	highest_axis += stick->naxes;
+	/* output("(reconfiguring %d %d)\n", istick, stick->button_event_base); */
+      }
+      output("(all-sticks-initialized)\n");
+    }
+  }
 }
 
 int
@@ -1214,6 +1290,7 @@ main (int argc, char **argv)
   char *device_name = "/dev/js0";
   char *event_name =  "jse '";
   char *name = "joystick-";
+  char *prefix = "";
 
   int stick_number = 0;
 
@@ -1224,8 +1301,9 @@ main (int argc, char **argv)
   the_controller.buttons_down = 0;
   the_controller.used_modifiers = 0;
   the_controller.symbolic_modifiers = 1;
+  the_controller.btn_abbrevs = NULL;
   the_controller.chord = 0;
-  the_controller.sticks = (struct joystick**)malloc(16*sizeof(struct joystick**));
+  the_controller.sticks = (struct joystick**)malloc(STICK_MAX*sizeof(struct joystick**));
 
   set_modifiers_buffer(&the_controller);
 
@@ -1254,9 +1332,13 @@ main (int argc, char **argv)
 #endif
     case 'd':			/* device */
       device_name = optarg;
-      the_controller.n_sticks = stick_number + 1;
-      the_controller.sticks[stick_number] = new_joystick(device_name, event_name, name);
+      the_controller.sticks_to_init =
+	the_controller.n_sticks = stick_number + 1;
+      the_controller.sticks[stick_number] = new_joystick(device_name, event_name, name, prefix, stick_number);
       stick_number++;
+      if (stick_number >= STICK_MAX) {
+	perror("joylisp: too many sticks");
+      }
       break;
     case 'e':			/* event name */
       event_name = optarg;
@@ -1278,6 +1360,9 @@ main (int argc, char **argv)
 	name[511] = '\0';
       }
       break;
+    case 'p':			/* prefix the button and axis names */
+      prefix = optarg;
+      break;
     case 'v':			/* verbose */
       acknowledge = 1;
       break;
@@ -1286,16 +1371,19 @@ main (int argc, char **argv)
 
   while ((optind < argc) && (argv[optind][0] != '\0')) {
     device_name =  argv[optind];
-    fprintf(stderr, "extra stick %s\n", device_name);
-    the_controller.n_sticks = stick_number + 1;
-    the_controller.sticks[stick_number] = new_joystick(device_name, event_name, name);
+    the_controller.sticks_to_init =
+      the_controller.n_sticks = stick_number + 1;
+    the_controller.sticks[stick_number] = new_joystick(device_name, event_name, name, prefix, stick_number);
     stick_number++;
+    if (stick_number >= STICK_MAX) {
+      perror("joylisp: too many sticks");
+    }
     optind++;
   }
 
   if (stick_number == 0) {
     the_controller.n_sticks = stick_number + 1;
-    the_controller.sticks[stick_number] = new_joystick(device_name, event_name, name);
+    the_controller.sticks[stick_number] = new_joystick(device_name, event_name, name, prefix, stick_number);
     stick_number++;
   }
 
@@ -1308,6 +1396,7 @@ main (int argc, char **argv)
     }
     the_controller.sticks[which_stick]->fd = new_fd;
     if (new_fd > fd_max) {
+      /* the maximum for select to look at */
       fd_max = new_fd;
     }
     get_joystick_config(the_controller.sticks[which_stick]);
@@ -1405,18 +1494,12 @@ main (int argc, char **argv)
 		   the_controller.sticks[which_stick]->device,
 		   js.number,
 		   Button_Name(the_controller.sticks[which_stick], js.number),
-		   btn_abbrevs[js.number]);
+		   the_controller.sticks[which_stick]->btn_abbrevs[js.number]);
 
 	    the_controller.sticks[which_stick]->buttons_to_init--;
 
-	    if ((the_controller.sticks[which_stick]->buttons_to_init == which_stick) &&
-		(the_controller.sticks[which_stick]->axes_to_init == which_stick)) {
-	      output("(%sinit-done \"%s\")\n",
-		     the_controller.sticks[which_stick]->name,
-		     the_controller.sticks[which_stick]->device);
-	      the_controller.sticks[which_stick]->buttons_to_init =
-		the_controller.sticks[which_stick]->axes_to_init = -1;
-	    }
+	    check_init_complete(&the_controller, which_stick);
+
 	    break;
 
 	  case JS_EVENT_INIT | JS_EVENT_AXIS:
@@ -1428,14 +1511,8 @@ main (int argc, char **argv)
 
 	    the_controller.sticks[which_stick]->axes_to_init--;
 
-	    if ((the_controller.sticks[which_stick]->buttons_to_init == which_stick) &&
-		(the_controller.sticks[which_stick]->axes_to_init == which_stick)) {
-	      output("(%sinit-done \"%s\")\n",
-		     the_controller.sticks[which_stick]->name,
-		     the_controller.sticks[which_stick]->device);
-	      the_controller.sticks[which_stick]->buttons_to_init =
-		the_controller.sticks[which_stick]->axes_to_init = -1;
-	    }
+	    check_init_complete(&the_controller, which_stick);
+
 	    break;
 
 	  default:

@@ -26,11 +26,13 @@
 
 #define NAME_LENGTH 128
 
-#define Button_Name(_s_,_b_) ((_s_)->button_labels_good ? \
+#define Raw_Button_Name(_s_,_b_) ((_s_)->button_labels_good ? \
          (button_names[(_s_)->btnmap[(_b_)] - BTN_MISC]) : \
          fake_button_name((_s_), (_b_)))
+#define Raw_Axis_Name(_s_,_a_) (axis_names[(_s_)->axmap[(_a_)]])
 
-#define Axis_Name(_s_,_a_) (axis_names[(_s_)->axmap[(_a_)]])
+#define Button_Name(_st_,_bu_) Raw_Button_Name(_st_,_bu_)
+#define Axis_Name(_st_,_ax_) Raw_Axis_Name(_st_,_ax_)
 
 /* This should be large enough, as the only variable parts output for
    joystick events are numbers and modifiers.  The maximum modifiers
@@ -81,17 +83,32 @@ typedef struct joystick {
   char *event_name;
 
   /* The first thing inside the brackets for all the NON-event s-exps we
-     issue.  The user can set this (as the third arg when calling the
+     issue.  The user can set this (as the "-event" option when calling the
      program); the default value is "joystick", so that each event type calls a
      different Lisp function. */
   char *name;
+
+  /* A string to prefix to each button name, for use with multiple
+     joysticks being used as a single controller.  This lets you tell
+     apart the equivalent buttons on the individual joysticks. */
+  char *prefix;
 
   /* how many controls there are */
   unsigned int naxes;
   unsigned int nbuttons;
 
+  /* which of joystick this is, of several in a controller */
+  unsigned int number;
+  /* offset to add to our event numbers (used to tell multiple sticks apart) */
+  unsigned int button_event_base;
+  unsigned int axis_event_base;
+
   /* whether the button labels make sense */
   int button_labels_good;
+  /* per-stick arrays of names, or NULL */
+  char **button_names;
+  char **btn_abbrevs;
+  char **axis_names;
 
   /* countdown for declaring the end of declarations: */
   unsigned int buttons_to_init;
@@ -119,9 +136,13 @@ typedef struct joystick {
   struct axis **axes;
 } joystick;
 
+/* a[n un]reasonable maximum number of joysticks to combine */
+#define STICK_MAX 16
+
 typedef struct controller {
   struct joystick **sticks;
   unsigned int n_sticks;
+  unsigned int sticks_to_init;
 
   /* whether we are sending timestamps */
   int timestamped;
@@ -159,6 +180,8 @@ typedef struct controller {
   unsigned long chord;
 
   int symbolic_modifiers;
+  /* The abbreviated forms of all the button names on this controller */
+  char **btn_abbrevs;
 
 } controller;
 

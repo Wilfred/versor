@@ -165,7 +165,7 @@ label it actively with legends."
   :group 'joystick
   :type 'string)
 
-(defcustom joystick-graphical t
+(defcustom joystick-graphical (not (null window-system))
   "Whether to use the graphical version of the joystick interface."
   :group 'joystick
   :type 'boolean)
@@ -303,6 +303,8 @@ Returns the process started, which is also stored in `joystick-latest-process'."
       (progn
 	(joystick-find-working-joystick)
 	(setq device joystick-default-device)))
+  (unless device
+    (throw 'no-joystick nil))
   ;; set the connection type to use a pipe, because otherwise commands
   ;; we send back to the joystick get buffered up until there are huge
   ;; quantities of them
@@ -1009,6 +1011,13 @@ whenever a chord is completely released."
     ;; Fill in your own code here if you want to do something with
     ;; chord typing
     ))
+
+(defun all-sticks-initialized (&rest args)
+  "This is run from the joystick process.
+It happens when all the joystick devices have been initialized.
+It is only significant if you're using a controller made of
+multiple joystick devices; even then, it's probaby not really
+significant, and we don't as yet do anything with it.")
 
 (defun joystick-do-nothing ()
   "Do nothing.
