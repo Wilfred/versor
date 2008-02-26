@@ -18,7 +18,7 @@
 @c The following two commands start the copyright page.
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2005, 2006, 2007 John C. G. Sturdy
+Copyright @copyright{} 2005, 2006, 2007, 2008 John C. G. Sturdy
 
 Published by John C. G. Sturdy.
 
@@ -214,9 +214,10 @@ The shoulder buttons are used for most of the chording, as they are
 ergonomically most convenient for this.
 
 @menu
-* Joystick axes::               The analog joysticks and the hat switch
-* Buttons::                     The buttons
-* Chording::                    Combinations of buttons
+* Joystick axes::              The analog joysticks and the hat switch
+* Buttons::                    The buttons
+* Chording::                   Combinations of buttons
+* Compound controllers::       Building a custom controller
 @end menu
 
 @node Joystick axes, Buttons, Introduction, Introduction
@@ -255,7 +256,7 @@ is pressed (for example, @key{Trigger-down}) and one when it is released
 for @ref{Chording}, command actions are normally done on the @key{-up}
 event.
 
-@node  Chording,  , Buttons, Introduction
+@node  Chording, Compound controllers, Buttons, Introduction
 @comment  node-name,  next,  previous,  up
 @section Chording
 
@@ -289,6 +290,15 @@ the bindings, for when you didn't want to distinguish between orders of
 pressing modifers.  (The order is actually that of the numbers used to
 represent the buttons in the device driver.)
 
+@node  Compound controllers,  , Chording, Introduction
+@comment  node-name,  next,  previous,  up
+@section Compound controllers
+
+The interface program allows several joystick devices to be combined,
+such that chords between devices are handled as if in a single device.
+This is meant for construction of custom compound controllers by
+ergonomics experimenters, hardware modders, etc.
+
 @node Familiarization, The hat and stick axes, Introduction, Top
 @comment  node-name,  next,  previous,  up
 @chapter Familiarization and learning
@@ -296,7 +306,7 @@ represent the buttons in the device driver.)
 @menu
 * Starting and trying::         First steps with gamepad/versor
 * Learning::                    Handling the learning curve
-* Acheiving fluent fluidity::   The most crucial points to learn
+* Achieving fluent fluidity::   The most crucial points to learn
 @end menu
 
 @node  Starting and trying, Learning, Familiarization, Familiarization
@@ -324,7 +334,7 @@ takes textual commands on its standard input; type ``quit'' to make it
 exit.  For details of the commands the program accepts, @ref{Driver
 commands}.
 
-@node  Learning, Acheiving fluent fluidity, Starting and trying, Familiarization
+@node  Learning, Achieving fluent fluidity, Starting and trying, Familiarization
 @comment  node-name,  next,  previous,  up
 @section Learning
 
@@ -338,9 +348,9 @@ to print out.
 
 The author plans to make a demonstration and teaching video.
 
-@node  Acheiving fluent fluidity,  , Learning, Familiarization
+@node  Achieving fluent fluidity,  , Learning, Familiarization
 @comment  node-name,  next,  previous,  up
-@section Acheiving fluent fluidity
+@section Achieving fluent fluidity
 
 @c todo: put in xrefs for these commands
 
@@ -1092,12 +1102,12 @@ modifier in effect, it modifies the bindings shown on the diagram.
 @chapter Making your own bindings
 
 The short versions of button names (used as prefixes when the buttons
-are used as modifiers) are made by taking all uppercase letters in the
-original name, all lowercase letters immediately following an uppercase
-letter, and all digits.  Thus, for example, @key{BaseBtn2}, used as a
-modifier, appears as @key{BaBt2-}.  (This shortening algorithm provides
-a reasonable level of shortening without ambiguity and without special
-cases.)
+are used as modifiers) are made by taking the first two characters in
+the original name, all uppercase letters, all lowercase letters
+immediately following an uppercase letter, and all digits.  Thus, for
+example, @key{BaseBtn2}, used as a modifier, appears as @key{BaBt2-}.
+(This shortening algorithm provides a reasonable level of shortening
+without ambiguity and without special cases.)
 
 You can use the command @kbd{M-x joystick-indicate-next-event} followed
 by a joystick button or axis combination, to find out what the event is
@@ -1122,8 +1132,8 @@ documents that protocol.
 
 @menu
 * Starting the driver program::  Command line arguments
-* Protocol::                    The Lisp emitted by the program
-* Driver commands::             Shell-style commands to the program
+* Protocol::                     The s-exps emitted by the program
+* Driver commands::              Shell-style commands to the program
 @end menu
 
 @node  Starting the driver program, Protocol, Implementation details, Implementation details
@@ -1141,10 +1151,10 @@ There are two versions of the joylisp program, @command{joylisp} and
 gamepad, with optional labelling of the buttons and axes, for training
 purposes.
 
-Usage: @command{joylisp [device [device-event-label [device-non-event-label]]]}
+Usage: @command{joylisp [options] [devices]}
 
-The "device" argument is the joystick device to read, such as
-@file{/dev/js0}.
+The "devices" arguments are the joystick devices to read, such as
+@file{/dev/js0}, @file{/dev/in0}, etc.
 
 The optional @code{device-event-label} argument is something to put at
 the start of each event s-exp instead of @code{"jse '"} (which stands
@@ -1158,6 +1168,53 @@ at the start of each non-event s-exp instead of @code{"joystick-"}.
 This is partly in case you have several joystick-like devices on the
 same system.  The default is such that each type of non-event
 (declarations etc) runs a different Lisp function.
+
+The possible options are as follows:
+
+@itemize
+@item @code{--autoraise}, @code{-a}
+
+Autoraise on pressing and holding a button (@command{xjoylisp} only).
+
+@item @code{--device}, @code{-d}
+
+Takes a device file as its argument.
+
+@item @code{--prefix}, @code{-p}
+
+Takes an argument which is used as the prefix for any following device
+arguments.  This is output at the start of any button or joystick names
+for that devices.  It is also abbreviated as the prefix for buttons used
+as modifiers.  For how the abbreviation is made, see @ref{Making your
+own bindings}.
+
+@item @code{--geometry}, @code{-g}
+
+Gives the X@code{-windows} geometry for the device diagram (@command{xjoylisp} only).
+
+@item @code{--event}, @code{-e}
+
+Takes an argument which is used as the event name for any following
+device arguments.  This is output as the functor for the event s@code{-exps}
+issued for that device.  The default is @code{jse-} (standing for
+JoyStick Event).
+
+@item @code{--name}, @code{-n}
+
+Takes an argument which is used as the stick name for any following
+device arguments.  This name is output at the start of any s@code{-exp} functor
+apart from the event functor.  The default is @code{joystick-}.
+
+@item @code{--verbose}, @code{-v}
+
+Switches on acknowledgement of commands.
+@end itemize
+
+Any further devices listed at the end of the command line are treated as
+though they had @code{--device} before each of them.  However, if you
+are using multiple devices, you will probably need to specify a new
+@code{--prefix} and/or @code{--name} and @code{--event} before each of
+them, so the client program can tell them apart.
 
 @node  Protocol, Driver commands, Starting the driver program, Implementation details
 @comment  node-name,  next,  previous,  up
