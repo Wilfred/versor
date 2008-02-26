@@ -258,7 +258,10 @@ The device name is passed in as an argument.
 This is the best place to bind the joystick axes and buttons,
 because it can use `joystick-label-modified' which knows the
 button name->number mapping, and can tell the graphical version
-of the interface program what labels to display."
+of the interface program what labels to display.
+This function is used within the code to make the standard bindings.
+You could add user bindings by putting a function to do the
+bindings onto `joystick-bindings-hook', instead."
   :group 'joystick
   :type 'hook)
 
@@ -588,6 +591,17 @@ This is a command sent back to Emacs from the joystick communication process."
 	
 (defun joystick-init-done (device)
   "Accept that a joystick DEVICE has completed its initialization."
+  ;; Now that we support compound devices, the initialization of the
+  ;; lisp variables has moved to `all-sticks-initialized'.  If you
+  ;; want to do things on the initialization of individual devices,
+  ;; you can do it here.
+  )
+
+(defun all-sticks-initialized ()
+  "Accept that all the joystick devices have completed their initializations.
+This sets up the Lisp variables containing the description of the
+joystick(s), and runs the hook `joystick-initialized-hook', which
+is the recommended place to bind the button and axis commands."
   (setq joystick-buttons (sort joystick-buttons
 			       (lambda (a b)
 				 (< (cdr a) (cdr b))))
@@ -600,7 +614,7 @@ This is a command sent back to Emacs from the joystick communication process."
 	joystick-axis-array (apply 'vector
 				   (mapcar 'car joystick-double-headed-axes))
 	)
-  (run-hook-with-args 'joystick-initialized-hook device))
+  (run-hook-with-args 'joystick-initialized-hook t))
 
 (defun joystick-label (device modifiers keymap label)
   (message "Joystick %s has label %s when on %d:%s"
@@ -1012,13 +1026,6 @@ whenever a chord is completely released."
     ;; chord typing
     ))
 
-(defun all-sticks-initialized (&rest args)
-  "This is run from the joystick process.
-It happens when all the joystick devices have been initialized.
-It is only significant if you're using a controller made of
-multiple joystick devices; even then, it's probaby not really
-significant, and we don't as yet do anything with it.")
-
 (defun joystick-do-nothing ()
   "Do nothing.
 This is bound to chords of large numbers of buttons, so that if
@@ -1323,6 +1330,33 @@ Optional FORK is as for `Info-follow-nearest-node'."
       (Info-follow-nearest-node fork)
     (error (Info-exit))))
 
+(defun joystick-info-setup ()
+  "Set up the joystick buttons for info mode."
+  (interactive)
+  ;; We shouldn't be killing or yanking in Info buffers, so re-use
+  ;; the buttons.  We take over the copy button as well, which could
+  ;; have been used, but this gives us a nice trio of buttons, and
+  ;; lets us establish a pattern of "next" and "previous" buttons
+  ;; that we can use in mail readers etc too.
+  (message "(boundp 'Info-mode-map) --> %S" (boundp 'Info-mode-map))
+  (define-key Info-mode-map [ Trigger-up ] 'Info-prev)
+  (define-key Info-mode-map [ ThumbBtn-up ] 'Info-up)
+  (define-key Info-mode-map [ TopBtn-up ] 'Info-next)
+  (define-key Info-mode-map [ ThumbBtn2-up ]
+    'Info-follow-nearest-node-or-exit
+    ;; Info-exit
+    )
+  (put 'Info-prev 'joystick-help "previous")
+  (put 'Info-next 'joystick-help "next")
+  (put 'Info-up 'joystick-help "up")
+  (put 'Info-exit 'joystick-help "quit"))
+
+(defun joystick-mode-specific-prefix ()
+  "Do mode-specific things."
+  (interactive)
+  ;; todo: get an event, and look it up current-local-map, telling the reader function to accept any such event
+)
+
 (defun joystick-gamepad-setup (device)
   "Configure the gamepad buttons and axes.
 DEVICE tells it which device this is for."
@@ -1338,474 +1372,460 @@ DEVICE tells it which device this is for."
   ;; -----+------------------------+----------------------+---------------
 
   ;; character/line movements
-  (global-set-key [ Hat0X-previous ] 'backward-char)
-  (global-set-key [ Hat0X-next ] 'forward-char)
-  (global-set-key [ Hat0Y-previous ] 'previous-line)
-  (global-set-key [ Hat0Y-next ] 'next-line)
+  (if (eq device 't)
+      (progn
+	(global-set-key [ Hat0X-previous ] 'backward-char)
+	(global-set-key [ Hat0X-next ] 'forward-char)
+	(global-set-key [ Hat0Y-previous ] 'previous-line)
+	(global-set-key [ Hat0Y-next ] 'next-line)
 
-  (global-set-key [ X-previous ] 'backward-char)
-  (global-set-key [ X-next ] 'forward-char)
-  (global-set-key [ Y-previous ] 'previous-line)
-  (global-set-key [ Y-next ] 'next-line)
+	(global-set-key [ X-previous ] 'backward-char)
+	(global-set-key [ X-next ] 'forward-char)
+	(global-set-key [ Y-previous ] 'previous-line)
+	(global-set-key [ Y-next ] 'next-line)
 
-  (make-other-window-commands)
+	(make-other-window-commands)
 
-  (set-other-window-axes "" "" "-other-window" nil
-			 'backward-char
-			 'forward-char
-			 'previous-line
-			 'next-line)
-  (set-other-window-axes "BaBt6-" "" "-other-other-window" nil
-			 'backward-char
-			 'forward-char
-			 'previous-line
-			 'next-line)
-  (set-other-window-axes "ToBt2-PiBt-" "" "-other-window" nil
-			 'backward-word
-			 'forward-word
-			 'backward-sentence
-			 'forward-sentence)
-  (set-other-window-axes "ToBt2-PiBt-BaBt6-" "" "-other-other-window" nil
-			 'backward-word
-			 'forward-word
-			 'backward-sentence
-			 'forward-sentence)
-  (set-other-window-axes "BaBt-BaBt2-" "" "-other-window" nil
-			 'backward-sexp
-			 'forward-sexp
-			 'backward-up-list
-			 'down-list)
-  (set-other-window-axes "BaBt-BaBt2-BaBt6-" "" "-other-other-window" nil
-			 'backward-sexp
-			 'forward-sexp
-			 'backward-up-list
-			 'down-list)
-  (set-other-window-axes "PiBt-BaBt2-" "" "-other-window" nil
-			 'c-beginning-of-statement
-			 'c-end-of-statement
-			 'beginning-of-defun
-			 'end-of-defun)
-  (set-other-window-axes "PiBt-BaBt2-BaBt6-" "" "-other-other-window" nil
-			 'c-beginning-of-statement
-			 'c-end-of-statement
-			 'beginning-of-defun
-			 'end-of-defun)
+	(set-other-window-axes "" "" "-other-window" nil
+			       'backward-char
+			       'forward-char
+			       'previous-line
+			       'next-line)
+	(set-other-window-axes "BaBt6-" "" "-other-other-window" nil
+			       'backward-char
+			       'forward-char
+			       'previous-line
+			       'next-line)
+	(set-other-window-axes "ToBt2-PiBt-" "" "-other-window" nil
+			       'backward-word
+			       'forward-word
+			       'backward-sentence
+			       'forward-sentence)
+	(set-other-window-axes "ToBt2-PiBt-BaBt6-" "" "-other-other-window" nil
+			       'backward-word
+			       'forward-word
+			       'backward-sentence
+			       'forward-sentence)
+	(set-other-window-axes "BaBt-BaBt2-" "" "-other-window" nil
+			       'backward-sexp
+			       'forward-sexp
+			       'backward-up-list
+			       'down-list)
+	(set-other-window-axes "BaBt-BaBt2-BaBt6-" "" "-other-other-window" nil
+			       'backward-sexp
+			       'forward-sexp
+			       'backward-up-list
+			       'down-list)
+	(set-other-window-axes "PiBt-BaBt2-" "" "-other-window" nil
+			       'c-beginning-of-statement
+			       'c-end-of-statement
+			       'beginning-of-defun
+			       'end-of-defun)
+	(set-other-window-axes "PiBt-BaBt2-BaBt6-" "" "-other-other-window" nil
+			       'c-beginning-of-statement
+			       'c-end-of-statement
+			       'beginning-of-defun
+			       'end-of-defun)
 
-  ;; These are now done by set-other-window-axes above:
-  ;;   (global-set-key [ Rz-previous ] 'backward-char-other-window)
-  ;;   (global-set-key [ Rz-next ] 'forward-char-other-window)
-  ;;   (global-set-key [ Z-previous ] 'previous-line-other-window)
-  ;;   (global-set-key [ Z-next ] 'next-line-other-window)
+	;; These are now done by set-other-window-axes above:
+	;;   (global-set-key [ Rz-previous ] 'backward-char-other-window)
+	;;   (global-set-key [ Rz-next ] 'forward-char-other-window)
+	;;   (global-set-key [ Z-previous ] 'previous-line-other-window)
+	;;   (global-set-key [ Z-next ] 'next-line-other-window)
 
-  ;;   (global-set-key [ BaBt6-Rz-previous ] 'backward-char-other-other-window)
-  ;;   (global-set-key [ BaBt6-Rz-next ] 'forward-char-other-other-window)
-  ;;   (global-set-key [ BaBt6-Z-previous ] 'previous-line-other-other-window)
-  ;;   (global-set-key [ BaBt6-Z-next ] 'next-line-other-other-window)
+	;;   (global-set-key [ BaBt6-Rz-previous ] 'backward-char-other-other-window)
+	;;   (global-set-key [ BaBt6-Rz-next ] 'forward-char-other-other-window)
+	;;   (global-set-key [ BaBt6-Z-previous ] 'previous-line-other-other-window)
+	;;   (global-set-key [ BaBt6-Z-next ] 'next-line-other-other-window)
 
-  (put 'backward-char 'joystick-help "char--")
-  (put 'forward-char 'joystick-help "char++")
-  (put 'previous-line 'joystick-help "line--")
-  (put 'next-line 'joystick-help "line++")
+	(put 'backward-char 'joystick-help "char--")
+	(put 'forward-char 'joystick-help "char++")
+	(put 'previous-line 'joystick-help "line--")
+	(put 'next-line 'joystick-help "line++")
 
-  ;; some simple editing
+	;; some simple editing
 
-  ;;     /----------------------\           /----------------------\   front
-  ;;    /  next-buffer/bufmenu   \---------/                        \   of
-  ;;    |  other-window                                             |   pad
-  ;;    +-----------------------------------------------------------+
-  ;;    |       up                                        kill      |   top
-  ;;    |  left    right   speed               help   copy    yank  |   of
-  ;;    |      down  +-----------+         +-----------+  find      |   pad
-  ;;    +------------|           |---------|           |------------+
-  ;;       /         |   move    |	 |	     |	    \
-  ;;      /	   |	       |	 |	     |	     \
-  ;;     /	   +-----------+  	 +-----------+	      \
-  ;;    /		    /				\ 	       \
-  ;;   /_____________/				 \______________\
+	;;     /----------------------\           /----------------------\   front
+	;;    /  next-buffer/bufmenu   \---------/                        \   of
+	;;    |  other-window                                             |   pad
+	;;    +-----------------------------------------------------------+
+	;;    |       up                                        kill      |   top
+	;;    |  left    right   speed               help   copy    yank  |   of
+	;;    |      down  +-----------+         +-----------+  find      |   pad
+	;;    +------------|           |---------|           |------------+
+	;;       /         |   move    |	 |	     |	    \
+	;;      /	   |	       |	 |	     |	     \
+	;;     /	   +-----------+  	 +-----------+	      \
+	;;    /		    /				\ 	       \
+	;;   /_____________/				 \______________\
 
-  ;; The buttons marked "save" and "yank" also do `exit-minibuffer' and
-  ;; `minibuffer-complete', respectively, when in the minibuffer.
+	;; The buttons marked "save" and "yank" also do `exit-minibuffer' and
+	;; `minibuffer-complete', respectively, when in the minibuffer.
 
-  (global-set-key [ Trigger-up ] 'kill-ring-save)
-  (global-set-key [ ThumbBtn-up ] 'kill-region)
-  (global-set-key [ TopBtn-up ] 'yank)
-  (global-set-key [ ThumbBtn2-up ] 'find-this-tag)
-  (define-key emacs-lisp-mode-map [ ThumbBtn2-up ] 'find-this-function)
-  (define-key lisp-interaction-mode-map [ ThumbBtn2-up ] 'find-this-function)
+	(global-set-key [ Trigger-up ] 'kill-ring-save)
+	(global-set-key [ ThumbBtn-up ] 'kill-region)
+	(global-set-key [ TopBtn-up ] 'yank)
+	(global-set-key [ ThumbBtn2-up ] 'find-this-tag)
+	(define-key emacs-lisp-mode-map [ ThumbBtn2-up ] 'find-this-function)
+	(define-key lisp-interaction-mode-map [ ThumbBtn2-up ] 'find-this-function)
 
-  (put 'kill-ring-save 'joystick-help "copy")
-  (put 'kill-region 'joystick-help "kill")
-  (put 'yank 'joystick-help "yank")
-  (put 'find-this-tag 'joystick-help "find")
-  (put 'find-this-function 'joystick-help "find")
+	(put 'kill-ring-save 'joystick-help "copy")
+	(put 'kill-region 'joystick-help "kill")
+	(put 'yank 'joystick-help "yank")
+	(put 'find-this-tag 'joystick-help "find")
+	(put 'find-this-function 'joystick-help "find")
 
-  (add-hook
-   ;; I tried eval-after-load, but, to my puzzlement, Info-mode-map
-   ;; wasn't defined when I expected it to be.  So I'm doing it this
-   ;; way, to get the job done.
-   'Info-mode-hook
-   (lambda ()
-     ;; We shouldn't be killing or yanking in Info buffers, so re-use
-     ;; the buttons.  We take over the copy button as well, which could
-     ;; have been used, but this gives us a nice trio of buttons, and
-     ;; lets us establish a pattern of "next" and "previous" buttons
-     ;; that we can use in mail readers etc too.
-     (message "(boundp 'Info-mode-map) --> %S" (boundp 'Info-mode-map))
-     (define-key Info-mode-map [ Trigger-up ] 'Info-prev)
-     (define-key Info-mode-map [ ThumbBtn-up ] 'Info-up)
-     (define-key Info-mode-map [ TopBtn-up ] 'Info-next)
-     (define-key Info-mode-map [ ThumbBtn2-up ]
-       'Info-follow-nearest-node-or-exit
-       ;; Info-exit
-       )
-     (put 'Info-prev 'joystick-help "previous")
-     (put 'Info-next 'joystick-help "next")
-     (put 'Info-up 'joystick-help "up")
-     (put 'Info-exit 'joystick-help "quit")))
+	(add-hook
+	 ;; I tried eval-after-load, but, to my puzzlement, Info-mode-map
+	 ;; wasn't defined when I expected it to be.  So I'm doing it this
+	 ;; way, to get the job done.
+	 'Info-mode-hook 'joystick-info-setup)
 
-  (add-hook
-   'vm-mode-hook
-   (lambda ()
-     ;; much the same as for info-mode button setup
-     (define-key vm-summary-mode-map [ Trigger-up ] 'vm-previous-message)
-     (define-key vm-summary-mode-map [ ThumbBtn-up ] 'vm-delete-message)
-     (define-key vm-summary-mode-map [ TopBtn-up ] 'vm-next-message)
-     (define-key vm-mode-map [ Trigger-up ] 'vm-previous-message)
-     (define-key vm-mode-map [ ThumbBtn-up ] 'vm-delete-message)
-     (define-key vm-mode-map [ TopBtn-up ] 'vm-next-message)
-     (put 'vm-previous-message 'joystick-help "previous")
-     (put 'vm-delete-message 'joystick-help "delete")
-     (put 'vm-next-message 'joystick-help "next")))
+	(add-hook
+	 'vm-mode-hook
+	 (lambda ()
+	   ;; much the same as for info-mode button setup
+	   (define-key vm-summary-mode-map [ Trigger-up ] 'vm-previous-message)
+	   (define-key vm-summary-mode-map [ ThumbBtn-up ] 'vm-delete-message)
+	   (define-key vm-summary-mode-map [ TopBtn-up ] 'vm-next-message)
+	   (define-key vm-mode-map [ Trigger-up ] 'vm-previous-message)
+	   (define-key vm-mode-map [ ThumbBtn-up ] 'vm-delete-message)
+	   (define-key vm-mode-map [ TopBtn-up ] 'vm-next-message)
+	   (put 'vm-previous-message 'joystick-help "previous")
+	   (put 'vm-delete-message 'joystick-help "delete")
+	   (put 'vm-next-message 'joystick-help "next")))
 
-  (add-hook
-   'rmail-mode-hook
-   (lambda ()
-     ;; much the same as for info-mode button setup
-     ;; rmail message buffers
-     (define-key rmail-mode-map
-       [ Trigger-up ] 'rmail-previous-undeleted-message)
-     (define-key rmail-mode-map [ ThumbBtn-up ] 'rmail-delete-forward)
-     (define-key rmail-mode-map [ TopBtn-up ] 'rmail-next-undeleted-message)
-     (put 'rmail-previous-undeleted-message 'joystick-help "previous")
-     (put 'rmail-delete-forward 'joystick-help "delete")
-     (put 'rmail-next-undeleted-message 'joystick-help "next")
-     ;; rmail summary buffers
-     (define-key rmail-summary-mode-map
-       [ Trigger-up ] 'rmail-summary-previous-msg)
-     (define-key rmail-summary-mode-map
-       [ ThumbBtn-up ] 'rmail-summary-delete-forward)
-     (define-key rmail-summary-mode-map
-       [ TopBtn-up ] 'rmail-summary-next-msg)
-     (put 'rmail-summary-previous-msg 'joystick-help "previous")
-     (put 'rmail-summary-delete-forward' 'joystick-help "delete")
-     (put 'rmail-summary-next-msg 'joystick-help "next")))
+	(add-hook
+	 'rmail-mode-hook
+	 (lambda ()
+	   ;; much the same as for info-mode button setup
+	   ;; rmail message buffers
+	   (define-key rmail-mode-map
+	     [ Trigger-up ] 'rmail-previous-undeleted-message)
+	   (define-key rmail-mode-map [ ThumbBtn-up ] 'rmail-delete-forward)
+	   (define-key rmail-mode-map [ TopBtn-up ] 'rmail-next-undeleted-message)
+	   (put 'rmail-previous-undeleted-message 'joystick-help "previous")
+	   (put 'rmail-delete-forward 'joystick-help "delete")
+	   (put 'rmail-next-undeleted-message 'joystick-help "next")
+	   ;; rmail summary buffers
+	   (define-key rmail-summary-mode-map
+	     [ Trigger-up ] 'rmail-summary-previous-msg)
+	   (define-key rmail-summary-mode-map
+	     [ ThumbBtn-up ] 'rmail-summary-delete-forward)
+	   (define-key rmail-summary-mode-map
+	     [ TopBtn-up ] 'rmail-summary-next-msg)
+	   (put 'rmail-summary-previous-msg 'joystick-help "previous")
+	   (put 'rmail-summary-delete-forward' 'joystick-help "delete")
+	   (put 'rmail-summary-next-msg 'joystick-help "next")))
 
-    ;; -----+------------------------+----------------------+---------------
-    ;; [' ] |       PiBt-            | other-buffer         | buf select
-    ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [' ] |       PiBt-            | other-buffer         | buf select
+	;; -----+------------------------+----------------------+---------------
 
-    ;; Note: the menu appears when you press PinkieBtn AND Hat-Downwards,
-    ;; not immediately on PinkieBtn
-  (global-set-key [ PiBt-Hat0Y-next ] 'electric-buffer-list)
-  (eval-after-load "ebuff-menu"
-    '(progn
-       (define-key electric-buffer-menu-mode-map [ PiBt-Hat0Y-next ]
-	 'next-line)
-       (define-key electric-buffer-menu-mode-map [ PiBt-Hat0Y-previous ]
-	 'previous-line)
-       (define-key electric-buffer-menu-mode-map [ ToBt2-PinkieBtn-up ]
-	 'Buffer-menu-mark)
-       (define-key electric-buffer-menu-mode-map [ PiBt-TopBtn2-up ]
-	 'Buffer-menu-mark)
-       (define-key electric-buffer-menu-mode-map [ PiBt-Hat0X-next ]
-	 'Buffer-menu-mark)
-       (define-key electric-buffer-menu-mode-map [ PiBt-Hat0X-previous ]
-	 'Buffer-menu-unmark)
-       (define-key electric-buffer-menu-mode-map [ PiBt-ThumbBtn-up ]
-	 'Buffer-menu-delete)
-       (define-key electric-buffer-menu-mode-map [ PinkieBtn-release ]
-	 'Electric-buffer-menu-select)))
+	;; Note: the menu appears when you press PinkieBtn AND Hat-Downwards,
+	;; not immediately on PinkieBtn
+	(global-set-key [ PiBt-Hat0Y-next ] 'electric-buffer-list)
+	(eval-after-load "ebuff-menu"
+	  '(progn
+	     (define-key electric-buffer-menu-mode-map [ PiBt-Hat0Y-next ]
+	       'next-line)
+	     (define-key electric-buffer-menu-mode-map [ PiBt-Hat0Y-previous ]
+	       'previous-line)
+	     (define-key electric-buffer-menu-mode-map [ ToBt2-PinkieBtn-up ]
+	       'Buffer-menu-mark)
+	     (define-key electric-buffer-menu-mode-map [ PiBt-TopBtn2-up ]
+	       'Buffer-menu-mark)
+	     (define-key electric-buffer-menu-mode-map [ PiBt-Hat0X-next ]
+	       'Buffer-menu-mark)
+	     (define-key electric-buffer-menu-mode-map [ PiBt-Hat0X-previous ]
+	       'Buffer-menu-unmark)
+	     (define-key electric-buffer-menu-mode-map [ PiBt-ThumbBtn-up ]
+	       'Buffer-menu-delete)
+	     (define-key electric-buffer-menu-mode-map [ PinkieBtn-release ]
+	       'Electric-buffer-menu-select)))
 
-  (global-set-key [ PiBt-Hat0X-next ] 'dired-non-mouse)
-  (put 'dired-non-mouse 'joystick-help "dired")
-  (eval-after-load "dired"
-    '(progn
-       (mapcar
-	(lambda (prefix)
-	  (define-key dired-mode-map
-	    (vector (intern (concat prefix "Hat0X-next")))
-	    'dired-next-line)
-	  (define-key dired-mode-map
-	    (vector (intern (concat prefix "Hat0X-previous")))
-	    'dired-previous-line)
-	  (define-key dired-mode-map
-	    (vector (intern (concat prefix "Trigger-up")))
-	    'dired-find-file-other-window)
-	  (define-key dired-mode-map
-	    (vector (intern (concat prefix "ThumbBtn-up")))
-	    'dired-flag-file-deletion)
-	  ;; subdirectories
-	  (define-key dired-mode-map
-	    (vector (intern (concat prefix "TopBtn-up")))
-	    'dired-maybe-insert-subdir)
-	  (define-key dired-mode-map
-	    (vector (intern (concat prefix "Hat0Y-next")))
-	    'dired-tree-down)
-	  (define-key dired-mode-map
-	    (vector (intern (concat prefix "Hat0Y-previous")))
-	    'dired-tree-up))
-	'("" "PiBt-"))
-       ;; end of the mode
-       (define-key dired-mode-map [ PinkieBtn-release ] 'dired-find-file)))
+	(global-set-key [ PiBt-Hat0X-next ] 'dired-non-mouse)
+	(put 'dired-non-mouse 'joystick-help "dired")
+	(eval-after-load "dired"
+	  '(progn
+	     (mapcar
+	      (lambda (prefix)
+		(define-key dired-mode-map
+		  (vector (intern (concat prefix "Hat0X-next")))
+		  'dired-next-line)
+		(define-key dired-mode-map
+		  (vector (intern (concat prefix "Hat0X-previous")))
+		  'dired-previous-line)
+		(define-key dired-mode-map
+		  (vector (intern (concat prefix "Trigger-up")))
+		  'dired-find-file-other-window)
+		(define-key dired-mode-map
+		  (vector (intern (concat prefix "ThumbBtn-up")))
+		  'dired-flag-file-deletion)
+		;; subdirectories
+		(define-key dired-mode-map
+		  (vector (intern (concat prefix "TopBtn-up")))
+		  'dired-maybe-insert-subdir)
+		(define-key dired-mode-map
+		  (vector (intern (concat prefix "Hat0Y-next")))
+		  'dired-tree-down)
+		(define-key dired-mode-map
+		  (vector (intern (concat prefix "Hat0Y-previous")))
+		  'dired-tree-up))
+	      '("" "PiBt-"))
+	     ;; end of the mode
+	     (define-key dired-mode-map [ PinkieBtn-release ] 'dired-find-file)))
 
-  ;; PinkieBtn by itself (without Hat) just goes to the next buffer;
-  ;; the one beside it acts as a modifier to go the other way
-  (global-set-key [ PinkieBtn-up ] 'next-buffer)
-  (global-set-key [ BaBt2-PinkieBtn-up ] 'previous-buffer)
-  (joystick-label-modified "PiBt" "Buffer/File" device)
+	;; PinkieBtn by itself (without Hat) just goes to the next buffer;
+	;; the one beside it acts as a modifier to go the other way
+	(global-set-key [ PinkieBtn-up ] 'next-buffer)
+	(global-set-key [ BaBt2-PinkieBtn-up ] 'previous-buffer)
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [. ] | ToBt2-                 | other-window         | cmd hist
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [. ] | ToBt2-                 | other-window         | cmd hist
+	;; -----+------------------------+----------------------+---------------
 
-  (global-set-key [ TopBtn2-up ] 'other-window)
-  (put 'other-window 'joystick-help "-->window")
+	(global-set-key [ TopBtn2-up ] 'other-window)
+	(put 'other-window 'joystick-help "-->window")
 
-  (global-set-key [ ToBt2-Hat0Y-next ] 'repeat-complex-command)
-  (define-key minibuffer-local-map [ ToBt2-Hat0Y-next ] 'previous-history-element)
-  (define-key minibuffer-local-map [ ToBt2-Hat0Y-previous ] 'next-history-element)
-  (define-key minibuffer-local-map [ TopBtn2-release ] 'exit-minibuffer)
-  (joystick-label-modified "ToBt2" "History" device)
+	(global-set-key [ ToBt2-Hat0Y-next ] 'repeat-complex-command)
+	(define-key minibuffer-local-map [ ToBt2-Hat0Y-next ] 'previous-history-element)
+	(define-key minibuffer-local-map [ ToBt2-Hat0Y-previous ] 'next-history-element)
+	(define-key minibuffer-local-map [ TopBtn2-release ] 'exit-minibuffer)
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [ '] |                 BaBt2- | mark                 | dimension(v)
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [ '] |                 BaBt2- | mark                 | dimension(v)
+	;; -----+------------------------+----------------------+---------------
 
-  (global-set-key [ BaseBtn-up ] 'set-mark-command)
-  (put 'set-mark-command 'joystick-help "mark")
+	(global-set-key [ BaseBtn-up ] 'set-mark-command)
+	(put 'set-mark-command 'joystick-help "mark")
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [ .] |            BaBt-       | surround(v)          | extend(v)
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [ .] |            BaBt-       | surround(v)          | extend(v)
+	;; -----+------------------------+----------------------+---------------
 
-  ;; these are set up in emacs-versor:versor-joystick.el
+	;; these are set up in emacs-versor:versor-joystick.el
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [: ] | ToBt2-PiBt             | one-window/del-window| words etc
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [: ] | ToBt2-PiBt             | one-window/del-window| words etc
+	;; -----+------------------------+----------------------+---------------
 
-  (global-set-key [ TopBtn2-up ] 'other-window)
-  (global-set-key [ PiBt-TopBtn2-up ] 'delete-other-windows)
-  (global-set-key [ ToBt2-PinkieBtn-up ] 'delete-window)
+	(global-set-key [ TopBtn2-up ] 'other-window)
+	(global-set-key [ PiBt-TopBtn2-up ] 'delete-other-windows)
+	(global-set-key [ ToBt2-PinkieBtn-up ] 'delete-window)
 
-  (global-set-key [ ToBt2-PiBt-Hat0X-previous ] 'backward-word)
-  (global-set-key [ ToBt2-PiBt-Hat0X-next ] 'forward-word)
-  (global-set-key [ ToBt2-PiBt-Hat0Y-previous ] 'backward-sentence)
-  (global-set-key [ ToBt2-PiBt-Hat0Y-next ] 'forward-sentence)
-  (global-set-key [ ToBt2-PiBt-ThumbBtn2-up ] 'isearch-yank-word)
-  (global-set-key [ ToBt2-PiBt-ThumbBtn-up ] 'kill-word)
+	(global-set-key [ ToBt2-PiBt-Hat0X-previous ] 'backward-word)
+	(global-set-key [ ToBt2-PiBt-Hat0X-next ] 'forward-word)
+	(global-set-key [ ToBt2-PiBt-Hat0Y-previous ] 'backward-sentence)
+	(global-set-key [ ToBt2-PiBt-Hat0Y-next ] 'forward-sentence)
+	(global-set-key [ ToBt2-PiBt-ThumbBtn2-up ] 'isearch-yank-word)
+	(global-set-key [ ToBt2-PiBt-ThumbBtn-up ] 'kill-word)
 
-  ;; dabbrev typically does a word, so put it in with words
-  (global-set-key [ ToBt2-PiBt-TopBtn-up ] 'dabbrev-expand)
+	;; dabbrev typically does a word, so put it in with words
+	(global-set-key [ ToBt2-PiBt-TopBtn-up ] 'dabbrev-expand)
 
-  (put 'backward-word 'joystick-help "<-word")
-  (put 'forward-word 'joystick-help "word->")
-  (put 'backward-sentence 'joystick-help "<-sent")
-  (put 'forward-sentence 'joystick-help "sent->")
-  (put 'dabbrev-expand 'joystick-help "dabbrev")
-  (joystick-label-modified "ToBt2-PiBt-" "Words" device)
+	(put 'backward-word 'joystick-help "<-word")
+	(put 'forward-word 'joystick-help "word->")
+	(put 'backward-sentence 'joystick-help "<-sent")
+	(put 'forward-sentence 'joystick-help "sent->")
+	(put 'dabbrev-expand 'joystick-help "dabbrev")
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [ :] |            BaBt-BaBt2- | M-x/menu             | sexps
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [ :] |            BaBt-BaBt2- | M-x/menu             | sexps
+	;; -----+------------------------+----------------------+---------------
 
-  ;; todo: make joystick-icicles match these
-  (global-set-key [ BaBt-BaseBtn2-up ] 'execute-extended-command)
-  (put 'execute-extended-command 'joystick-help "M-x")
+	;; todo: make joystick-icicles match these
+	(global-set-key [ BaBt-BaseBtn2-up ] 'execute-extended-command)
+	(put 'execute-extended-command 'joystick-help "M-x")
 
-  (let ((joystick-minibuf-autoload-help "Joystick minibuffer command.
+	(let ((joystick-minibuf-autoload-help "Joystick minibuffer command.
 Full documentation available when loaded."))
-    (autoload 'joystick-char-right-or-new "joystick-minibuf.el"
-      joystick-minibuf-autoload-help t)
-    (autoload 'joystick-char-decrement "joystick-minibuf.el"
-      joystick-minibuf-autoload-help t)
-    (autoload 'joystick-char-increment "joystick-minibuf.el"
-      joystick-minibuf-autoload-help t)
-    (autoload 'joystick-completing-char-right-or-new "joystick-minibuf.el"
-      joystick-minibuf-autoload-help t)
-    (autoload 'joystick-valid-char-decrement "joystick-minibuf.el"
-      joystick-minibuf-autoload-help t)
-    (autoload 'joystick-valid-char-increment "joystick-minibuf.el"
-      joystick-minibuf-autoload-help t))
+	  (autoload 'joystick-char-right-or-new "joystick-minibuf.el"
+	    joystick-minibuf-autoload-help t)
+	  (autoload 'joystick-char-decrement "joystick-minibuf.el"
+	    joystick-minibuf-autoload-help t)
+	  (autoload 'joystick-char-increment "joystick-minibuf.el"
+	    joystick-minibuf-autoload-help t)
+	  (autoload 'joystick-completing-char-right-or-new "joystick-minibuf.el"
+	    joystick-minibuf-autoload-help t)
+	  (autoload 'joystick-valid-char-decrement "joystick-minibuf.el"
+	    joystick-minibuf-autoload-help t)
+	  (autoload 'joystick-valid-char-increment "joystick-minibuf.el"
+	    joystick-minibuf-autoload-help t))
 
-  (dolist (this-map (list minibuffer-local-map
-			  minibuffer-local-ns-map))
-    (define-key this-map
-      [ BaBt-BaBt2-Hat0X-next ] 'joystick-char-right-or-new)
-    (define-key this-map
-      [ BaBt-BaBt2-Hat0Y-previous ] 'joystick-char-decrement)
-    (define-key this-map
-      [ BaBt-BaBt2-Hat0Y-next ] 'joystick-char-increment))
+	(dolist (this-map (list minibuffer-local-map
+				minibuffer-local-ns-map))
+	  (define-key this-map
+	    [ BaBt-BaBt2-Hat0X-next ] 'joystick-char-right-or-new)
+	  (define-key this-map
+	    [ BaBt-BaBt2-Hat0Y-previous ] 'joystick-char-decrement)
+	  (define-key this-map
+	    [ BaBt-BaBt2-Hat0Y-next ] 'joystick-char-increment))
 
-  (dolist (this-map (list minibuffer-local-completion-map
-			  minibuffer-local-must-match-map))
-    (define-key this-map [ BaBt-BaBt2-Hat0X-next ]
-      'joystick-completing-char-right-or-new)
-    (define-key this-map [ BaBt-BaBt2-Hat0Y-previous ]
-      'joystick-valid-char-decrement)
-    (define-key this-map [ BaBt-BaBt2-Hat0Y-next ]
-      'joystick-valid-char-increment))
+	(dolist (this-map (list minibuffer-local-completion-map
+				minibuffer-local-must-match-map))
+	  (define-key this-map [ BaBt-BaBt2-Hat0X-next ]
+	    'joystick-completing-char-right-or-new)
+	  (define-key this-map [ BaBt-BaBt2-Hat0Y-previous ]
+	    'joystick-valid-char-decrement)
+	  (define-key this-map [ BaBt-BaBt2-Hat0Y-next ]
+	    'joystick-valid-char-increment))
 
-  (dolist (this-map (list minibuffer-local-completion-map
-			  minibuffer-local-must-match-map
-			  minibuffer-local-map
-			  minibuffer-local-ns-map))
-    (define-key this-map [ BaBt-BaBt2-Hat0X-previous ] 'backward-char)
-    (define-key this-map [ Trigger-up ] 'minibuffer-complete-and-exit)
-    (define-key this-map [ ThumbBtn-up ] 'delete-char)
-    (define-key this-map [ TopBtn-up ] 'minibuffer-complete-word)
-    (define-key this-map [ ThumbBtn2-up ] 'abort-recursive-edit))
+	(dolist (this-map (list minibuffer-local-completion-map
+				minibuffer-local-must-match-map
+				minibuffer-local-map
+				minibuffer-local-ns-map))
+	  (define-key this-map [ BaBt-BaBt2-Hat0X-previous ] 'backward-char)
+	  (define-key this-map [ Trigger-up ] 'minibuffer-complete-and-exit)
+	  (define-key this-map [ ThumbBtn-up ] 'delete-char)
+	  (define-key this-map [ TopBtn-up ] 'minibuffer-complete-word)
+	  (define-key this-map [ ThumbBtn2-up ] 'abort-recursive-edit))
 
-  (global-set-key [ BaBt2-BaseBtn-up ] 'joystick-menu)
-  (autoload 'joystick-menu "joystick-menu"
-    "Execute a command from the menubar system, using a joystick."
-    t)
-  (put 'joystick-menu 'joystick-help "menu")
+	(global-set-key [ BaBt2-BaseBtn-up ] 'joystick-menu)
+	(autoload 'joystick-menu "joystick-menu"
+	  "Execute a command from the menubar system, using a joystick."
+	  t)
+	(put 'joystick-menu 'joystick-help "menu")
 
-  (global-set-key [ BaBt-BaBt2-Hat0X-previous ] 'backward-sexp)
-  (global-set-key [ BaBt-BaBt2-Hat0X-next ] 'forward-sexp)
-  (global-set-key [ BaBt-BaBt2-Hat0Y-previous ] 'backward-up-list)
-  (global-set-key [ BaBt-BaBt2-Hat0Y-next ] 'down-list)
-  (global-set-key [ BaBt-BaBt2-ThumbBtn-up ] 'kill-sexp)
+	(global-set-key [ BaBt-BaBt2-Hat0X-previous ] 'backward-sexp)
+	(global-set-key [ BaBt-BaBt2-Hat0X-next ] 'forward-sexp)
+	(global-set-key [ BaBt-BaBt2-Hat0Y-previous ] 'backward-up-list)
+	(global-set-key [ BaBt-BaBt2-Hat0Y-next ] 'down-list)
+	(global-set-key [ BaBt-BaBt2-ThumbBtn-up ] 'kill-sexp)
 
-  (put 'backward-sexp 'joystick-help "<-()-")
-  (put 'forward-sexp 'joystick-help "-()->")
-  (put 'backward-up-list 'joystick-help "<-(-)")
-  (put 'down-list 'joystick-help "-(->)")
-  (joystick-label-modified "BaBt-BaBt2-" "Sexps" device)
+	(put 'backward-sexp 'joystick-help "<-()-")
+	(put 'forward-sexp 'joystick-help "-()->")
+	(put 'backward-up-list 'joystick-help "<-(-)")
+	(put 'down-list 'joystick-help "-(->)")
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [''] |       PiBt-     BaBt2- | icicles-find-file/buf| statements
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [''] |       PiBt-     BaBt2- | icicles-find-file/buf| statements
+	;; -----+------------------------+----------------------+---------------
 
-  ;; todo: icicles commands
-  (global-set-key [ PiBt-BaBt2-Hat0X-previous ] 'c-beginning-of-statement)
-  (global-set-key [ PiBt-BaBt2-Hat0X-next ] 'c-end-of-statement)
-  (global-set-key [ PiBt-BaBt2-Hat0Y-previous ] 'beginning-of-defun)
-  (global-set-key [ PiBt-BaBt2-Hat0Y-next ] 'end-of-defun)
+	;; todo: icicles commands
+	(global-set-key [ PiBt-BaBt2-Hat0X-previous ] 'c-beginning-of-statement)
+	(global-set-key [ PiBt-BaBt2-Hat0X-next ] 'c-end-of-statement)
+	(global-set-key [ PiBt-BaBt2-Hat0Y-previous ] 'beginning-of-defun)
+	(global-set-key [ PiBt-BaBt2-Hat0Y-next ] 'end-of-defun)
 
-  (put 'c-beginning-of-statement 'joystick-help "<--;")
-  (put 'c-end-of-statement 'joystick-help "-->;")
-  (put 'beginning-of-defun 'joystick-help "^(<--")
-  (put 'end-of-defun 'joystick-help "-->)$")
-  (joystick-label-modified "PiBt-BaBt2-" "Statements" device)
+	(put 'c-beginning-of-statement 'joystick-help "<--;")
+	(put 'c-end-of-statement 'joystick-help "-->;")
+	(put 'beginning-of-defun 'joystick-help "^(<--")
+	(put 'end-of-defun 'joystick-help "-->)$")
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [..] | ToBt2-     BaBt-       |                      | chars/lines
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [..] | ToBt2-     BaBt-       |                      | chars/lines
+	;; -----+------------------------+----------------------+---------------
 
-  ;; repeat the default bindings but on modified Hat axes, as
-  ;; versor-joystick will rebind the unmodified Hat axes to be its
-  ;; current dimension
+	;; repeat the default bindings but on modified Hat axes, as
+	;; versor-joystick will rebind the unmodified Hat axes to be its
+	;; current dimension
 
-  (global-set-key [ ToBt2-BaBt-Hat0X-previous ] 'backward-char)
-  (global-set-key [ ToBt2-BaBt-Hat0X-next ] 'forward-char)
-  (global-set-key [ ToBt2-BaBt-Hat0Y-previous ] 'previous-line)
-  (global-set-key [ ToBt2-BaBt-Hat0Y-next ] 'next-line)
-  (global-set-key [ ToBt2-BaBt-ThumbBtn-up ] 'delete-char)
-  (joystick-label-modified "ToBt2-BaBt-" "Chars/Lines" device)
+	(global-set-key [ ToBt2-BaBt-Hat0X-previous ] 'backward-char)
+	(global-set-key [ ToBt2-BaBt-Hat0X-next ] 'forward-char)
+	(global-set-key [ ToBt2-BaBt-Hat0Y-previous ] 'previous-line)
+	(global-set-key [ ToBt2-BaBt-Hat0Y-next ] 'next-line)
+	(global-set-key [ ToBt2-BaBt-ThumbBtn-up ] 'delete-char)
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; ['.] |       PiBt-     BaBt2- | transpose(v)         | insert(v)
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; ['.] |       PiBt-     BaBt2- | transpose(v)         | insert(v)
+	;; -----+------------------------+----------------------+---------------
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [.'] | ToBt2-          BaBt2- | alter(v)             | alter(v)
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [.'] | ToBt2-          BaBt2- | alter(v)             | alter(v)
+	;; -----+------------------------+----------------------+---------------
 
-  (global-set-key [ ToBt2-BaseButton2-down ] 'versor-begin-altering-item)
-  (global-set-key [ ToBt2-BaBt2-Hat0X-previous ] 'versor-alter-item-prev)
-  (global-set-key [ ToBt2-BaBt2-Hat0X-next ] 'versor-alter-item-next)
-  (global-set-key [ ToBt2-BaBt2-Hat0Y-previous ] 'versor-alter-item-over-prev)
-  (global-set-key [ ToBt2-BaBt2-Hat0Y-next ] 'versor-alter-item-over-next)
-  (global-set-key [ ToBt2-BaseButton2-up ] 'versor-end-altering-item)
-  (joystick-label-modified "ToBt2-BaBt2" "Altering" device)
+	(global-set-key [ ToBt2-BaseButton2-down ] 'versor-begin-altering-item)
+	(global-set-key [ ToBt2-BaBt2-Hat0X-previous ] 'versor-alter-item-prev)
+	(global-set-key [ ToBt2-BaBt2-Hat0X-next ] 'versor-alter-item-next)
+	(global-set-key [ ToBt2-BaBt2-Hat0Y-previous ] 'versor-alter-item-over-prev)
+	(global-set-key [ ToBt2-BaBt2-Hat0Y-next ] 'versor-alter-item-over-next)
+	(global-set-key [ ToBt2-BaseButton2-up ] 'versor-end-altering-item)
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [.:] | ToBt2-     BaBt-BaBt2- |                      |
-  ;; -----+------------------------+----------------------+---------------
+	(global-set-key [ BaBt-PinkieBtn-up ] 'joystick-mode-specific-prefix)
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [':] |       PiBt-BaBt-BaBt2- |                      |
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [.:] | ToBt2-     BaBt-BaBt2- |                      |
+	;; -----+------------------------+----------------------+---------------
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [:.] | ToBt2-PiBt-BaBt-       |                      |
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [':] |       PiBt-BaBt-BaBt2- |                      |
+	;; -----+------------------------+----------------------+---------------
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [:'] | ToBt2-PiBt-     BaBt2- |                      |
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [:.] | ToBt2-PiBt-BaBt-       |                      |
+	;; -----+------------------------+----------------------+---------------
 
-  ;; -----+------------------------+----------------------+---------------
-  ;; [::] | ToBt2-PiBt-BaBt-BaBt2- |                      |
-  ;; -----+------------------------+----------------------+---------------
+	;; -----+------------------------+----------------------+---------------
+	;; [:'] | ToBt2-PiBt-     BaBt2- |                      |
+	;; -----+------------------------+----------------------+---------------
 
-  ;; modal etc settings: the minibuffer
-  (mapcar (lambda (map)
-	    (define-key map [ Trigger-up ] 'exit-minibuffer)
-	    (define-key map [ TopBtn-up ] 'minibuffer-complete)
-	    )
-	  (list minibuffer-local-map
-		minibuffer-local-must-match-filename-map
-		minibuffer-local-filename-completion-map
-		minibuffer-local-completion-map
-		minibuffer-local-must-match-map
-		minibuffer-local-ns-map))
+	;; -----+------------------------+----------------------+---------------
+	;; [::] | ToBt2-PiBt-BaBt-BaBt2- |                      |
+	;; -----+------------------------+----------------------+---------------
 
-  (global-set-key [ BaseBtn3-down ] 'joystick-help)
-  (global-set-key [ PiBt-BaseBtn3-down ] 'joystick-help)
-  (global-set-key [ BaBt-BaseBtn3-down ] 'joystick-help)
-  (global-set-key [ BaBt2-BaseBtn3-down ] 'joystick-help)
-  (global-set-key [ BaseBtn3-up ] 'recenter)
-  (global-set-key [ PiBt-BaseBtn3-up ] 'recenter)
-  (global-set-key [ BaBt-BaseBtn3-up ] 'recenter)
-  (global-set-key [ BaBt2-BaseBtn3-up ] 'recenter)
+	;; modal etc settings: the minibuffer
+	(mapcar (lambda (map)
+		  (define-key map [ Trigger-up ] 'exit-minibuffer)
+		  (define-key map [ TopBtn-up ] 'minibuffer-complete)
+		  )
+		(list minibuffer-local-map
+		      minibuffer-local-must-match-filename-map
+		      minibuffer-local-filename-completion-map
+		      minibuffer-local-completion-map
+		      minibuffer-local-must-match-map
+		      minibuffer-local-ns-map))
 
-  ;; All shoulder buttons except last with Hat changes the window size
-  (global-set-key [ ToBt2-PiBt-BaBt-Hat0X-previous ] 'shrink-window-horizontally)
-  (global-set-key [ ToBt2-PiBt-BaBt-Hat0X-next ] 'enlarge-window-horizontally)
-  (global-set-key [ ToBt2-PiBt-BaBt-Hat0Y-previous ] 'shrink-window)
-  (global-set-key [ ToBt2-PiBt-BaBt-Hat0Y-next ] 'enlarge-window)
-  (joystick-label-modified "ToBt2-PiBt-BaBt" "Window size" device)
+	(global-set-key [ BaseBtn3-down ] 'joystick-help)
+	(global-set-key [ PiBt-BaseBtn3-down ] 'joystick-help)
+	(global-set-key [ BaBt-BaseBtn3-down ] 'joystick-help)
+	(global-set-key [ BaBt2-BaseBtn3-down ] 'joystick-help)
+	(global-set-key [ BaseBtn3-up ] 'recenter)
+	(global-set-key [ PiBt-BaseBtn3-up ] 'recenter)
+	(global-set-key [ BaBt-BaseBtn3-up ] 'recenter)
+	(global-set-key [ BaBt2-BaseBtn3-up ] 'recenter)
 
-  ;; Right-hand small fiddly button changes the speed
-  (global-set-key [ BaseBtn4-Hat0Y-previous ] 'joystick-faster)
-  (global-set-key [ BaseBtn4-Hat0Y-next ] 'joystick-slower)
-  (joystick-label-modified "BaseBtn4" "Repeat speed" device)
-  ;; by itself, right-hand small fiddly button undoes
-  (global-set-key [ BaseBtn4-up ] 'undo)
+	;; All shoulder buttons except last with Hat changes the window size
+	(global-set-key [ ToBt2-PiBt-BaBt-Hat0X-previous ] 'shrink-window-horizontally)
+	(global-set-key [ ToBt2-PiBt-BaBt-Hat0X-next ] 'enlarge-window-horizontally)
+	(global-set-key [ ToBt2-PiBt-BaBt-Hat0Y-previous ] 'shrink-window)
+	(global-set-key [ ToBt2-PiBt-BaBt-Hat0Y-next ] 'enlarge-window)
 
-  ;; if you realize you've got the wrong buttons pressed, and want to
-  ;; cancel the gesture without anything happening, press the all the
-  ;; shoulder buttons; release the other buttons first, then all the
-  ;; shoulder ones, the last shoulder one to go down should be the first to come up
-  (global-set-key [ ToBt2-PiBt-BaBt-BaBt2-Trigger-up ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-PiBt-BaBt-BaBt2-ThumbBtn-up ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-PiBt-BaBt-BaBt2-TopBtn-up ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-PiBt-BaBt-BaBt2-ThumbBtn2-up ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-PiBt-BaBt2-BaseBtn-release ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-PiBt-BaBt2-BaseBtn-up ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-PiBt-BaBt-BaseBtn2-release ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-PiBt-BaBt-BaseBtn2-up ] 'joystick-do-nothing)
-  (global-set-key [ PiBt-BaBt-BaBt2-TopBtn2-release ] 'joystick-do-nothing)
-  (global-set-key [ PiBt-BaBt-BaBt2-TopBtn2-up ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-BaBt-BaBt2-PinkieBtn-release ] 'joystick-do-nothing)
-  (global-set-key [ ToBt2-BaBt-BaBt2-PinkieBtn-up ] 'joystick-do-nothing)
+	;; Right-hand small fiddly button changes the speed
+	(global-set-key [ BaseBtn4-Hat0Y-previous ] 'joystick-faster)
+	(global-set-key [ BaseBtn4-Hat0Y-next ] 'joystick-slower)
+	;; by itself, right-hand small fiddly button undoes
+	(global-set-key [ BaseBtn4-up ] 'undo)
 
-  (joystick-label-modified "" "Default" device)
+	;; if you realize you've got the wrong buttons pressed, and want to
+	;; cancel the gesture without anything happening, press the all the
+	;; shoulder buttons; release the other buttons first, then all the
+	;; shoulder ones, the last shoulder one to go down should be the first to come up
+	(global-set-key [ ToBt2-PiBt-BaBt-BaBt2-Trigger-up ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-PiBt-BaBt-BaBt2-ThumbBtn-up ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-PiBt-BaBt-BaBt2-TopBtn-up ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-PiBt-BaBt-BaBt2-ThumbBtn2-up ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-PiBt-BaBt2-BaseBtn-release ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-PiBt-BaBt2-BaseBtn-up ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-PiBt-BaBt-BaseBtn2-release ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-PiBt-BaBt-BaseBtn2-up ] 'joystick-do-nothing)
+	(global-set-key [ PiBt-BaBt-BaBt2-TopBtn2-release ] 'joystick-do-nothing)
+	(global-set-key [ PiBt-BaBt-BaBt2-TopBtn2-up ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-BaBt-BaBt2-PinkieBtn-release ] 'joystick-do-nothing)
+	(global-set-key [ ToBt2-BaBt-BaBt2-PinkieBtn-up ] 'joystick-do-nothing)
 
-  (run-hook-with-args 'joystick-bindings-hook device))
+	(run-hook-with-args 'joystick-bindings-hook device))
+    (joystick-label-modified "PiBt" "Buffer/File" device)
+    (joystick-label-modified "ToBt2" "History" device)
+    (joystick-label-modified "ToBt2-PiBt-" "Words" device)
+    (joystick-label-modified "BaBt-BaBt2-" "Sexps" device)
+    (joystick-label-modified "PiBt-BaBt2-" "Statements" device)
+    (joystick-label-modified "ToBt2-BaBt-" "Chars/Lines" device)
+    (joystick-label-modified "ToBt2-BaBt2" "Altering" device)
+    (joystick-label-modified "ToBt2-PiBt-BaBt" "Window size" device)
+    (joystick-label-modified "BaseBtn4" "Repeat speed" device)
+    (joystick-label-modified "" "Default" device)
+    (run-hook-with-args 'joystick-bindings-hook device)))
 
 ;; Make the bindings when the joystick starts, because the help system
 ;; can set itself up more fully when it has the button numbering
