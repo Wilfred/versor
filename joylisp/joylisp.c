@@ -329,6 +329,7 @@ char *axis_names[ABS_MAX + 1] = {
 #define HAT_MIN 16
 #define HAT_MAX 23
 
+/* todo: should probably redefine this now we have multiple joysticks */
 #define IS_HAT(_s_,_a_) (HAT_MIN <= ((_s_)->axmap[(_a_)]) && ((_s_)->axmap[(_a_)]) <= HAT_MAX)
 
 char *button_names[KEY_MAX - BTN_MISC + 1] = {
@@ -995,9 +996,13 @@ get_joystick_config(struct joystick *stick)
       char prev;
       char *prefix = stick->prefix;
       char *button_name = Button_Name(stick, i);
+      int char_index = 0;
       prev = *prefix;
-      for (; *prefix != '\0'; prefix++) {
-	if (isupper(*prefix) || isupper(prev) || isdigit(*prefix)) {
+      for (; *prefix != '\0'; prefix++, char_index++) {
+	if ((char_index <= 1)
+	    || isupper(*prefix)
+	    || isdigit(*prefix)
+	    || isupper(prev)) {
 	  *next++ = *prefix;
 	}
 	prev = *prefix;
@@ -1037,6 +1042,7 @@ js_do_button_event(struct controller *controller,
 
     /* add to buttons_down after output, so it doesn't modify itself */
     controller->buttons_down |= (1 << (event->number + stick->button_event_base));
+
     set_modifiers_buffer(controller);
 
     /* add the button to the chord we are collecting */
@@ -1237,6 +1243,7 @@ check_init_complete(struct controller *controller, int which_stick)
 	   controller->sticks[which_stick]->device);
     controller->sticks[which_stick]->buttons_to_init =
       controller->sticks[which_stick]->axes_to_init = -1;
+
     if (--controller->sticks_to_init == 0) {
       /* last stick initialized */
       int istick;
@@ -1387,7 +1394,8 @@ main (int argc, char **argv)
   }
 
   if (stick_number == 0) {
-    the_controller.n_sticks = stick_number + 1;
+    the_controller.sticks_to_init =
+      the_controller.n_sticks = stick_number + 1;
     the_controller.sticks[stick_number] = new_joystick(device_name, event_name, name, prefix, stick_number);
     stick_number++;
   }
@@ -1498,6 +1506,7 @@ main (int argc, char **argv)
 		   the_controller.sticks[which_stick]->name,
 		   the_controller.sticks[which_stick]->device,
 		   js.number,
+		   /* todo: add stick prefix here */
 		   Button_Name(the_controller.sticks[which_stick], js.number),
 		   the_controller.sticks[which_stick]->btn_abbrevs[js.number]);
 
@@ -1512,6 +1521,7 @@ main (int argc, char **argv)
 		   the_controller.sticks[which_stick]->name,
 		   the_controller.sticks[which_stick]->device,
 		   js.number,
+		   /* todo: add stick prefix here */
 		   Axis_Name(the_controller.sticks[which_stick], js.number));
 
 	    the_controller.sticks[which_stick]->axes_to_init--;
