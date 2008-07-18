@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2008-01-17 16:35:20 jcgs>
+;;; Time-stamp: <2008-07-14 18:59:58 jcgs>
 ;;
 ;; Author: John C. G. Sturdy <john@cb1.com>
 ;; Maintainer: John C. G. Sturdy <john@cb1.com>
@@ -274,8 +274,10 @@ movements."
 	(point))
     (error nil)))
 
-;;;; sexps, extended to handle bracketting by larger things than
-;;;; characters, e.g. markup tags
+;;;; Sexps, extended to handle bracketting by larger things than
+;;;; characters, e.g. markup tags.  Also lets you move over statements
+;;;; in C etc, in much the same way that you would over the equivalent
+;;;; Lisp.
 
 (defmodel versor-backward-up-list (arg)
   "Like backward-up-list, but with some versor stuff around it.
@@ -320,10 +322,31 @@ Makes a two-part selection, of opening and closing brackets."
       (versor-add-to-current-item(1- end) end))
     (cons start end)))
 
-(defmodal versor-backward-up-list (lisp-mode emacs-lisp-mode lisp-interaction-mode) (arg)
+(defmodel at-top-level-of-statement-p ()
+  "Return whether we are at the top level of a statement.")
+
+(defmodal at-top-level-of-statement-p (fundamental-mode) ()
+  "Return whether we are at the top level of a statement."
+  ;; no idea, really!
+  nil)
+
+(defmodal at-top-level-of-statement-p (c-mode c++-mode perl-mode java-mode) ()
+  "Return whether we are at the top level of a statement."
+  (let ((beginning-of-statement (save-excursion
+				  (beginning-of-statement-internal)
+				  (point)))
+	(next-bracket (save-excursion
+			(if (safe-backward-up-list 1)
+			    (point)
+			  nil))))
+    (if (null next-bracket)
+	t
+      (< next-bracket
+	 beginning-of-statement))))
+
+(defun versor-common-smart-backward-up-list (arg)
   "Like backward-up-list, but with some versor stuff around it.
 Makes a two-part selection, of opening and closing brackets."
-  (interactive "p")
   (safe-backward-up-list arg)
   (let ((start (point))
 	(end (save-excursion (safe-forward-sexp 1) (point-marker))))
@@ -346,6 +369,52 @@ Makes a two-part selection, of opening and closing brackets."
 	(cons start (marker-position end))
       (move-marker end nil))))
 
+(defmodel versor-surrounding-container ()
+  "Select the container of the current selection, with gap for old selection.
+Return whether we did so.")
+
+(defmodal versor-surrounding-container (fundamental-mode)
+  "Select the container of the current selection, with gap for old selection.
+Return whether we did so."
+  nil)
+
+(defmodal versor-surrounding-container (c-mode c++-mode perl-mode java-mode) ()
+  "Select the container of the current selection, with gap for old selection.
+Return whether we did so."
+  (let ((inner-start (point))
+	(inner-end (save-excursion
+		     (end-of-statement-internal nil)
+		     (point))))
+    (navigate-this-container)
+    (let ((outer-start (point))
+	  (outer-end (versor-overlay-end (versor-get-current-item))))
+      (versor-set-current-item outer-start inner-start)
+      (versor-add-to-current-item inner-end outer-end)))
+  t)
+
+(defmodal versor-backward-up-list (c-mode c++-mode perl-mode java-mode) (arg)
+  "Like backward-up-list, but with some versor stuff around it.
+Makes a two-part selection, of opening and closing brackets.
+Treat curly-brace statements approximately as though they were
+delimited with brackets."
+  (interactive "p")
+  ;; todo: may be more to do here
+  (cond
+   ((c-at-statement-start-p)
+    (versor-surrounding-container))
+   ((at-top-level-of-statement-p)
+    (previous-statement 1))
+   (t
+    (versor-common-smart-backward-up-list arg))))
+
+(defmodal versor-backward-up-list (lisp-mode 
+				   emacs-lisp-mode
+				   lisp-interaction-mode) (arg)
+  "Like backward-up-list, but with some versor stuff around it.
+Makes a two-part selection, of opening and closing brackets."
+  (interactive "p")
+  (versor-common-smart-backward-up-list arg))
+
 (defmodal versor-backward-up-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
   "Like backward-up-list, but with versor stuff around it, and for HTML blocks."
   (nested-blocks-leave-backwards)
@@ -357,7 +426,7 @@ Makes a two-part selection, of opening and closing brackets."
 	(let ((close-start (match-beginning 0))
 	      (close-end (match-end 0)))
 	  (make-versor-overlay open-start open-end)
-	  (versor-extra-overlay close-start close-end)
+	  (versor-add-to-current-item close-start close-end)
 	  (goto-char open-start))))))
 
 (defmodal versor-backward-up-list (sgml-mode xml-mode) (arg)
@@ -429,6 +498,32 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
       (when (safe-forward-sexp 1)
 	(versor-set-current-item start (point))
 	(goto-char start)))))
+
+(defvar versor-start-of-head nil
+  "Where we got to on going down into a statement as though it were a list.")
+
+(defvar versor-start-of-body nil
+  "Where we got to on going down into a statement and then on one.")
+
+(defvar versor-start-of-tail nil
+  "Where we got to on going down into a statement and then on two.")
+
+(defmodal versor-down-list (c-mode c++-mode perl-mode java-mode) (arg)
+  "Like down-list, but with some versor stuff around it.
+This is the default implementation (defined as fundamental-mode) and it
+should be used for normal programming language modes, including the various
+kinds of Lisp modes."
+  (interactive "p")
+  ;; todo: may be more to do here
+  (setq versor-start-of-head nil)
+  (cond
+   ((c-at-statement-start-p)
+    (navigate-this-head)
+    (setq versor-start-of-head (point)))
+   ((c-at-expression-start-p)
+    (safe-down-list arg))
+   (t
+    (safe-down-list arg))))
 
 (defmodal versor-down-list (html-mode html-helper-mode latex-mode tex-mode) (arg)
   "Like down-list, but with versor stuff around it, and for HTML block structure."
@@ -515,16 +610,11 @@ This breaks the normal behaviour for versor-backward-up-list when there is no ac
   end of the current one, and so skips leading whitespace etc.
   See versor-allow-move-to-end-of-last for some finer control."
   (interactive "p"))
-    
-(defmodal next-sexp (fundamental-mode) (n)
+
+(defun versor-plain-next-sexp (n)
   "Move forward N sexps.
-Like forward-sexp but moves to the start of the next sexp rather than the
-end of the current one, and so skips leading whitespace etc.
-See versor-allow-move-to-end-of-last for some finer control.
-This is the default implementation (defined as fundamental-mode) and it
-should be used for normal programming language modes, including the various
-kinds of Lisp modes."
-  (interactive "p")
+This is the internals of the default form of `next-sexp', which see.
+It is in a separate function as it may be used from some other forms of it."
   (let* ((where (safe-scan-sexps (point) n))
 	 (one-more (safe-scan-sexps where 1)))
     ;; (message "where=%S one-more=%S" where one-more)
@@ -561,6 +651,42 @@ kinds of Lisp modes."
 	    (safe-up-list)
 	    (skip-to-actual-code))
 	(message "No more sexps")))))
+    
+(defmodal next-sexp (fundamental-mode) (n)
+  "Move forward N sexps.
+Like forward-sexp but moves to the start of the next sexp rather than the
+end of the current one, and so skips leading whitespace etc.
+See versor-allow-move-to-end-of-last for some finer control.
+This is the default implementation (defined as fundamental-mode) and it
+should be used for normal programming language modes, including the various
+kinds of Lisp modes."
+  (interactive "p")
+  (versor-plain-next-sexp n))
+
+(defmodal next-sexp (c-mode c++-mode perl-mode java-mode) (n)
+  "Move forward N sexps.
+Like forward-sexp but moves to the start of the next sexp rather than the
+end of the current one, and so skips leading whitespace etc.
+See versor-allow-move-to-end-of-last for some finer control.
+Treat curly-brace statements approximately as though they were
+delimited with brackets."
+  (interactive "p")
+  ;; todo: may be some more to do here
+  (cond
+   ((eq (point) versor-start-of-head)
+    (navigate-this-body)
+    (setq versor-start-of-body (point)))
+   ((eq (point) versor-start-of-body)
+    (condition-case evar
+	(progn (navigate-this-tail)
+	       (setq versor-start-of-tail (point)))
+      (error (next-statement 1))))
+   ((c-at-statement-start-p)
+    (next-statement n))
+   ((c-at-expression-start-p)
+    (versor-plain-next-sexp n))
+   (t
+    (versor-plain-next-sexp n))))
 
 (defvar debug-texp nil
   "*Whether texp movement should explain what it's doing.")
@@ -728,13 +854,8 @@ things with natural language punctuation."
 Like backward-sexp but stops without error on reaching the start."
   (interactive "p"))
 
-(defmodal previous-sexp (fundamental-mode) (n)
-  "Move backward N sexps.
-Like backward-sexp but stops without error on reaching the start.
-This is the default implementation (defined as fundamental-mode) and it
-should be used for normal programming language modes, including the various
-kinds of Lisp modes."
-  (interactive "p")
+(defun versor-plain-previous-sexp (n)
+  "The internals of the previous-sexp for fundamental-mode."
   (let* ((parse-sexp-ignore-comments t)
 	 (where (safe-scan-sexps (point) (- n))))
     (if where
@@ -742,6 +863,34 @@ kinds of Lisp modes."
       (if versor-move-out-when-at-end
 	  (safe-backward-up-list)
 	(message "No more previous sexps")))))
+
+(defmodal previous-sexp (fundamental-mode) (n)
+  "Move backward N sexps.
+Like backward-sexp but stops without error on reaching the start.
+This is the default implementation (defined as fundamental-mode) and it
+should be used for normal programming language modes, including the various
+kinds of Lisp modes."
+  (interactive "p")
+  (versor-plain-previous-sexp n))
+
+(defmodal previous-sexp (c-mode c++-mode perl-mode java-mode) (n)
+  "Move backward N sexps.
+Like backward-sexp but stops without error on reaching the start.
+Treat curly-brace statements approximately as though they were
+delimited with brackets."
+  (interactive "p")
+  ;; todo: sort out detection of being at the end of a statement instead?
+  (cond
+   ((eq (point) versor-start-of-body)
+    (navigate-this-head))
+   ((eq (point) versor-start-of-tail)
+    (navigate-this-body))
+   ((c-at-statement-start-p)
+    (previous-statement n))
+   ((c-at-expression-start-p)
+    (versor-plain-previous-sexp n))
+   (t
+    (versor-plain-previous-sexp n))))
 
 (defun previous-texp (n)
   "Move to the Nth previous text expression.Treat tagged markup blocks like bracketted expressions.
@@ -1477,7 +1626,9 @@ If so, it is called on the other two arguments."
   (interactive "p")
   (goto-char (previous-property-change (point) (current-buffer))))
 		       
-(defun goto-last-property-change (n)
+(defun goto-final-property-change (n)
+  ;; called "final" rather than "last" because it was bugging me in
+  ;; completion when I wanted goto-line
   "Go to the last property change."
   (interactive "p")
   (goto-char (previous-property-change (point-max) (current-buffer))))
