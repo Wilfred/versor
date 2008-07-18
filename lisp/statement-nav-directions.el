@@ -1,5 +1,5 @@
 ;;;; statement-nav-directions.el -- follow directions to navigate to parts of statements
-;;; Time-stamp: <2007-08-21 18:19:20 john>
+;;; Time-stamp: <2008-07-18 18:58:22 jcgs>
 
 ;;  This program is free software; you can redistribute it and/or modify it
 ;;  under the terms of the GNU General Public License as published by the
@@ -51,34 +51,35 @@
 	  ;; (message "using cached statement position %S" remembered)
 	  (versor-set-current-items remembered)
 	  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
-      (let* ((type (if prelocated
-		       (third latest-statement-known)
-		     (identify-statement nil)))
-	     (directions (get-statement-part type part)))
-	;; no cached data, really do the navigation
-;;;;;;;;;;;;;;;; type is coming through as nil if we are prelocated but had not cached this part
-	;; (message "not cached; navigate-to %S %S got %S" type part directions) (backtrace)
-	(if directions
-	    (if (eq (car directions) 'statement-navigate)
-		(let ((selected-parts (progn
-					(goto-char statement-start)
-					(statement-navigate (cdr directions)))))
-		  ;; cache the data in case we want it again;
-		  ;; (message "caching statement position %S" selected-parts)
-		  (statement-remember-part statement-start type
-					   part
-					   ;;(list (point) mark-candidate)
-					   selected-parts
-					   )
-		  ;; (message "Selected-parts=%S" selected-parts)
-		  ;; (versor-set-current-item (point) mark-candidate)
-		  (versor-set-current-items selected-parts)
-		  ;; (message "point now at %d" (point))
-		  (versor-display-highlighted-choice (symbol-name part) (languide-parts)))
-	      (goto-char old-position)
-	      (error "Don't know how to handle directions like \"%S\" (for %S of %S)" directions part type))
-	  (goto-char old-position)
-	  (error "No %S defined for \"%S\" for %S" part type major-mode)))))
+      (let ((type (or (and prelocated
+			   (third latest-statement-known))
+		      (identify-statement nil))))
+	(if type
+	    (let ((directions (get-statement-part type part)))
+	      ;; no cached data, really do the navigation
+	      ;; (message "not cached; navigate-to %S %S got %S" type part directions) (backtrace)
+	      (if directions
+		  (if (eq (car directions) 'statement-navigate)
+		      (let ((selected-parts (progn
+					      (goto-char statement-start)
+					      (statement-navigate (cdr directions)))))
+			;; cache the data in case we want it again;
+			;; (message "caching statement position %S" selected-parts)
+			(statement-remember-part statement-start type
+						 part
+						 ;;(list (point) mark-candidate)
+						 selected-parts
+						 )
+			;; (message "Selected-parts=%S" selected-parts)
+			;; (versor-set-current-item (point) mark-candidate)
+			(versor-set-current-items selected-parts)
+			;; (message "point now at %d" (point))
+			(versor-display-highlighted-choice (symbol-name part) (languide-parts)))
+		    (goto-char old-position)
+		    (error "Don't know how to handle directions like \"%S\" (for %S of %S)" directions part type))
+		(goto-char old-position)
+		(error "No %S defined for \"%S\" for %S" part type major-mode)))
+	  (error "Could not identify statement at \"%s\"" (buffer-substring-no-properties (point) (min (+ (point) 24) (point-max))))))))
   (setq navigated-latest-part part
 	navigated-latest-place (point)))
 
