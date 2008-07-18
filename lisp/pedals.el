@@ -1,7 +1,7 @@
 ;;;; pedals.el -- set up the six-pedal system
-;;; Time-stamp: <2007-10-07 20:48:59 jcgs>
+;;; Time-stamp: <2008-07-12 22:09:17 jcgs>
 ;;
-;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008  John C. G. Sturdy
 ;;
 ;; This file is part of emacs-versor.
 ;;
@@ -457,6 +457,20 @@ which are most suitable for duplicating onto pedals."
       (define-key Info-mode-map pedal-menu 'Info-exit)
       (define-key Info-mode-map pedal-S-menu 'Info-menu))))
 
+(defun emms-define-pedals ()
+  "Helper function for pedals-setup."
+  (eval-after-load "emms"
+    '(progn
+       ;; (define-key emms-playlist-mode-map pedal-aux 'emms-playlist-)
+       ;; (define-key emms-playlist-mode-map pedal-S-aux 'emms-playlist-)
+       ;; (define-key emms-playlist-mode-map pedal-C-aux 'emms-playlist-)
+       ;; (define-key emms-playlist-mode-map pedal-C-S-aux 'emms-playlist-)
+       (define-key emms-playlist-mode-map pedal-onward 'emms-next)
+       (define-key emms-playlist-mode-map pedal-S-onward 'emms-previous)
+       ;; (define-key emms-playlist-mode-map pedal-menu 'emms-playlist-)
+       ;;(define-key emms-playlist-mode-map pedal-S-menu 'emms-playlist-)
+       )))
+
 (defvar pedal:versor-change-dimension-ctrl nil
   "*Whether the control pedal should make versor movements switch dimension.
 This is the function normally assigned to meta and a versor movement, but
@@ -601,7 +615,8 @@ See handsfree-menus.el for menus."
   (comint-define-pedals)
   (autocue-define-pedals)
   (view-mode-define-pedals)
-  (planner-mode-define-pedals))
+  (planner-mode-define-pedals)
+  (emms-define-pedals))
 
 (defun pedals-draw-bindings (&optional keymap)
   "Draw the pedal bindings, in the main keymap or (from a program) the one given."
