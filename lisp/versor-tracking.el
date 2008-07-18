@@ -23,9 +23,10 @@
     (versor-as-motion-command old-item
       (goto-char where)
       (let* ((item (versor-invent-item))
-	     (start (car item))
-	     (end (cdr item)))
-	(versor-set-current-item start end)
+	     (start (versor-overlay-start item))
+	     (end (versor-overlay-end item)))
+	;; versor-invent-item now does this for us:
+	;; (versor-set-current-item start end)
 	(if (< (point) start)
 	    (goto-char start)
 	  (if (> (point) end)
