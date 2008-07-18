@@ -15,7 +15,7 @@
 ;;  with this program; if not, write to the Free Software Foundation, Inc.,
 ;;  59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-(defadvice describe-key (after versor (key untranslated up-event) activate)
+(defadvice describe-key (after versor (key &optional untranslated up-event) activate)
   "Further help for versor functions."
   (let ((pre-versor-def (lookup-key versor-original-bindings-map key)))
     (when (and pre-versor-def
