@@ -1,5 +1,5 @@
 ;;; versor-commands.el -- versatile cursor commands
-;;; Time-stamp: <2008-01-17 16:20:47 jcgs>
+;;; Time-stamp: <2008-07-14 19:00:59 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -143,7 +143,8 @@ items."
 			   '(if (versor-current-item-valid)
 				(versor-get-current-item)
 			      (car versor-latest-items)))))
-	 ;; todo: invent item if there is none
+	 (when (and (null ,item-var) versor-invent-items)
+	   (versor-invent-item))
 	 (run-hooks 'versor-pre-command-hook)
 	 (versor-clear-current-item-indication)
 	 (versor-local-dimensions-update)
@@ -710,23 +711,28 @@ the outer boundary while leaving the inside boundary as it was.
 This seems to be the more useful way to do it."
   (interactive)
   (versor-as-motion-command (current-items)
-    (let* ((item-start (versor-overlay-start (first current-items)))
-	   (gap-start (if (= (length current-items) 1)
-			  item-start
-			(versor-overlay-end (first current-items))))
-	   (gap-end (if (= (length current-items) 1)
-			(versor-overlay-end (first current-items))
-		      (versor-overlay-start (car (last current-items)))))
-	   (surrounder (versor-get-action 'surround))
-	   (surrounding-item (if surrounder
-				 (funcall surrounder)
-			       (goto-char item-start)
-			       (versor-backward-up-list 1)))
-	   (surrounding-end (versor-overlay-end surrounding-item))
-	   (surrounding-start (versor-overlay-start surrounding-item)))
-      (versor-set-current-items
-       (list (cons surrounding-start gap-start)
-	     (cons gap-end surrounding-end))))))
+    (unless (versor-surrounding-container)
+      (let* ((item-start (versor-overlay-start (first current-items)))
+	     (gap-start (if (= (length current-items) 1)
+			    item-start
+			  (versor-overlay-end (first current-items))))
+	     (gap-end (if (= (length current-items) 1)
+			  (versor-overlay-end (first current-items))
+			(versor-overlay-start (car (last current-items)))))
+	     (surrounder (versor-get-action 'surrounding))
+	     (surrounding-item (if surrounder
+				   (funcall surrounder)
+				 (goto-char item-start)
+				 (versor-backward-up-list 1)))
+	     (surrounding-start (versor-overlay-start surrounding-item))
+	     (surrounding-end (versor-overlay-end surrounding-item)))
+	(message "surrounding item %S; surrounding bits [%S %S] [%S %S]"
+		 surrounding-item
+		 surrounding-start gap-start
+		 gap-end surrounding-end)
+	(versor-set-current-items
+	 (list (cons surrounding-start gap-start)
+	       (cons gap-end surrounding-end)))))))
 
 (defun versor-transpose ()
   "Transpose this item with the following one."
