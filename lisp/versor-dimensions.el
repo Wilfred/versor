@@ -1,5 +1,5 @@
 ;;; versor-dimensions.el -- versatile cursor
-;;; Time-stamp: <2008-01-23 12:27:44 jcgs>
+;;; Time-stamp: <2008-07-17 10:22:30 jcgs>
 ;;
 ;; Copyright (C) 2007, 2008, John C. G. Sturdy
 
@@ -243,7 +243,7 @@ See the definition of `versor-make-movemap' for details of move maps."
 		       (first first-sexp)
 		       (previous previous-sexp)
 		       (next next-sexp)
-		       (end-of-item forward-sexp)
+		       (end-of-item safe-forward-sexp)
 		       (last last-sexp)
 		       (mark mark-sexp)
 		       ;; (delete kill-sexp)
@@ -272,7 +272,7 @@ See the definition of `versor-make-movemap' for details of move maps."
 		       (last navigate-this-body)
 		       (start-of-item skip-to-actual-code)
 		       (end-of-item latest-statement-navigation-end)
-		       (surround locate-this-container)
+		       (surrounding locate-this-container)
 		       (extension-offset 1)
 		       (dwim versor-dwim-lispishly)))
 
@@ -286,7 +286,7 @@ See the definition of `versor-make-movemap' for details of move maps."
 		       (last end-of-defun) ;;;;;;;;;;;;;;;; make this go back one statement from the end of the defun
 		       (end-of-item latest-statement-navigation-end)
 		       (start-of-item skip-to-actual-code)
-		       (surround locate-this-container)
+		       (surrounding locate-this-container)
 		       (dwim versor-dwim-lispishly)))
 
 (versor-define-moves movemap-defuns
@@ -439,7 +439,7 @@ See the definition of `versor-make-movemap' for details of move maps."
 		       (first (goto-first-property-change))
 		       (previous (goto-next-property-change))
 		       (next (goto-previous-property-change))
-		       (last (goto-last-property-change))))
+		       (last (goto-final-property-change))))
 
 (versor-define-moves movemap-references
 		     '((color "orange")
@@ -634,9 +634,9 @@ This is a convenience function for use with mapcar for your
 	  '((emacs-lisp-mode "structural" "exprs")
 	    ("emacs-lisp-mode" "text" "words")
 	    (lisp-interaction-mode "structural" "exprs")
-	    (c-mode "program" "statement-parts")
+	    (c-mode "structural" "exprs")
 	    ("c-mode" "text" "words")
-	    (text-mode "cartesian" "lines")
+	    (text-mode "text" "words")
 	    (html-helper-mode "structured text" "words")
 	    ("html-helper-mode" "text" "chars")
 	    (html-mode "structured text" "words")
@@ -679,7 +679,6 @@ To enable the separate handling of embedded text, set
     (beginning-of-defun . versor-previous-defun)
     (previous-line . versor-previous-line)
     (beginning-of-line . versor-start-of-line)
-    (forward-sexp . next-sexp)
     )
   "Alist mapping commands to their nearest Versor equivalents.")
 
@@ -699,7 +698,6 @@ To enable the separate handling of embedded text, set
     forward-page
     versor-forward-phrase
     forward-sentence
-    forward-sexp
     innermost-list
     last-sexp
     latest-statement-navigation-end
