@@ -92,6 +92,11 @@ and going forward from the last meta-level takes you to the first one."
   :group 'versor-motion
   :type 'boolean)
 
+(defcustom versor-invent-items t
+  "Whether to create an item around the point cursor as needed.
+This happens when there is no current item and you do an operation
+that requires one.")
+
 ;;;;;;;;;;;;;;;;;
 ;;;; editing ;;;;
 ;;;;;;;;;;;;;;;;;
