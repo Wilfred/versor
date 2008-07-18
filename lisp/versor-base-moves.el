@@ -1,5 +1,5 @@
 ;;; versor-base-moves.el -- versatile cursor
-;;; Time-stamp: <2008-07-14 18:59:58 jcgs>
+;;; Time-stamp: <2008-07-18 18:57:40 jcgs>
 ;;
 ;; Author: John C. G. Sturdy <john@cb1.com>
 ;; Maintainer: John C. G. Sturdy <john@cb1.com>
@@ -373,7 +373,7 @@ Makes a two-part selection, of opening and closing brackets."
   "Select the container of the current selection, with gap for old selection.
 Return whether we did so.")
 
-(defmodal versor-surrounding-container (fundamental-mode)
+(defmodal versor-surrounding-container (fundamental-mode) ()
   "Select the container of the current selection, with gap for old selection.
 Return whether we did so."
   nil)
