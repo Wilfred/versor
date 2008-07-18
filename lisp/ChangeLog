@@ -1,3 +1,50 @@
+2008-07-17  John Sturdy  <john.sturdy@ul.ie>
+
+	* versor-dimensions.el (movemap-exprs): try `next-sexp' instead of
+	`forward-sexp' to avoid errors in versor-tracking in sexps in C
+	mode, but that caused several segvs, so tried `safe-forward-sexp'
+	instead.
+
+2008-07-14  John Sturdy  <john.sturdy@ul.ie>
+
+	* versor-base-moves.el (versor-backward-up-list): better handling
+	of ``moving outwards'' in C-like languages
+
+2008-07-12  John Sturdy  <john.sturdy@ul.ie>
+
+	* pedals.el (emms-define-pedals): Add pedals definitions for EMMS
+	playlists
+
+2008-07-04  John Sturdy  <john.sturdy@ul.ie>
+
+	* versor-tracking.el (versor-select-around-point): use
+	versor-overlay-start, versor-overlay-end instead of car, cdr
+
+	* versor-selection.el (versor-invent-item): remove old version of
+	versor-invent-item
+
+2008-05-22  John Sturdy  <john.sturdy@ul.ie>
+
+	* languide.el (skip-to-actual-code-backwards): make
+	skip-to-actual-code and skip-to-actual-code-backwards modal, so
+	that a version for C can treat preprocessor statements as comment
+
+2008-05-01  John Sturdy  <john.sturdy@ul.ie>
+
+	* versor-dimensions.el (movemap-property-changes): renamed
+	goto-last-property-change to goto-final-property-change, to avoid
+	clashing with goto-line in command completion
+
+2008-03-17  John Sturdy  <john.sturdy@ul.ie>
+
+	* versor-base-moves.el (next-sexp): Make curly-bracket-languages
+	version of next/previous/up/down sexp movements, that treat
+	statements roughly as though they were the corresponding Lisp
+	ones.  Using explicit statement-level commands had proved
+	inadequate, because of the rapid mix of statement and expression
+	movements.  At a deeper level, it's because of the horrible syntax
+	of that language family.
+
 2008-01-22  John Sturdy  <jcgs@ezekiel.csis.ul.ie>
 
 	* languide-c-like.el (class): Start definition of C++ class
