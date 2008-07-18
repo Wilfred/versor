@@ -1,5 +1,5 @@
 ;;; versor-selection.el -- versatile cursor
-;;; Time-stamp: <2008-01-17 16:28:27 jcgs>
+;;; Time-stamp: <2008-07-15 13:09:10 jcgs>
 ;;
 ;; emacs-versor -- versatile cursors for GNUemacs
 ;;
@@ -57,7 +57,9 @@ other emacs commands.")
 		   (car versor-items))))
     ;; re-use overlay if there's one ready
     (if (and (overlayp item) (overlay-buffer item))
-	(move-overlay item start end (current-buffer))
+	(progn 
+	  (move-overlay item start end (current-buffer))
+	  item)
       (make-versor-overlay start end))))
 
 (defun versor-add-to-current-item (start end)
@@ -137,7 +139,8 @@ yet to edit."
 	   (when versor-debug-motion-framework
 	     (message "versor-get-current-items: constructing item"))
 	   (let ((pair (versor-invent-item)))
-	     (make-versor-overlay (car pair) (cdr pair))
+	     (make-versor-overlay (versor-overlay-start pair)
+				  (versor-overlay-end pair))
 	     versor-items
 	     )))
 	 ))
@@ -154,16 +157,32 @@ yet to edit."
 (defun versor-overlay-start (olay)
   "Return the start of OLAY.
 OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
-  (if (consp olay)
-      (car olay)
-    (overlay-start olay)))
+  (cond
+   ((overlayp olay)
+    (overlay-start olay))
+   ((consp olay)
+    (cond
+     ((overlayp (car olay))
+      (overlay-start (car olay)))
+     ((consp (car olay))
+      (caar olay))
+     ((integer-or-marker-p (car olay))
+      (car olay))))))
 
 (defun versor-overlay-end (olay)
   "Return the end of OLAY.
 OLAY may be an overlay, or a cons used to preserve data from a destroyed overlay."
-  (if (consp olay)
-      (cdr olay)
-    (overlay-end olay)))
+  (cond
+   ((overlayp olay)
+    (overlay-end olay))
+   ((consp olay)
+    (cond
+     ((overlayp (car olay))
+      (overlay-end (car olay)))
+     ((consp (car olay))
+      (cdar olay))
+     ((integer-or-marker-p (car olay))
+      (cdr olay))))))
 
 (defun versor-display-item-list (label il)
   "With LABEL, display IL.
@@ -179,31 +198,6 @@ Meant for debugging versor itself."
 		       (buffer-substring start (+ start 8))
 		       (buffer-substring (- end 8) end)))))
 	  il))
-
-(defun versor-invent-item ()
-  "Invent a versor item around the current point.
-Meant to be used by things that require an item, when there is none.
-Leaves point in a position compatible with what has just been returned."
-  ;; (message "Using %S in inventing item" (versor-current-level))
-  (let* ((end (condition-case evar
-		  (progn (funcall (or (versor-get-action 'end-of-item)
-				  (versor-get-action 'next))
-			      1)
-		     ;; (message "invented end") (sit-for 2)
-		     (point))
-		(error
-		 ;; (message "Could not find end when inventing item")
-		 ;; todo: think of something tidier to do here; even better, reduce the occasions when it happens; the main one is "next sexp" when amongst a series of closing brackets
-		 (point))))
-	 (start (condition-case evar
-		    (progn (funcall (versor-get-action 'previous) 1)
-			   ;; (message "invented start") (sit-for 2)
-			   (point))
-		  (error
-		   ;; (message "Could not find start when inventing item")
-		   (point)))))
-    ;; (message "Invented item %d..%d" start end)
-    (cons start end)))
 
 (defun versor-valid-item-list-p (a)
   "Return whether A is a valid item list."
@@ -301,6 +295,29 @@ hidden to make the elision.
             comment-end \"\n\"))
 is a suitable function.")
 
+(defun versor-invent-item (&optional no-adjust)
+  "Create an item based on point.
+Optionally, NO-ADJUST says not to adjust position."
+  (versor-set-current-item
+   (progn
+     (when (and versor-trim-item-starts-to-non-space
+		(not no-adjust))
+       ;; To maintain consistency, it generally makes sense to
+       ;; adjust point so that it's at the start of some
+       ;; non-blank text; most commands will probably do this
+       ;; anyway, but here we just make sure, which makes it
+       ;; easier to borrow underlying commands not written
+       ;; specially for versor.
+       (let ((trimmer (versor-get-action 'start-of-item)))
+	 (when trimmer
+	   (when versor-debug-motion-framework
+	     (message "trimming from %d" (point)))
+	   (funcall trimmer)
+	   (when versor-debug-motion-framework
+	     (message "trimmed to %d" (point))))))
+     (point))
+   (versor-end-of-item-position)))
+
 (defun versor-indicate-current-item (&optional no-adjust)
   "Make the current item distinctly visible.
 This is intended to be called at the end of all versor commands.
@@ -325,50 +342,43 @@ start of the likely selection."
 	(unless (versor-current-item-valid)
 	  (when versor-debug-motion-framework
 	    (message "Establishing current item"))
-	  (versor-set-current-item
-	   (progn
-	     (when (and versor-trim-item-starts-to-non-space
-			(not no-adjust))
-	       ;; To maintain consistency, it generally makes sense to
-	       ;; adjust point so that it's at the start of some
-	       ;; non-blank text; most commands will probably do this
-	       ;; anyway, but here we just make sure, which makes it
-	       ;; easier to borrow underlying commands not written
-	       ;; specially for versor.
-	       (let ((trimmer (versor-get-action 'start-of-item)))
-		 (when trimmer
-		   (when versor-debug-motion-framework
-		     (message "trimming from %d" (point)))
-		   (funcall trimmer)
-		   (when versor-debug-motion-framework
-		     (message "trimmed to %d" (point))))))
-	     (point))
-	   (versor-end-of-item-position)))
+	  (versor-invent-item no-adjust))
 
-	    ;; Try to get the whole selection on-screen, if the user
-	    ;; so desires.  First, we simply move it, if it will fit
-	    ;; in the window.  Otherwise (according to
-	    ;; versor-show-both-ends-of-item) we can either
-	    ;; temporarily split the window, or make the middle of the
-	    ;; invisible (and put dots there to indicate that this has
-	    ;; been done)
+	;; Try to get the whole selection on-screen, if the user
+	;; so desires.  First, we simply move it, if it will fit
+	;; in the window.  Otherwise (according to
+	;; versor-show-both-ends-of-item) we can either
+	;; temporarily split the window, or make the middle of the
+	;; invisible (and put dots there to indicate that this has
+	;; been done)
 
 	(when (or versor-try-to-display-whole-item
-		versor-show-both-ends-of-item)
+		  versor-show-both-ends-of-item)
 	  (let* ((items (versor-get-current-items))
 		 (item (car items))
-		 (end (cdar (last items))))
-	    (when (> end (window-end))
-	      (let* ((start (car item))
+		 (end (versor-overlay-end (car (last items)))))
+
+	    ;; (message "versor-indicate-current-item end %d, window-end %d" end (window-end nil t))
+
+	    (when (> end (window-end nil t))
+	      (let* ((start (versor-overlay-start item))
 		     (lines-needed (count-lines start end))
 		     (lines-available (- (window-height
 					  (selected-window))
 					 2)))
+		;; (message "off the bottom, %d lines needed, %d lines available, %d lines spare"
+		;; 			 lines-needed
+		;; 			 lines-available
+		;; 			 (- lines-available lines-needed))
 		(if (<= lines-needed lines-available)
 		    ;; whole selection fits in the window
-		    (recenter (/ (- lines-available lines-needed) 2))
+		    (progn
+		      ;; (message "=> enough room, recenter at %d"
+		      ;; (/ (- lines-available lines-needed) 2))
+		      (recenter (/ (- lines-available lines-needed) 2)))
 		  ;; we can't get the whole selection visible in the
 		  ;; window, but we can try to show both ends
+		  ;; (message "=> not enough room, %d extra" (- lines-needed lines-available))
 		  (recenter 1)	       ; get the top onto the top line
 		  (let ((extra (- lines-needed lines-available)))
 		    (cond
