@@ -1,5 +1,5 @@
 ;;;; languide-c-like.el -- C, java, perl definitions for language-guided editing
-;;; Time-stamp: <2008-01-22 17:25:25 jcgs>
+;;; Time-stamp: <2008-07-14 13:20:57 jcgs>
 
 ;; Copyright (C) 2004, 2005, 2006, 2007, 2008  John C. G. Sturdy
 
@@ -93,6 +93,43 @@ is liable to return the wrong result."
     (goto-char a)
     (= (- b a)
        (skip-chars-forward " \t\n\r" b))))
+
+(defmodal skip-to-actual-code (c-mode c++-mode java-mode) (&optional limit)
+  "Skip forward, over any whitespace or comments, to the next actual code.
+This assumes that we start in actual code too.
+LIMIT, if given, limits the movement.
+Returns the new point."
+  (interactive)
+  (backward-out-of-comment)
+  (while (progn
+	   (skip-syntax-forward "->")
+	   (cond
+	    ((looking-at "\\s<")
+	     (re-search-forward "\\s>" limit t))
+	    ((looking-at "^#")		; C pragmata
+	     (beginning-of-line 2))
+	    ((and (stringp comment-start-skip)
+		  (stringp comment-end)
+		  (looking-at comment-start-skip))
+	     (goto-char (match-end 0))
+	     (if (string= comment-end "")
+		 (progn
+		   (beginning-of-line 2)
+		   t)
+		 (search-forward comment-end (and limit (max limit (point))) t)))
+	    (t nil))))
+  (point))
+
+(defmodal skip-to-actual-code-backwards (c-mode c++-mode) (&optional limit)
+  "Skip backward, over any whitespace or comments, to the next actual code.
+This assumes that we start in actual code too.
+LIMIT, if given, limits the movement.
+Returns the new point."
+  (interactive)
+  (while (progn
+	   (skip-syntax-backward "->")
+	   (backward-out-of-comment)))
+  (point))
 
 (defmodal move-into-previous-statement (c-mode c++-mode perl-mode java-mode) ()
   "Move into the previous C (etc) statement.
@@ -256,7 +293,7 @@ Return the type if we spotted it."
 	(read-char)
 	(delete-overlay o)))))
 
-(defmodal beginning-of-statement-internal (c-mode c++-mode perl-mode) ()
+(defmodal beginning-of-statement-internal (c-mode c++-mode perl-mode java-mode) ()
   "Move to the beginning of a C or Perl statement.
 Return the type if obvious."
   (mapcar 'delete-overlay debug-overlays)

@@ -1,7 +1,7 @@
 ;;;; languide.el -- language-guided editing
-;;; Time-stamp: <2007-12-11 17:28:34 jcgs>
+;;; Time-stamp: <2008-05-22 12:02:39 jcgs>
 ;;
-;; Copyright (C) 2004, 2005, 2006, 2007  John C. G. Sturdy
+;; Copyright (C) 2004, 2005, 2006, 2007, 2008  John C. G. Sturdy
 
 ;; Author: John C. G. Sturdy <john@cb1.com>
 ;; Maintainer: John C. G. Sturdy <john@cb1.com>
@@ -325,7 +325,14 @@ Returns whether it did anything."
 	    nil))
       nil)))
 
-(defun skip-to-actual-code (&optional limit)
+(defmodel skip-to-actual-code (&optional limit)
+  "Skip forward, over any whitespace or comments, to the next actual code.
+This assumes that we start in actual code too.
+LIMIT, if given, limits the movement.
+Returns the new point."
+  (interactive))
+
+(defmodal skip-to-actual-code fundamental-mode (&optional limit)
   "Skip forward, over any whitespace or comments, to the next actual code.
 This assumes that we start in actual code too.
 LIMIT, if given, limits the movement.
@@ -345,7 +352,14 @@ Returns the new point."
 	       nil))))
   (point))
 
-(defun skip-to-actual-code-backwards (&optional limit)
+(defmodel skip-to-actual-code-backwards (&optional limit)
+  "Skip backward, over any whitespace or comments, to the next actual code.
+This assumes that we start in actual code too.
+LIMIT, if given, limits the movement.
+Returns the new point."
+  (interactive))
+
+(defmodal skip-to-actual-code-backwards fundamental-mode (&optional limit)
   "Skip backward, over any whitespace or comments, to the next actual code.
 This assumes that we start in actual code too.
 LIMIT, if given, limits the movement.
