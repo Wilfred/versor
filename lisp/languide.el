@@ -302,7 +302,8 @@ non-nil, display the result."
   "If in a comment, move to just before it, else do nothing.
 Returns whether it did anything."
   (interactive)
-  (if (or (derived-mode-p 'text-mode)
+  (if (or (and (fboundp 'derived-mode-p)
+	       (derived-mode-p 'text-mode))
 	  (memq major-mode other-text-modes))
       (when (in-comment-p)
 	;; If we can, get to the start of the comment (but inside it),
