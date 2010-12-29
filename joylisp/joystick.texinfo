@@ -18,7 +18,7 @@
 @c The following two commands start the copyright page.
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2005, 2006, 2007, 2008 John C. G. Sturdy
+Copyright @copyright{} 2005, 2006, 2007, 2008, 2010 John C. G. Sturdy
 
 Published by John C. G. Sturdy.
 
@@ -45,14 +45,17 @@ The Emacs Joystick Interface lets you use a gamepad or a joystick to
 control many functions of Emacs.  Commands from the device appear as
 events in Emacs' input stream, much like function keys or menu entries.
 
-You can, of course, make your own bindings, just as for normal keys, but
-a fairly rich set of bindings is provided.
+You can, of course, make your own bindings, just as for normal keys.
+However, a fairly rich set of default bindings is provided.
 
-A help command is provided, that draws a diagram of a gamepad and labels
-it with the current bindings.
+A help command is included, that draws an ASCII diagram of a gamepad in
+an Emacs buffer, and labels it with the current bindings.
 
-The Emacs Joystick Interface uses a small C program to talk to the Linux
-Joystick Interface.
+The Emacs Joystick Interface uses a C program, @command{joylisp}, to
+talk to the Linux Joystick Interface.  There is a graphical version of
+this program (@command{xjoylisp}), that can draw a diagram in an
+X-window of its own and lights up the buttons as they are pressed, for
+demonstration and tutorial purposes.
 
 @menu
 * Motivation::                  Why use a gamepad with Emacs?
@@ -76,10 +79,11 @@ Joystick Interface.
 @comment  node-name,  next,  previous,  up
 @chapter Motivation
 
-Sometimes Emacs is accused of causing RSI.  This isn't fair; the problem
-is not with Emacs, but with taking a typewriter-style keyboard (designed
-in the 19th century, for typing letters) a long way beyond what it is
-designed for, and using it as a controller.
+Sometimes Emacs is accused of causing RSI.  This isn't a fair
+accusation; the problem is not with Emacs, but with taking a
+typewriter-style keyboard (designed in the 19th century, for typing
+letters) a long way beyond what it is designed for, and using it as a
+controller.
 
 It makes much more sense to control Emacs with something designed as a
 controller; furthermore, a controller designed for comfortable, fast,
@@ -113,9 +117,9 @@ comfortable angle.
 
 Emacs uses chording a lot (and it is the way to get the maximum use out
 of a given number of buttons, or for that matter from a limited number
-of fingers -- for example, 8 buttons allows 8 inputs as single buttons,
-or 255 as chords), but it is awkward to do with a keyboard, and some
-people find it a strain on the hands, which is why some Emacs users
+of fingers -- for example, a set of 8 buttons allows 8 inputs as single
+buttons, or 255 as chords), but it is awkward to do with a keyboard, and
+some people find it a strain on the hands, which is why some Emacs users
 recommend using pedals for the modifiers.  A gamepad's design makes it
 very convenient for chording, because the fingers are already in
 position over the buttons, or very near them, and never have to stretch
@@ -142,12 +146,15 @@ movements to use them.
 Versor puts a related pair of movements on the cursor keys (or, with the
 joystick, onto the hat switch and joystick movements) and uses the same
 keys, with a modifier, to switch between different forms of movement.
+This way, you only have to use the modifier when changing between forms
+of movement, rather than all the time for all but the default forms.
 
-Versor also provides feedback by highlighting the whole selection in
-colour, and defines editing operations (such as ``copy'') which act on
-the highlighted selection.  (Using other commands immediately removes
-the versor highlight, so it's not conspicuous when you're not actively
-using it.)
+Versor treats a unit of the current form of motion (e.g. a word, or an
+sexp) as being an editing selection, and provides feedback by
+highlighting the whole selection in colour.  It defines editing
+operations (such as ``copy'') which act on the highlighted selection.
+(Using other commands immediately removes the Versor highlight, so it's
+not conspicuous when you're not actively using it.)
 
 This makes it easy to select and operate on meaningful units of text,
 without having to make character-by-character movements to select each
@@ -198,29 +205,57 @@ tied behind your back, although the author hopes that this will not be a
 deciding factor for most people: it is entirely possible to use it with
 neither hand tied behind your back.
 
-(Apologies for those not familiar with the English phrase ``He can do it
-with one hand tied behind his back'', which means ``He can do it very
+(Apologies for those not familiar with the English phrase ``She can do it
+with one hand tied behind her back'', which means ``She can do it very
 easily''.)
 
 @node Introduction, Familiarization, Motivation, Top
 @chapter Introduction
 
 The Emacs Joystick Interface makes a joystick or gamepad appear as extra
-keys.  It is possible to do sophisticated chording, as the interface
-program arranges for buttons to appear as modifiers automatically
-whenever they are used as modifiers.
+keys, which Emacs can bind using the normal binding functions.  It is
+possible to do sophisticated chording, as the interface program arranges
+for buttons to appear as modifiers automatically whenever they are used
+as modifiers.
+
+This software may be used with either a gamepad or a conventional
+joystick; it is however designed specifically around a gamepad, and not
+all conventional joysticks have enough buttons to make full use of it.
 
 The shoulder buttons are used for most of the chording, as they are
 ergonomically most convenient for this.
 
 @menu
-* Joystick axes::              The analog joysticks and the hat switch
-* Buttons::                    The buttons
-* Chording::                   Combinations of buttons
-* Compound controllers::       Building a custom controller
+* Nomenclature::                The terminology used in the manual
+* Joystick axes::               The analog joysticks and the hat switch
+* Buttons::                     The buttons
+* Chording::                    Combinations of buttons
+* Compound controllers::        Building a custom controller
 @end menu
 
-@node Joystick axes, Buttons, Introduction, Introduction
+@node  Nomenclature, Joystick axes, Introduction, Introduction
+@comment  node-name,  next,  previous,  up
+@section Nomenclature
+
+The buttons on the top of a gamepad are the ``face buttons''.  (These are
+sometimes labelled 1--4.)
+
+The buttons on the front of the gamepad (facing away from you, with the
+device held conventionally) are the ``shoulder buttons''.  (These are
+sometimes labelled 5--8.)
+
+The digital joystick (typically positioned for use with the left thumb)
+is the ``hat switch''.  (Some people call this the ``D-pad''.)
+
+The two small buttons on the top of the gamepad, betwen the face buttons
+and the hat switch, are the ``slow / turbo'' buttons.  (These are
+sometimes labelled 9 and 10.)
+
+The two small analog joysticks are the ``analog joysticks''.  They
+contain buttons (which are not usually labelled, but are buttons 11 and
+12).
+
+@node Joystick axes, Buttons, Nomenclature, Introduction
 @comment  node-name,  next,  previous,  up
 @section Joystick axes
 
@@ -251,10 +286,11 @@ Their names are supplied by the driver program that talks to the Linux
 Joystick Interface.
 
 Each button, used by itself, provides two types of events, one when it
-is pressed (for example, @key{Trigger-down}) and one when it is released
-(for example, @key{Trigger-up}).  Because it is possible to use buttons
-for @ref{Chording}, command actions are normally done on the @key{-up}
-event.
+is pressed (for example, @samp{Trigger-down}) and one when it is
+released (for example, @samp{Trigger-up}).  Because it is possible to
+use buttons for chording (@pxref{Chording}), command actions are
+normally done on the @samp{-up} event, which is never issued if the
+button turns out to have been used as a modifier to another button.
 
 @node  Chording, Compound controllers, Buttons, Introduction
 @comment  node-name,  next,  previous,  up
@@ -262,7 +298,7 @@ event.
 
 If you press a button and hold it down, and press another button, the
 first button appears as a modifier to the second one.  Following the
-Emacs convention of using @key{S-} for `shift', etc, an abbreviated
+Emacs convention of using @samp{S-} for `shift', etc, an abbreviated
 version of the first button's name is prepended to the second button's
 name.  For how the abbreviation is made, see @ref{Making your own
 bindings}.
@@ -271,17 +307,17 @@ Having used a button as a modifier for another one, you will typically
 not want it to act as a command in its own right when released.
 Therefore, the driver program issues a different event when a button is
 released having been used as a modifier to another: it suffixes
-@key{-release} instead of @key{-up} to the button name.
+@samp{-release} instead of @samp{-up} to the button name.
 
-For example, if you press @key{BaseBtn}, hold it and press and release
-@key{Trigger}, then release @key{BaseBtn}, you get the sequence:
-@key{BaseBtn-down} @key{BaBt-Trigger-down} @key{BaBt-Trigger-up}
-@key{BaseBtn-release}.
+For example, if you press @samp{BaseBtn}, hold it and press and release
+@samp{Trigger}, then release @samp{BaseBtn}, you get the sequence:
+@samp{BaseBtn-down} @samp{BaBt-Trigger-down} @samp{BaBt-Trigger-up}
+@samp{BaseBtn-release}.
 
 Any number of buttons may be pressed at once. (The number of buttons
 supported is limited to the number of bits in a long integer on your
 system.  This does not appear to be a real problem in devices designed
-for human use!)  The order in which the modifier names appear is fixed:
+for human use.)  The order in which the modifier names appear is fixed:
 it is not necessarily the order in which they were pressed.  This might
 change in a future version; it would be more powerful, at the cost of a
 yet steeper and longer learning curve.  It would also make the interface
@@ -298,6 +334,12 @@ The interface program allows several joystick devices to be combined,
 such that chords between devices are handled as if in a single device.
 This is meant for construction of custom compound controllers by
 ergonomics experimenters, hardware modders, etc.
+
+As well as outputting the button events as events, @command{joylisp}
+also outputs the chord you have pressed, when you have finished it, as a
+number representing the combined bits for the buttons used.  This is
+meant for using a gamepad as a chord keyboard for typing on (possibly
+after hardware modification).
 
 @node Familiarization, The hat and stick axes, Introduction, Top
 @comment  node-name,  next,  previous,  up
@@ -330,15 +372,15 @@ If the system's behaviour seems confusing, in terms of how it overloads
 buttons as commands and modifiers, it may be helpful to run the
 @command{joystick} or @command{xjoystick} program directly from a
 terminal, and observe the output as you press buttons.  The program
-takes textual commands on its standard input; type ``quit'' to make it
-exit.  For details of the commands the program accepts, @ref{Driver
-commands}.
+takes textual commands on its standard input; type ``@code{quit}'' to
+make it exit.  For details of the commands the program accepts,
+@ref{Driver commands}.
 
 @node  Learning, Achieving fluent fluidity, Starting and trying, Familiarization
 @comment  node-name,  next,  previous,  up
 @section Learning
 
-The whole gamepad/versor/languide system is quite large, and may take a
+The whole gamepad/Versor/Languide system is quite large, and may take a
 while to learn.  Writing out a diagram of what buttons do, and sticking
 it over your monitor, may be helpful (this is how the author learnt
 it).  Future versions of this manual may contain such a diagram for you
@@ -383,7 +425,8 @@ characters and lines, or can be other dimensions such as words, sexps.
 The buttons (particularly the shoulder buttons) can be used as modifiers
 for the hat switch.
 
-Held down, the hat switch repeats, gradually accelerating.
+Held down, the hat switch repeats, gradually accelerating up to a set
+limit.
 
 @menu
 * Hat movement::                Moving with the hat switch
@@ -397,7 +440,7 @@ Held down, the hat switch repeats, gradually accelerating.
 @comment  node-name,  next,  previous,  up
 @subsection Hat movement
 
-If using the joystick package with the ``versor'' system
+If using the joystick package with the ``Versor'' system
 (@pxref{versor,,,versor,The Versor manual}), the hat switch steps in
 whatever the current units of motion are.
 
@@ -427,17 +470,17 @@ Pressing two shoulder buttons on the same side of the square, while
 using the hat switch, selects a different type of hat switch movement,
 such as structural (sexps, depth), textual (words, sentences) etc.
 
-@multitable {@key{5,6}} {both bottom} {the kind of movement}
-@item @key{5,6}
+@multitable {@samp{5,6}} {both bottom} {the kind of movement}
+@item @samp{5,6}
 @tab both left
 @tab words/sentences
-@item @key{7,8}
+@item @samp{7,8}
 @tab both right
 @tab sexps/depth
-@item @key{5,7}
+@item @samp{5,7}
 @tab both top
 @tab chars/lines
-@item @key{6,8}
+@item @samp{6,8}
 @tab both bottom
 @tab statements/defuns
 @end multitable
@@ -450,38 +493,38 @@ the plain cursor moves in the appropriate dimension.
 @comment  node-name,  next,  previous,  up
 @subsection Hat buffer selection
 
-Holding the bottom left shoulder button (@key{PinkieBtn}) while using
+Holding the bottom left shoulder button (@samp{PinkieBtn}) while using
 the vertical axis of the hat switch will bring up the buffer list.  (The
 list does not appear until the button and the hat switch are both
 pressed; otherwise the buffer list would make a nuisance of itself when
 you use the button without the hat switch).
 
 You can then move up and down the list, using the hat switch, and select
-the buffer you want by releasing @key{PinkieBtn}.
+the buffer you want by releasing @samp{PinkieBtn}.
 
-Pressing @key{ThumbBtn} (which normally deletes the region or
-selection), while still holding @key{PinkieBtn} down, will mark a buffer
+Pressing @samp{ThumbBtn} (which normally deletes the region or
+selection), while still holding @samp{PinkieBtn} down, will mark a buffer
 for deletion on finishing the buffer list.
 
 If you want more than one buffer selected, use the top left button
-(while still holding @key{PinkieBtn} down) to mark the extra buffer(s).
+(while still holding @samp{PinkieBtn} down) to mark the extra buffer(s).
 
 @node Hat file selection, Alterations, Hat buffer selection, Hat switch
 @comment  node-name,  next,  previous,  up
 @subsection Hat file selection
 
-Holding the bottom left shoulder button (@key{PinkieBtn}) while using
+Holding the bottom left shoulder button (@samp{PinkieBtn}) while using
 the horizontal axis of the hat switch will bring up dired, and move
 between the entries.
 
-Releasing @key{PinkieBtn} will find the file point is on.
+Releasing @samp{PinkieBtn} will find the file point is on.
 
-Pressing @key{ThumbBtn} (which normally deletes the region or
-selection), while still holding @key{PinkieBtn} down, will mark a file
+Pressing @samp{ThumbBtn} (which normally deletes the region or
+selection), while still holding @samp{PinkieBtn} down, will mark a file
 for deletion on finishing dired.
 
-Pressing @key{TopBtn} (which normally inserts something) while holding
-@key{PinkieBtn} down will insert a subdirectory at point.
+Pressing @samp{TopBtn} (which normally inserts something) while holding
+@samp{PinkieBtn} down will insert a subdirectory at point.
 
 Using the vertical axis of the hat switch while in dired will go up or
 down levels of the tree (if any subdirectories have been inserted).
@@ -502,24 +545,33 @@ using the up and down axes will switch to other kinds of possible values
 --- the range of possibilities is dependent on the context (such as the
 major mode, and whether a tags file is active).
 
+(This is probably the least-developed area of Versor; don't expect too
+much of it yet.)
+
 @node  Left analog, Right analog, Hat switch, The hat and stick axes
 @comment  node-name,  next,  previous,  up
 @section The left analog stick
 
+Note that some versions of the joylisp program have the support for the
+analog sticks suppressed; this is for gamepads which output spurious
+joystick values when centred.  This should eventually be programmed
+around, or interfaced to a calibration system.
+
 The left analog stick moves point in the intuitively obvious way, with
 the displacement of the stick from its centre setting the speed.
 
-If you are using the analog joystick with versor, the movements are
-still in real X and Y co-ordinates, but the versor selectable item
-(word, sentence, sexp, defun, etc) nearest point becomes the versor
+If you are using the analog joystick with Versor, the movements are
+still in real X and Y co-ordinates, but the Versor selectable item
+(word, sentence, sexp, defun, etc) nearest point becomes the Versor
 selection.
 
-The significant difference, apart from being analog, is that the repeat
-rate is still in terms of cartesian co-ordinates on the screen, which is
-probably easier for the eye/brain/hand combination to predict over time,
-whereas the hat switch repeat is in terms of words, sexps, etc, and it
-is harder to get a feel for how far it will go with a certain amount of
-holding the control down.
+The significant differences, apart from being analog, are that the
+movement is direct, and that the repeat rate is still in terms of
+cartesian co-ordinates on the screen, which is probably easier for the
+eye/brain/hand combination to predict over time, whereas the hat switch
+repeat is in terms of words, sexps, etc, and it is harder to get a feel
+for how far it will go with a certain amount of holding the control
+down.
 
 @node  Right analog,  , Left analog, The hat and stick axes
 @comment  node-name,  next,  previous,  up
@@ -544,53 +596,53 @@ making such a window if there isn't one.
 
 This section lists what each of the buttons does, as commands in their
 own right.  It also mentions their use as modifiers, which sometimes
-relates in an obvious way to their use as commands.
+relates in a mnemonic way to their use as commands.
 
 @menu
-* Trigger group::               The buttons on the top of the gamepad
+* Face buttons::                The buttons on the top of the gamepad
 * Shoulder buttons::            The buttons on the far edge of the pad
 * The slow/turbo buttons::      The tricky little buttons near the middle
 @end menu
 
-@node  Trigger group, Shoulder buttons, The buttons, The buttons
+@node  Face buttons, Shoulder buttons, The buttons, The buttons
 @comment  node-name,  next,  previous,  up
-@section The trigger button group
+@section The Face button group
 
-The trigger button group (or ``face buttons'' -- typically a
-diamond-shaped group on the right-hand half of the top surface of a
-gamepad) do some basic editing actions.  They can also be used to choose
-statement types when inserting statements.
+The ``face buttons'' (typically a diamond-shaped group on the right-hand
+half of the top surface of a gamepad) do some basic editing actions.
+They can also be used to choose statement types when inserting
+statements.
 
-@multitable {@key{Number}} {@key{Position}} {@key{ThumbBtn2}} {command name} {statement type}
+@multitable {@samp{Number}} {@samp{Position}} {@samp{ThumbBtn2}} {command name} {statement type}
 @item Number
 @tab Position
 @tab Name
 @tab Command
 @tab Statement type
-@item @key{1}
-@tab @key{left}
-@tab @key{Trigger}
+@item @samp{1}
+@tab @samp{left}
+@tab @samp{Trigger}
 @tab Copy
 @tab Bind
-@item @key{2}
-@tab @key{top}
-@tab @key{ThumbBtn}
+@item @samp{2}
+@tab @samp{top}
+@tab @samp{ThumbBtn}
 @tab Kill
 @tab Conditional
-@item @key{3}
-@tab @key{bottom}
-@tab @key{ThumbBtn2}
+@item @samp{3}
+@tab @samp{bottom}
+@tab @samp{ThumbBtn2}
 @tab Find
 @tab Call
-@item @key{4}
-@tab @key{right}
-@tab @key{TopBtn}
+@item @samp{4}
+@tab @samp{right}
+@tab @samp{TopBtn}
 @tab Yank
 @tab Iteration
 @end multitable
 
 If you are using Versor with the gamepad, you can use the button that
-normally does ``Yank'' (@key{TopBtn}, button number 4, the right-most of
+normally does ``Yank'' (@samp{TopBtn}, button number 4, the right-most of
 the trigger buttons) as a modifier for the hat switch, which then
 inserts before, after, around, or in place of, the current selection.
 
@@ -603,7 +655,7 @@ or a kind of bracket).
 other data source) before and after the current selection.
 
 Such successive items on the kill ring may be generated by copying or
-killing a multi-part selection. @ref{Surround}.
+killing a multi-part selection. @xref{Surround}.
 
 ``Replace'' places the inserted item in place of the current selection.
 If the selection is a multi-part one, successive items are used to
@@ -617,10 +669,10 @@ occurrences of the text in the current selection.
 * Insertion directions::        Selecting where to insert
 * Insertion types::             Selecting what to insert
 * Languide commands::           Language-guided editing
-* Other face button commands::       More trigger-group button commands
+* Other face button commands::  More face button commands
 @end menu
 
-@node  Insertion directions, Insertion types, Trigger group, Trigger group
+@node  Insertion directions, Insertion types, Face buttons, Face buttons
 @comment  node-name,  next,  previous,  up
 @subsection Insertion directions
 
@@ -661,11 +713,11 @@ the new text and the original text is adjusted automatically.
 ``Insert Around'' inserts something before the current selection and
 something after it, typically related in some sensible way, such as a
 pair of bracketing characters, or two successive items from the data
-source; in the common case of this being the kill ring. this is as
-results from copying a two-part selection; @ref{Surround}.
-The following button or key determines what is inserted; for the types
-of insertions, see the menu in @xref{Insertion types}.  Whitespace
-between the new text and the original text is adjusted automatically.
+source; in the common case of this being the kill ring.  This is as
+results from copying a two-part selection; @ref{Surround}.  The
+following button or key determines what is inserted; for the types of
+insertions, see the menu in @xref{Insertion types}.  Whitespace between
+the new text and the original text is adjusted automatically.
 
 @node  Replace,  , Insert Around, Insertion directions
 @comment  node-name,  next,  previous,  up
@@ -680,7 +732,7 @@ Surround operation (@pxref{Surround}), the parts of it are
 replaced with successive items from the data source, as for ``Insert
 Around'' (@pxref{Insert Around}).
 
-@node  Insertion types, Languide commands, Insertion directions, Trigger group
+@node  Insertion types, Languide commands, Insertion directions, Face buttons
 @comment  node-name,  next,  previous,  up
 @subsection Insertion types
 
@@ -737,37 +789,37 @@ one, for curly braces.
 Statements may be inserted before, after, around, or in place of, the
 current selection.
 
-@multitable {@key{Number}} {@key{Position}} {@key{ThumbBtn2}} {main statement type} {other statement type}
+@multitable {@samp{Number}} {@samp{Position}} {@samp{ThumbBtn2}} {main statement type} {other statement type}
 @item Number
 @tab Position
 @tab Name
 @tab Main statement type
 @tab Other statement type
-@item @key{1}
-@tab @key{left}
-@tab @key{Trigger}
+@item @samp{1}
+@tab @samp{left}
+@tab @samp{Trigger}
 @tab Variable declaration
 @tab Assignment
-@item @key{2}
-@tab @key{top}
-@tab @key{ThumbBtn}
+@item @samp{2}
+@tab @samp{top}
+@tab @samp{ThumbBtn}
 @tab if-then
 @tab if-then-else
-@item @key{3}
-@tab @key{bottom}
-@tab @key{ThumbBtn2}
+@item @samp{3}
+@tab @samp{bottom}
+@tab @samp{ThumbBtn2}
 @tab function call
 @tab function definition
-@item @key{4}
-@tab @key{right}
-@tab @key{TopBtn}
+@item @samp{4}
+@tab @samp{right}
+@tab @samp{TopBtn}
 @tab Iteration
 @tab Fancy iteration
 @end multitable
 
 The ``Main statement type'' may be selected by using that button with
-@key{PinkieBtn} (the lower left shoulder button) as a modifier, and the ``Other
-statement type'' using @key{PinkieBtn} and @key{TopBtn2} (both left-hand
+@samp{PinkieBtn} (the lower left shoulder button) as a modifier, and the ``Other
+statement type'' using @samp{PinkieBtn} and @samp{TopBtn2} (both left-hand
 shoulder buttons) as the modifiers.
 
 The same layout of statement buttons is used for outwardly similar, but
@@ -778,16 +830,16 @@ package; see @ref{Languide commands}.
 @comment  node-name,  next,  previous,  up
 @subsubsection Other insertions
 
-Pressing the bottom trigger button (@key{ThumbBtn2}, @key{3}) --- that
+Pressing the bottom trigger button (@samp{ThumbBtn2}, @samp{3}) --- that
 normally runs a ``find'' command --- to select an insertion type inserts
 the latest search string.
 
-@node  Languide commands, Other face button commands, Insertion types, Trigger group
+@node  Languide commands, Other face button commands, Insertion types, Face buttons
 @comment  node-name,  next,  previous,  up
 @subsection Languide commands
 
 Languide (Language-guided editing) commands may be accessed by pressing
-@key{Trigger} with @key{PinkieBtn} as a modifier.  A further button must
+@samp{Trigger} with @samp{PinkieBtn} as a modifier.  A further button must
 be pressed to select a Languide operation.  The button bindings are,
 wherever possible, generally similar to those for inserting
 statements. @ref{Inserting statements}.
@@ -807,10 +859,10 @@ statements. @ref{Inserting statements}.
 @comment  node-name,  next,  previous,  up
 @subsubsection Languide variable commands
 
-The @key{Trigger} button (@key{1}, the left button of the face buttons)
+The @samp{Trigger} button (@samp{1}, the left button of the face buttons)
 runs commands related to variables.
 
-With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+With @samp{PinkieBtn} (lower left shoulder button) as a modifier, it
 takes the current selection as the initialization expression for a local
 variable, creates the variable and its initialization, and puts the
 variable name in place of the original selection, leaving the variable
@@ -822,23 +874,23 @@ binding points for the variable, if Languide finds several.
 
 This operation is meant for when you want to re-use an expression.
 
-With @key{TopBtn2} (upper left shoulder button) as a modifier, it does
+With @samp{TopBtn2} (upper left shoulder button) as a modifier, it does
 this but with a global variable instead of a local one.
 
 @node  Languide conditional commands, Languide function commands, Languide variable commands, Languide commands
 @comment  node-name,  next,  previous,  up
 @subsubsection Languide conditional commands
 
-The @key{ThumbBtn} (@key{2}, the top button of the face buttons) does
+The @samp{ThumbBtn} (@samp{2}, the top button of the face buttons) does
 some operations connected with making code conditional.
 
-With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+With @samp{PinkieBtn} (lower left shoulder button) as a modifier, it
 makes the current selection conditional.  If it is possible to do this
 by adding a condition to an existing ``if'' statement, it does so,
 otherwise it wraps the selection in an ``if'' statement in the
 programming language of the current major mode.
 
-With @key{PinkieBtn} and @key{TopBtn2} (both left shoulder buttons) as
+With @samp{PinkieBtn} and @samp{TopBtn2} (both left shoulder buttons) as
 modifiers, it makes the current selection into the body of an
 ``if-then-else'' statement in the programming language of the current
 major mode.
@@ -847,7 +899,7 @@ major mode.
 @comment  node-name,  next,  previous,  up
 @subsubsection Languide function commands
 
-@key{ThumbBtn2}, the lower face button, runs commands relating to
+@samp{ThumbBtn2}, the lower face button, runs commands relating to
 functions and calls.
 
 By itself, it converts the current selection to a function, prompting
@@ -860,14 +912,14 @@ for a call to the function is left on the top of the kill ring, as this
 command is meant for when you want to re-use a block of code from
 somewhere else..
 
-With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+With @samp{PinkieBtn} (lower left shoulder button) as a modifier, it
 creates a function to suit the function call represented by the current
 selection.
 
-With @key{TopBtn2} (upper left shoulder button) as a modifier, it wraps
+With @samp{TopBtn2} (upper left shoulder button) as a modifier, it wraps
 the current selection with the syntax for a function call.
 
-With @key{PinkieBtn} and @key{TopBtn2} (both left shoulder buttons) as
+With @samp{PinkieBtn} and @samp{TopBtn2} (both left shoulder buttons) as
 modifiers, it removes the function call syntax surrounding the
 selection.
 
@@ -875,14 +927,14 @@ selection.
 @comment  node-name,  next,  previous,  up
 @subsubsection Languide iteration commands
 
-@key{TopBtn}, the right-most of the face buttons, runs commands relating
+@samp{TopBtn}, the right-most of the face buttons, runs commands relating
 to iteration.
 
-With @key{PinkieBtn} (lower left shoulder button) as a modifier, it
+With @samp{PinkieBtn} (lower left shoulder button) as a modifier, it
 wraps the current selection with a ``while'' loop in the programming
 language of the current major mode.
 
-With @key{PinkieBtn} and @key{TopBtn2} (both left shoulder buttons) as
+With @samp{PinkieBtn} and @samp{TopBtn2} (both left shoulder buttons) as
 modifiers, it wraps the current selection with a ``for'' loop in the
 programming language of the current major mode.
 
@@ -907,21 +959,21 @@ The hat switch ``right'' key comments out the current selection.
 @comment  node-name,  next,  previous,  up
 @subsubsection Other Languide commands
 
-@key{BaseBtn3} (the small button near the hat switch) shows a
+@samp{BaseBtn3} (the small button near the hat switch) shows a
 description of the current selection.
 
-@node  Other face button commands,  , Languide commands, Trigger group
+@node  Other face button commands,  , Languide commands, Face buttons
 @comment  node-name,  next,  previous,  up
 @subsection Other face button commands
 
-@node  Shoulder buttons, The slow/turbo buttons, Trigger group, The buttons
+@node  Shoulder buttons, The slow/turbo buttons, Face buttons, The buttons
 @comment  node-name,  next,  previous,  up
 @section The shoulder buttons
 
 The shoulder buttons are the buttons on the surface of the gamepad that
 normally faces away from you.
 
-@multitable {@key{Number}} {lower right} {Command description} {As modifier which might be longer}
+@multitable {@samp{Number}} {lower right} {Command description} {As modifier which might be longer}
 @item Number
 @tab Buttons
 @tab Command
@@ -1035,8 +1087,8 @@ or a left movement will add the previous statement.
 
 Once you have started to extend in one direction, going the other way
 will reduce the selection, rather than extend the other way.  For
-example, if you have started to extend forwards by pressing @key{left}
-on the hat switch, pressing @key{right} will retract the selection; and
+example, if you have started to extend forwards by pressing @samp{left}
+on the hat switch, pressing @samp{right} will retract the selection; and
 vice versa if you start the extension backwards.
 
 If you want to extend in both directions, you can use the up and down
@@ -1064,7 +1116,7 @@ modifier, pops up the text mode menu system.  The lower right button
 must be held down while navigating to the desired menu entry; releasing
 it performs the selected action.
 
-The hat switch navigates the menu, with the @key{Trigger} button
+The hat switch navigates the menu, with the @samp{Trigger} button
 (leftmost trigger button) or the upper right shoulder button to select
 at each stage, and releasing.the lower right shoulder button selects the
 eventual action.
@@ -1074,13 +1126,13 @@ eventual action.
 @subsection Extended commands
 
 The lower right shoulder button, with the upper right button as a
-modifier, runs @code{execute-extended-command}, that is, @key{M-x}.  The
+modifier, runs @code{execute-extended-command}, that is, @samp{M-x}.  The
 hat switch may then be used to move from character to character, and to
 bump characters up and down; whether they go to the next character, or
 the next one that makes sense in the completion context, depends on
-whether there is a completion context.  Again, @key{Trigger} executes
-the command; @key{ThumbBtn} (topmost trigger button) deletes a
-character, and @key{TopBtn} (rightmost trigger button) does completion.
+whether there is a completion context.  Again, @samp{Trigger} executes
+the command; @samp{ThumbBtn} (topmost trigger button) deletes a
+character, and @samp{TopBtn} (rightmost trigger button) does completion.
 
 @c todo: fix the code, and check the doc
 .
@@ -1105,7 +1157,7 @@ The short versions of button names (used as prefixes when the buttons
 are used as modifiers) are made by taking the first two characters in
 the original name, all uppercase letters, all lowercase letters
 immediately following an uppercase letter, and all digits.  Thus, for
-example, @key{BaseBtn2}, used as a modifier, appears as @key{BaBt2-}.
+example, @samp{BaseBtn2}, used as a modifier, appears as @samp{BaBt2-}.
 (This shortening algorithm provides a reasonable level of shortening
 without ambiguity and without special cases.)
 
@@ -1450,11 +1502,13 @@ every 4 ticks.
 @item shock
 @end itemize
 
-Make the joystick / keypad give the user a shock.  Not
-implemented, as there's no mention of this in the joystick
-driver documentation.  Also, this is just a joke entry from a
-James Bond film, but I wouldn't be surprised if someone really
-makes one sometime.
+Make the joystick / keypad give the user a shock.  Not implemented, as
+there's no mention of this in the joystick driver documentation.  Also,
+this is just a joke entry based on a villain's device in the James Bond
+film ``Never say never again'', but I wouldn't be surprised if someone
+really makes one sometime.  If you wanted to modify a standard device to
+do this, you could probably take the output that drives one of the
+rumble motors, and use that to switch the high-tension.
 
 @node  show-ticking, signed, shock, Driver commands
 @comment  node-name,  next,  previous,  up
