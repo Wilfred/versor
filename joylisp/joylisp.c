@@ -1,6 +1,6 @@
 /* Communicate between GNU Emacs and the Linux Joystick Interface.
 
-   Copyright (C) 2007, 2008 John C. G. Sturdy
+   Copyright (C) 2007, 2008, 2009, 2010 John C. G. Sturdy
 
    Based on jstest.c which is Copyright (C) 1996-1999 Vojtech Pavlik
    (Sponsored by SuSE) and released under GPL2.
@@ -12,7 +12,7 @@
    The Emacs Joystick Interface is free software; you can redistribute
    it and/or modify it under the terms of the GNU General Public
    License as published by the Free Software Foundation; either
-   version 2, or (at your option) any later version.
+   version 3, or (at your option) any later version.
 
    The Emacs Joystick Interface is distributed in the hope that it
    will be useful, but WITHOUT ANY WARRANTY; without even the implied
@@ -222,9 +222,9 @@
 
        Make the joystick / keypad give the user a shock.  Not
        implemented, as there's no mention of this in the joystick
-       driver documentation.  Also, this is just a joke entry from a
-       James Bond film, but I wouldn't be surprised if someone really
-       makes one sometime.
+       driver documentation.  Also, this is just a joke entry from the
+       James Bond film ``Never say never again'', but I wouldn't be
+       surprised if someone really makes one sometime.
 
      show-ticking [arg]
 
@@ -291,7 +291,7 @@
 
 #include "joylisp.h"
 
-static char *short_options = "a::d:e:n:p:vg:";
+static char *short_options = "a::d:e:n:p:vVhg:";
 
 static struct option long_options[] = {
 #ifdef DIAGRAM
@@ -302,6 +302,8 @@ static struct option long_options[] = {
   {"geometry", required_argument, 0, 'g'},
   {"event", required_argument, 0, 'e'},
   {"name", required_argument, 0, 'n'},
+  {"help", no_argument, 0, 'h'},
+  {"version", no_argument, 0, 'V'},
   {"verbose", no_argument, 0, 'v'},
   {0, 0, 0, 0}
 };
@@ -407,6 +409,19 @@ output(char *fmt, ...)
   output_buf[0] = '\0';
 }
 
+void
+await_acknowledgement()
+{
+  /* in some systems, lots of output gets buffered together.  We try
+     to simplify the reader by requiring each previous thing to be
+     read, before sending the next one. */
+#if 0
+  if ((command_length = read(0, command_reading, COMMAND_BUF_SIZE)) > 0) {
+    /* we don't have to do anything! */
+  }
+#endif
+}
+
 static unsigned int
 getstamptime()
 /* return milliseconds since midnight */
@@ -482,8 +497,600 @@ channel_index_from_axis_name(struct joystick *stick, char *name)
   return -1;
 }
 
+void
+output_renumbering(struct controller *controller)
+{
+  int all_buttons = 0, all_axes = 0;
+  int istick;
+
+  for (istick = 0;
+       istick < controller->n_sticks;
+       istick++) {
+    struct joystick *stick = controller->sticks[istick];
+    all_buttons += stick->nbuttons;
+    all_axes += stick->naxes;
+  }
+
+  output("(joystick-begin-control-renumbering %d %d %d)\n", controller->n_sticks, all_buttons, all_axes);
+
+  for (istick = 0;
+       istick < controller->n_sticks;
+       istick++) {
+    struct joystick *stick = controller->sticks[istick];
+    int ibutton;
+
+    for (ibutton = 0;
+	 ibutton < stick->nbuttons;
+	 ibutton++) {
+      output("(%sre-declare-button \"%s\" %d '%s%s \"%s\")\n",
+	     stick->name,
+	     stick->device,
+	     stick->button_event_base + ibutton,
+	     stick->prefix,
+	     Button_Name(stick, ibutton),
+	     stick->btn_abbrevs[ibutton]);
+      await_acknowledgement();
+    }
+
+  }
+  for (istick = 0;
+       istick < controller->n_sticks;
+       istick++) {
+    struct joystick *stick = controller->sticks[istick];
+    int  iaxis;
+
+    for (iaxis = 0;
+	 iaxis < stick->naxes;
+	 iaxis++) {
+      output("(%sre-declare-axis \"%s\" %d '%s%s)\n",
+	     stick->name,
+	     stick->device,
+	     stick->axis_event_base + iaxis,
+	     stick->prefix,
+	     Axis_Name(stick, iaxis));
+      await_acknowledgement();
+    }
+  }
+
+  output("(joystick-end-control-renumbering)\n");
+}
+
 static void
-process_command (struct controller *controller)
+command_quit(struct controller *controller, struct joystick *stick,
+	     int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	     int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type) 
+{
+  running = 0;
+}
+
+static void
+command_rumble(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type) 
+{
+  /* send a rumble command to game controllers that support it */
+  /* unfortunately, the Linux Joystick Driver doesn't
+     support it (yet); the person to ask would be Vojtech
+     Pavlik <vojtech@ucw.cz> */
+}
+
+static void
+command_shock(struct controller *controller, struct joystick *stick,
+	      int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	      int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* give the user an electric shock, like in that James
+     Bond film ;-) --- does that require an opto-isolated
+     joystick to avoid damaging the computing circuitry? PS
+     only joking, I don't know of any real joysticks that do
+     this -- alias it to rumble */
+}
+
+static void
+command_updown(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* send different events for the two directions of each
+     axis, with an unsigned number for the displacement from
+     center */
+  controller->timing = 0;
+  controller->up_down = 1;
+}
+
+static void
+command_signed(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* send the same event for both directions of the same
+     axis, with a signed number for the displacement from
+     center */
+  controller->timing = 0;
+  controller->up_down = 0;
+}
+
+static void
+command_timing(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* send different events for the two directions of each
+     axis, without any numbers, but repeating at an interval
+     set from the displacement from center */
+  controller->timing = 1;
+}
+
+static void
+command_show_ticking(struct controller *controller, struct joystick *stick,
+		     int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		     int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  if (has_numeric_arg) {
+    show_ticking = numeric_arg;
+  } else {
+    show_ticking = 1;
+  }
+}
+
+static void
+command_symbolic_mods(struct controller *controller, struct joystick *stick,
+		      int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		      int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* send modifiers using abbreviated names */
+  controller->symbolic_modifiers = 1;
+}
+
+static void
+command_numeric_mods(struct controller *controller, struct joystick *stick,
+		     int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		     int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* send combined modifiers as octal number */
+  controller->symbolic_modifiers = 0;
+}
+
+static void
+command_acceleration(struct controller *controller, struct joystick *stick,
+		     int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		     int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  int i;
+  /* set or show the acceleration, either overall or specifically */
+  if (has_name_arg) {
+    if (has_numeric_arg) {
+      if ((channel_type == JS_EVENT_AXIS) &&
+	  (channel_index >= 0) &&
+	  (channel_index < stick->naxes)) {
+	/* todo: handle multiple sticks */
+	stick->axes[channel_index]->acceleration = float_arg;
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      output("(axis-acceleration \"%s\" %lf)\n",
+	     Axis_Name(stick, channel_index),
+	     stick->axes[channel_index]->acceleration);
+    }
+  } else {
+    if (has_numeric_arg) {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	if ((i < HAT_MIN) || (i > HAT_MAX)) {
+	  stick->axes[i]->acceleration = float_arg;
+	}
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	output("(axis-acceleration \"%s\" %lf)\n",
+	       Axis_Name(stick, i),
+	       stick->axes[i]->acceleration);
+      }
+    }
+  }
+}
+
+static void
+command_max_sensitivities(struct controller *controller, struct joystick *stick,
+			  int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+			  int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  int i;
+  /* set or show the max_sensitivities, either overall or specifically */
+  if (has_name_arg) {
+    if (has_numeric_arg) {
+      if ((channel_type == JS_EVENT_AXIS) &&
+	  (channel_index >= 0) &&
+	  (channel_index < stick->naxes)) {
+	/* todo: handle multiple sticks */
+	stick->axes[channel_index]->max_sensitivity = float_arg;
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      output("(axis-max-speed \"%s\" %lf)\n",
+	     Axis_Name(stick, channel_index),
+	     stick->axes[channel_index]->max_sensitivity);
+    }
+  } else {
+    if (has_numeric_arg) {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	if ((i < HAT_MIN) || (i > HAT_MAX)) {
+	  stick->axes[i]->max_sensitivity = float_arg;
+	}
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	output("(axis-max-speed \"%s\" %lf)\n",
+	       Axis_Name(stick, i),
+	       stick->axes[i]->max_sensitivity);
+      }
+    }
+  }
+}
+
+#ifdef OCTANTS
+static void
+command_octants(struct controller *controller, struct joystick *stick,
+		int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  char *p = command_parsing;
+  /* skip command */
+  while ((*p != ' ') && (*p != '\0')) {
+    p++;
+  }
+  if (*p == ' ') {
+    char *q = name_arg;
+    p++;
+    while ((*p != ' ') && (*p != '\0')) {
+      *q++ = *p++;
+    }
+    *q++ = '\0';
+    p++;
+    if (strcmp(name_arg, "off") == 0) {
+      octants = 0;
+    } else if (strcmp(name_arg, "on") == 0) {
+      if (stick->n_defined_octants > 0) {
+	octants = 1;
+	/* reset these just in case */
+	stick->octants_off_centre = 0;
+	for (i = 0; i < stick->naxes; i++) {
+	  stick->octant_accumulators[i] = 0;
+	}
+      } else {
+	output("(error \"No octants set up\")\n");
+      }
+    } else {
+      if (stick->n_defined_octants > stick->naxes) {
+	output("(error \"Trying to define too many octant channels\")\n");
+      } else {
+	int last = 0;
+	int done = 0;
+	while (! done) {
+	  int channel_index = channel_index_from_axis_name(stick, name_arg);
+	  if (channel_index != -1) {
+	    stick->defined_octants[stick->n_defined_octants] = channel_index;
+	    stick->octant_coding_positions[channel_index] = stick->n_defined_octants;
+	    stick->octant_accumulators[channel_index] = 0;
+	    stick->n_defined_octants++;
+	    octants = 1;	/* implicitly enable them */
+	  } else {
+	    output("(error \"%s cannot be an octant channel\")\n", name_arg);
+	  }
+	  q = name_arg;
+	  while ((*p != ' ') && (*p != '\0')) {
+	    *q++ = *p++;
+	  }
+	  if (last) {
+	    done = 1;
+	  } else {
+	    if (*p == '\0') {
+	      last = 1;
+	    }
+	    *q++ = '\0';
+	    p++;
+	  }
+	}
+      }
+    }
+  } else {
+    /* todo: output octant status */
+    for (i = 0; i < stick->n_defined_octants; i++) {
+      output("(octant %d %s)\n",
+	     i, Axis_Name(stick, stick->defined_octants[i]));
+    }
+  }
+}
+#endif
+
+static void
+command_calibrating(struct controller *controller, struct joystick *stick,
+		    int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		    int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* send the absolute position before each stick action */
+  if (cmd_n_parts == 2) {
+    controller->calibrating = numeric_arg;
+  } else {
+    controller->calibrating = 1;
+  }
+}
+
+static void
+command_stamped(struct controller *controller, struct joystick *stick,
+		int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* send a timestamp before each action */
+  if (cmd_n_parts == 2) {
+    controller->timestamped = numeric_arg;
+  } else {
+    controller->timestamped = 1;
+  }
+}
+
+static void
+command_tickrate(struct controller *controller, struct joystick *stick,
+		 int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		 int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  /* set the tick rate */
+  double tick_time = 1.0 / float_arg;
+  if (has_numeric_arg) {
+    tick_secs = (int)(floor(tick_time));
+    tick_usecs = (int)(((tick_time - (double)tick_secs)) * 1000000.0);
+  } else {
+    output("(joystick-current-tick-rate \"%s\" %lf)\n",
+	   stick->device,
+	   1.0 / (((double)tick_secs) + (((double)tick_usecs) / 1000000.0)));
+  }
+}
+
+static void
+command_sensitivity(struct controller *controller, struct joystick *stick,
+		    int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		    int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  int i;
+  /* set or show the sensitivity, either overall or specifically */
+  if (has_name_arg) {
+    if (has_numeric_arg) {
+      if ((channel_type == JS_EVENT_AXIS) &&
+	  (channel_index >= 0) &&
+	  (channel_index < stick->naxes)) {
+	/* todo: handle multiple sticks */
+	stick->axes[channel_index]->base_sensitivity =
+	  stick->axes[channel_index]->sensitivity = float_arg;
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      output("(axis-sensitivity \"%s\" %lf)\n",
+	     Axis_Name(stick, channel_index),
+	     stick->axes[channel_index]->sensitivity);
+    }
+  } else {
+    if (has_numeric_arg) {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	if ((i < HAT_MIN) || (i > HAT_MAX)) {
+	  stick->axes[i]->base_sensitivity =
+	    stick->axes[i]->sensitivity = float_arg;
+	}
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	output("(axis-sensitivity \"%s\" %lf)\n",
+	       Axis_Name(stick, i),
+	       stick->axes[i]->sensitivity);
+      }
+    }
+  }
+}
+
+static void
+command_threshold(struct controller *controller, struct joystick *stick,
+		  int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		  int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  int i;
+  /* set or show the threshold, either overall or specifically */
+  if (has_name_arg) {
+    if (has_numeric_arg) {
+      if ((channel_type == JS_EVENT_AXIS) &&
+	  (channel_index >= 0) &&
+	  (channel_index < stick->naxes)) {
+	/* todo: handle multiple sticks */
+	stick->axes[channel_index]->threshold = float_arg;
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      output("(axis-threshold \"%s\" %lf)\n",
+	     Axis_Name(stick, channel_index),
+	     stick->axes[channel_index]->threshold);
+    }
+  } else {
+    if (has_numeric_arg) {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	if ((i < HAT_MIN) || (i > HAT_MAX)) {
+	  stick->axes[i]->threshold = float_arg;
+	}
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      for (i = 0; i < stick->naxes; i++) {
+	output("(axis-threshold \"%s\" %lf)\n",
+	       Axis_Name(stick, i),
+	       stick->axes[i]->threshold);
+      }
+    }
+  }
+}
+
+static void
+command_hatspeed(struct controller *controller, struct joystick *stick,
+		 int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		 int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  int i;
+  /* set or show the hat speed, either overall or specifically */
+  if (has_name_arg) {
+    if (has_numeric_arg) {
+      if ((channel_type == JS_EVENT_AXIS) &&
+	  (channel_index >= 0) &&
+	  (channel_index < stick->naxes) &&
+	  (channel >= HAT_MIN) &&
+	  (channel <= HAT_MAX))
+	/* todo: handle multiple sticks */
+	stick->axes[channel_index]->base_sensitivity =
+	  stick->axes[channel_index]->sensitivity = float_arg;
+    } else {
+      /* todo: handle multiple sticks */
+      output("(hatspeed \"%s\" %lf)\n",
+	     Axis_Name(stick, channel_index),
+	     stick->axes[channel_index]->sensitivity);
+    }
+  } else {
+    if (has_numeric_arg) {
+      /* todo: handle multiple sticks */
+      for (i = 0; i <= stick->naxes; i++) {
+	int j = stick->axmap[i];
+
+	if ((j >= HAT_MIN) && (j <= HAT_MAX)) {
+	  stick->axes[i]->base_sensitivity =
+	    stick->axes[i]->sensitivity = float_arg;
+	}
+      }
+    } else {
+      /* todo: handle multiple sticks */
+      for (i = 0; i <= stick->naxes; i++) {
+	int j = stick->axmap[i];
+
+	if ((j >= HAT_MIN) && (j <= HAT_MAX)) {
+	  output("(hatspeed \"%s\" %lf)\n",
+		 Axis_Name(stick, i),
+		 stick->axes[i]->sensitivity);
+	}
+      }
+    }
+  }
+}
+
+static void
+command_acknowledge(struct controller *controller, struct joystick *stick,
+		    int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		    int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  if (cmd_n_parts == 2) {
+    acknowledge = numeric_arg;
+  } else {
+    acknowledge = 1;
+  }
+}
+
+static void
+command_renumbering(struct controller *controller, struct joystick *stick,
+		    int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+		    int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  output_renumbering(controller);
+}
+
+static void
+command_report(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  int i;
+  /* todo: handle multiple sticks */
+  for (i = 0; i < stick->naxes; i++) {
+    output("(axis-position \"%s\" %lf)\n", Axis_Name(stick, i), stick->axes[i]->proportion);
+  }
+  output("(axis-positions-done)\n");
+}
+
+static void
+command_keymap(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+#ifdef DIAGRAM
+  set_keymap(name_arg);
+#endif
+}
+
+#ifdef DIAGRAM
+static void
+command_labels(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  parse_labels(stick, command_parsing);
+}
+#endif
+
+static void
+command_help(struct controller *controller, struct joystick *stick,
+	     int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	     int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type);
+
+typedef struct {
+  char *name;
+  void (*cmd_fn)(struct controller *, struct joystick *,
+		 int, char *, int, int, double,
+		 int, char *, int, int, int);
+} command_descr;
+
+static command_descr commands[24] = {
+  {"quit", command_quit},
+  {"rumble", command_rumble},
+  {"shock", command_shock},
+  {"updown", command_updown},
+  {"signed", command_signed},
+  {"timing", command_timing},
+  {"show-ticking", command_show_ticking},
+  {"symbolic-mods", command_symbolic_mods},
+  {"numeric-mods", command_numeric_mods},
+  {"acceleration", command_acceleration},
+  {"max_sensitivities", command_max_sensitivities},
+#ifdef OCTANTS
+  {"octants", command_octants},
+#endif
+  {"calibrating", command_calibrating},
+  {"stamped", command_stamped},
+  {"tickrate", command_tickrate},
+  {"sensitivity", command_sensitivity},
+  {"threshold", command_threshold},
+  {"hatspeed", command_hatspeed},
+  {"acknowledge", command_acknowledge},
+  {"renumbering", command_renumbering},
+  {"report", command_report},
+  {"keymap", command_keymap},
+#ifdef DIAGRAM
+  {"labels", command_labels},
+#endif
+  {"help", command_help},
+  {NULL, NULL}
+};
+
+static void
+command_help(struct controller *controller, struct joystick *stick,
+	     int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
+	     int has_name_arg, char *name_arg, int channel, int channel_index, int channel_type)
+{
+  command_descr *possible = &commands[0];
+  while (possible->name != NULL) {
+    output("(declare-command \"%s\")\n", possible->name);
+    possible++;
+  }
+}
+
+static void
+process_command(struct controller *controller)
 {
   struct joystick *stick = controller->sticks[0];
 
@@ -500,7 +1107,8 @@ process_command (struct controller *controller)
   int channel_type = -1;
   char *command_parsing;
   char *command_end;
-  int i;
+  command_descr *possible = &commands[0];
+  int done = 0;
 
   command_reading[command_length] = '\0';
   command_reading += command_length;
@@ -549,285 +1157,29 @@ process_command (struct controller *controller)
 	     stick->name,
 	     stick->device,
 	     command_parsing);
+      if (0) {
+	output("(message \"has_numeric_arg=%d numeric_arg=%lf has_name_arg=%d channel=%d type=%d\")\n",
+	       has_numeric_arg, numeric_arg,
+	       has_name_arg, channel, channel_type);
+      }
     }
 
-    if (strcmp(command_name, "quit") == 0) {
-      running = 0;
-    } else if (strcmp(command_name, "rumble") == 0) {
-      /* send a rumble command to game controllers that support it */
-      /* unfortunately, the Linux Joystick Driver doesn't
-	 support it (yet); the person to ask would be Vojtech
-	 Pavlik <vojtech@ucw.cz> */
-    } else if (strcmp(command_name, "shock") == 0) {
-      /* give the user an electric shock, like in that James
-	 Bond film ;-) --- does that require an opto-isolated
-	 joystick to avoid damaging the computing circuitry? PS
-	 only joking, I don't know of any real joysticks that do
-	 this -- alias it to rumble */
-    } else if (strcmp(command_name, "updown") == 0) {
-      /* send different events for the two directions of each
-	 axis, with an unsigned number for the displacement from
-	 center */
-      controller->timing = 0;
-      controller->up_down = 1;
-    } else if (strcmp(command_name, "signed") == 0) {
-      /* send the same event for both directions of the same
-	 axis, with a signed number for the displacement from
-	 center */
-      controller->timing = 0;
-      controller->up_down = 0;
-    } else if (strcmp(command_name, "timing") == 0) {
-      /* send different events for the two directions of each
-	 axis, without any numbers, but repeating at an interval
-	 set from the displacement from center */
-      controller->timing = 1;
-    } else if (strcmp(command_name, "show-ticking") == 0) {
-      if (has_numeric_arg) {
-	show_ticking = numeric_arg;
-      } else {
-	show_ticking = 1;
+    while (possible->name != NULL) {
+      if (strcmp(command_name, possible->name) == 0) {
+	(possible->cmd_fn)(controller, stick,
+			   cmd_n_parts, command_parsing,
+			   has_numeric_arg, numeric_arg, float_arg,
+			   has_name_arg, name_arg, channel,
+			   channel_index, channel_type);
+	done = 1;
+	break;
       }
-    } else if (strcmp(command_name, "symbolic-mods") == 0) {
-      /* send modifiers using abbreviated names */
-      controller->symbolic_modifiers = 1;
-    } else if (strcmp(command_name, "numeric-mods") == 0) {
-      /* send combined modifiers as octal number */
-      controller->symbolic_modifiers = 0;
-    }  else if (strcmp(command_name, "acceleration") == 0) {
-      /* set or show the acceleration, either overall or specifically */
-      if (has_name_arg) {
-	if (has_numeric_arg) {
-	  if ((channel_type == JS_EVENT_AXIS) &&
-	      (channel_index >= 0) &&
-	      (channel_index < stick->naxes)) {
-	    stick->axes[channel_index]->acceleration = float_arg;
-	  }
-	} else {
-	  output("(axis-acceleration \"%s\" %lf)\n",
-		 Axis_Name(stick, channel_index),
-		 stick->axes[channel_index]->acceleration);
-	}
-      } else {
-	if (has_numeric_arg) {
-	  for (i = 0; i < stick->naxes; i++) {
-	    if ((i < HAT_MIN) || (i > HAT_MAX)) {
-	      stick->axes[i]->acceleration = float_arg;
-	    }
-	  }
-	} else {
-	  for (i = 0; i < stick->naxes; i++) {
-	    output("(axis-acceleration \"%s\" %lf)\n",
-		   Axis_Name(stick, i),
-		   stick->axes[i]->acceleration);
-	  }
-	}
-      }
-    } else if (strcmp(command_name, "max_sensitivities") == 0) {
-      /* set or show the max_sensitivities, either overall or specifically */
-      if (has_name_arg) {
-	if (has_numeric_arg) {
-	  if ((channel_type == JS_EVENT_AXIS) &&
-	      (channel_index >= 0) &&
-	      (channel_index < stick->naxes)) {
-	    stick->axes[channel_index]->max_sensitivity = float_arg;
-	  }
-	} else {
-	  output("(axis-max-speed \"%s\" %lf)\n",
-		 Axis_Name(stick, channel_index),
-		 stick->axes[channel_index]->max_sensitivity);
-	}
-      } else {
-	if (has_numeric_arg) {
-	  for (i = 0; i < stick->naxes; i++) {
-	    if ((i < HAT_MIN) || (i > HAT_MAX)) {
-	      stick->axes[i]->max_sensitivity = float_arg;
-	    }
-	  }
-	} else {
-	  for (i = 0; i < stick->naxes; i++) {
-	    output("(axis-max-speed \"%s\" %lf)\n",
-		   Axis_Name(stick, i),
-		   stick->axes[i]->max_sensitivity);
-	  }
-	}
-      }
-#ifdef OCTANTS
-    } else if (strcmp(command_name, "octants") == 0) {
-      char *p = command_parsing;
-      /* skip command */
-      while ((*p != ' ') && (*p != '\0')) {
-	p++;
-      }
-      if (*p == ' ') {
-	char *q = name_arg;
-	p++;
-	while ((*p != ' ') && (*p != '\0')) {
-	  *q++ = *p++;
-	}
-	*q++ = '\0';
-	p++;
-	if (strcmp(name_arg, "off") == 0) {
-	  octants = 0;
-	} else if (strcmp(name_arg, "on") == 0) {
-	  if (stick->n_defined_octants > 0) {
-	    octants = 1;
-	    /* reset these just in case */
-	    stick->octants_off_centre = 0;
-	    for (i = 0; i < stick->naxes; i++) {
-	      stick->octant_accumulators[i] = 0;
-	    }
-	  } else {
-	    output("(error \"No octants set up\")\n");
-	  }
-	} else {
-	  if (stick->n_defined_octants > stick->naxes) {
-	    output("(error \"Trying to define too many octant channels\")\n");
-	  } else {
-	    int last = 0;
-	    int done = 0;
-	    while (! done) {
-	      int channel_index = channel_index_from_axis_name(stick, name_arg);
-	      if (channel_index != -1) {
-		stick->defined_octants[stick->n_defined_octants] = channel_index;
-		stick->octant_coding_positions[channel_index] = stick->n_defined_octants;
-		stick->octant_accumulators[channel_index] = 0;
-		stick->n_defined_octants++;
-		octants = 1;	/* implicitly enable them */
-	      } else {
-		output("(error \"%s cannot be an octant channel\")\n", name_arg);
-	      }
-	      q = name_arg;
-	      while ((*p != ' ') && (*p != '\0')) {
-		*q++ = *p++;
-	      }
-	      if (last) {
-		done = 1;
-	      } else {
-		if (*p == '\0') {
-		  last = 1;
-		}
-		*q++ = '\0';
-		p++;
-	      }
-	    }
-	  }
-	}
-      } else {
-	/* todo: output octant status */
-	for (i = 0; i < stick->n_defined_octants; i++) {
-	  output("(octant %d %s)\n",
-		 i, Axis_Name(stick, stick->defined_octants[i]));
-	}
-      }
-#endif
-    } else if (strcmp(command_name, "stamped") == 0) {
-      /* send a timestamp before each action */
-      if (cmd_n_parts == 2) {
-	controller->timestamped = numeric_arg;
-      } else {
-	controller->timestamped = 1;
-      }
-    } else if (strcmp(command_name, "tickrate") == 0) {
-      /* set the tick rate */
-      double tick_time = 1.0 / float_arg;
-      if (has_numeric_arg) {
-	tick_secs = (int)(floor(tick_time));
-	tick_usecs = (int)(((tick_time - (double)tick_secs)) * 1000000.0);
-      } else {
-	output("(joystick-current-tick-rate \"%s\" %lf)\n",
-	       stick->device,
-	       1.0 / (((double)tick_secs) + (((double)tick_usecs) / 1000000.0)));
-      }
-    } else if (strcmp(command_name, "sensitivity") == 0) {
-      /* set or show the sensitivity, either overall or specifically */
-      if (has_name_arg) {
-	if (has_numeric_arg) {
-	  if ((channel_type == JS_EVENT_AXIS) &&
-	      (channel_index >= 0) &&
-	      (channel_index < stick->naxes)) {
-	    stick->axes[channel_index]->base_sensitivity =
-	      stick->axes[channel_index]->sensitivity = float_arg;
-	  }
-	} else {
-	  output("(axis-sensitivity \"%s\" %lf)\n",
-		 Axis_Name(stick, channel_index),
-		 stick->axes[channel_index]->sensitivity);
-	}
-      } else {
-	if (has_numeric_arg) {
-	  for (i = 0; i < stick->naxes; i++) {
-	    if ((i < HAT_MIN) || (i > HAT_MAX)) {
-	      stick->axes[i]->base_sensitivity =
-		stick->axes[i]->sensitivity = float_arg;
-	    }
-	  }
-	} else {
-	  for (i = 0; i < stick->naxes; i++) {
-	    output("(axis-sensitivity \"%s\" %lf)\n",
-		   Axis_Name(stick, i),
-		   stick->axes[i]->sensitivity);
-	  }
-	}
-      }
-    } else if (strcmp(command_name, "hatspeed") == 0) {
-      /* set or show the hat speed, either overall or specifically */
-      if (has_name_arg) {
-	if (has_numeric_arg) {
-	  if ((channel_type == JS_EVENT_AXIS) &&
-	      (channel_index >= 0) &&
-	      (channel_index < stick->naxes) &&
-	      (channel >= HAT_MIN) &&
-	      (channel <= HAT_MAX))
-
-	    stick->axes[channel_index]->base_sensitivity =
-	      stick->axes[channel_index]->sensitivity = float_arg;
-	} else {
-	  output("(hatspeed \"%s\" %lf)\n",
-		 Axis_Name(stick, channel_index),
-		 stick->axes[channel_index]->sensitivity);
-	}
-      } else {
-	if (has_numeric_arg) {
-	  for (i = 0; i <= stick->naxes; i++) {
-	    int j = stick->axmap[i];
-
-	    if ((j >= HAT_MIN) && (j <= HAT_MAX)) {
-	    stick->axes[i]->base_sensitivity =
-	      stick->axes[i]->sensitivity = float_arg;
-	    }
-	  }
-	} else {
-	  for (i = 0; i <= stick->naxes; i++) {
-	    int j = stick->axmap[i];
-
-	    if ((j >= HAT_MIN) && (j <= HAT_MAX)) {
-	      output("(hatspeed \"%s\" %lf)\n",
-		     Axis_Name(stick, i),
-		     stick->axes[i]->sensitivity);
-	    }
-	  }
-	}
-      }
-    } else if (strcmp(command_name, "acknowledge") == 0) {
-      if (cmd_n_parts == 2) {
-	acknowledge = numeric_arg;
-      } else {
-	acknowledge = 1;
-      }
-    } else if (strcmp(command_name, "keymap") == 0) {
-#ifdef DIAGRAM
-      set_keymap(name_arg);
-#endif
+      possible++;
     }
-#ifdef DIAGRAM
-    else if (strcmp(command_name, "labels") == 0) {
-      parse_labels(stick, command_parsing);
-    }
-#endif
-    else {
+    
+    if (!done) {
       output("(%sbad-command \"%s\")\n", stick->event_name, command_parsing);
     }
-
     command_parsing = command_end+1;
   }
   command_reading = command_buf;
@@ -861,9 +1213,10 @@ do_ticking (struct controller *controller)
 	  unsigned int stamptime = getstamptime();
 	  output("(%stimestamp %d)\n", stick->event_name, stamptime);
 	}
-	output("(%s%s%s%s)\n",
+	output("(%s%s%s%s%s)\n",
 	       stick->event_name,
 	       modifiers_buf,
+	       stick->prefix,
 	       Axis_Name(stick, i),
 	       axis->action);
 	controller->used_modifiers |= controller->buttons_down;
@@ -894,7 +1247,7 @@ get_joystick_config(struct joystick *stick)
   int i;
 
   stick->version = 0x000800; /* inherited from old code, maybe remove? */
-  strcpy(stick->brand_name, "Unknown");
+  memset(stick->brand_name, '\0', NAME_LENGTH);
 
   stick->buttons_to_init = stick->axes_to_init = 0;
 
@@ -909,6 +1262,10 @@ get_joystick_config(struct joystick *stick)
   ioctl(fd, JSIOCGNAME(NAME_LENGTH), &stick->brand_name);
   ioctl(fd, JSIOCGAXMAP, &stick->axmap);
   ioctl(fd, JSIOCGBTNMAP, &stick->btnmap);
+
+  if (stick->brand_name[0] == '\0') {
+    strcpy(stick->brand_name, "Unknown");
+  }
 
   output("(%sbegin-init \"%s\")\n",
 	 stick->name,
@@ -977,6 +1334,7 @@ get_joystick_config(struct joystick *stick)
     }
     /* set the max (after acceleration): */
     axis->max_sensitivity = 1.0;
+    axis->threshold = 0.0;
     axis->action = "-idle";
 #ifdef OCTANTS
     axis->octant_coding_positions = -1;
@@ -1101,22 +1459,44 @@ js_do_axis_event(struct controller *controller,
   int value = event->value;
   unsigned int which_axis = event->number;
   struct joystick *stick = controller->sticks[which_stick];
+  struct axis *axis = stick->axes[which_axis];
+
+  if (controller->calibrating) {
+    	output("(js-pos '%s%s%s %d)\n",
+	       stick->event_name,
+	       stick->prefix,
+	       Axis_Name(stick, which_axis),
+	       value);
+  }
 
   if (controller->up_down && !controller->octants) {
     if (value == 0) {
-      stick->axes[which_axis]->direction = 0;
+      axis->direction = 0;
       action = "-center";
       has_value = 0;
     } else if (value < 0) {
-      stick->axes[which_axis]->direction = -1;
+      axis->direction = -1;
       action = "-previous";
       value = -value;
     } else {
-      stick->axes[which_axis]->direction = 1;
+      axis->direction = 1;
       action = "-next";
     }
   } else {
     action = "";
+  }
+
+#if 1
+  /* Hack this out for now: todo: proper fix */
+  if (!IS_HAT(stick, which_axis)) {
+  return;
+  }
+#endif
+
+  if ((value == 32767) && !IS_HAT(stick, which_axis)) {
+    /* todo: should I always do this? I'm doing it because the stick
+       is sometimes issuing that value spuriously. */
+    return;
   }
 
 #ifdef OCTANTS
@@ -1153,11 +1533,20 @@ js_do_axis_event(struct controller *controller,
   } else
 #endif
     if (controller->timing) {
+      double threshold = axis->threshold;
+
       if (value < 0) {
 	value = -value;
       }
-      stick->axes[which_axis]->proportion = (((double)value)
-					/ STICK_MAX_DISPLACEMENT);
+
+      axis->proportion = (((double)value)
+			  / STICK_MAX_DISPLACEMENT);
+
+      if (threshold != 0.0) {
+	if (axis->proportion < threshold) {
+	  axis->proportion = 0.0;
+	}
+      }
       /* If using timing, don't issue an event immediately, but
 	 wait for the countdown mechanism to do it, unless it is
 	 starting from centered or has just gone back to
@@ -1165,7 +1554,7 @@ js_do_axis_event(struct controller *controller,
 	 the value changes, which can be very often, and makes
 	 the joystick speed up whenever you move it. */
       if ((value == 0.0)
-	  || (stick->axes[which_axis]->countdown == 0.0)
+	  || (axis->countdown == 0.0)
 	  ) {
 	output("(%s%s%s%s%s)\n",
 	       stick->event_name,
@@ -1175,14 +1564,14 @@ js_do_axis_event(struct controller *controller,
 	       action);
       }
       if (value == 0) {
-	stick->axes[which_axis]->countdown = 0.0;
+	axis->countdown = 0.0;
 	/* reset from any acceleration it has done */
-	stick->axes[which_axis]->sensitivity = stick->axes[which_axis]->base_sensitivity;
+	axis->sensitivity = axis->base_sensitivity;
       } else {
 	/* give it something to count down from: */
-	stick->axes[which_axis]->countdown = 1.0;
+	axis->countdown = 1.0;
       }
-      stick->axes[which_axis]->action = action;
+      axis->action = action;
     } else {
       if (has_value) {
 	output("(%s%s%s%s%s %d)\n",
@@ -1251,6 +1640,15 @@ check_init_complete(struct controller *controller, int which_stick)
       int highest_axis = 0;
       int latest_global_abbrev = 0;
 
+      for (istick = 0;
+	   istick < controller->n_sticks;
+	   istick++) {
+	struct joystick *stick = controller->sticks[istick];
+
+	stick->button_event_base = highest_button;
+	highest_button += stick->nbuttons;
+      }
+
       if (controller->btn_abbrevs != NULL) {
 	free(controller->btn_abbrevs);
       }
@@ -1262,26 +1660,59 @@ check_init_complete(struct controller *controller, int which_stick)
 	struct joystick *stick = controller->sticks[istick];
 	int ibutton;
 
-	stick->button_event_base = highest_button;
-	highest_button += stick->nbuttons;
-
 	for (ibutton = 0;
 	     ibutton < stick->nbuttons;
 	     ibutton++) {
-	  controller->btn_abbrevs[latest_global_abbrev++] = stick->btn_abbrevs[ibutton];
+	  controller->btn_abbrevs[latest_global_abbrev++]
+	    = stick->btn_abbrevs[ibutton];
 	}
 
 	stick->axis_event_base = highest_axis;
 	highest_axis += stick->naxes;
-	/* output("(reconfiguring %d %d)\n", istick, stick->button_event_base); */
       }
+      
       output("(all-sticks-initialized)\n");
     }
   }
 }
 
+void
+joylisp_help_text()
+{
+#ifdef DIAGRAM
+  printf("Usage: xjoylisp [options] [devices]\n");
+#else
+  printf("Usage: joylisp [options] [devices]\n");
+#endif
+  printf("Output Lisp-style s-expressions representing joystick/gamepad events.\n");
+#ifdef DIAGRAM
+  printf("A simple diagram of a gamepad is also displayed, and the buttons light\n");
+  printf("up as they are pressed\n");
+#endif
+  printf("\n");
+#ifdef DIAGRAM
+  printf("  -a, --autoraise              Raise joystick diagram on held button\n");
+#endif
+  printf("  -d, --device <devicefile>    Use <devicefile>, with latest prefix etc\n");
+  printf("  -p, --prefix <prefixstring>  Use <prefixstring> as button/axis prefix\n");
+  printf("                               for following devices\n");
+#ifdef DIAGRAM
+  printf("  -g, --geometry <xgeom>       Use the specified X geometry for the diagram\n");
+#endif
+  printf("  -e, --event <eventname>      Use <eventname> for following devices\n");
+  printf("  -n, --name <name>            Use <name> for following devices\n");
+  printf("  -h, --help                   Output this text\n");
+  printf("  -V, --version                Display the version of this program\n");
+  printf("  -v, --verbose                Enable acknowledgement\n\n");
+#ifdef DIAGRAM
+  printf("Use joylisp instead of xjoylisp if you don't want the diagram display.\n");
+#else
+  printf("Use xjoylisp instead of joylisp if you want a diagram display.\n");
+#endif
+}
+
 int
-main (int argc, char **argv)
+main(int argc, char **argv)
 {
   int which_stick;
   int fd_max = 0;
@@ -1299,7 +1730,7 @@ main (int argc, char **argv)
   struct timeval tv;
   fd_set set;
 
-  char *device_name = "/dev/js0";
+  char *device_name = "/dev/input/js0";
   char *event_name =  "jse '";
   char *name = "joystick-";
   char *prefix = "";
@@ -1309,6 +1740,7 @@ main (int argc, char **argv)
   the_controller.timestamped = 0;
   the_controller.timing = 1;
   the_controller.octants = 0;
+  the_controller.calibrating = 0;
   the_controller.up_down = 1;
   the_controller.buttons_down = 0;
   the_controller.used_modifiers = 0;
@@ -1364,6 +1796,10 @@ main (int argc, char **argv)
       js_geometry(optarg);
       break;
 #endif
+    case 'h':
+      joylisp_help_text();
+      exit(0);
+      break;			/* might as well */
     case 'n':			/* name */
       name = optarg;
       if (strlen(name) > 512) {
@@ -1378,6 +1814,10 @@ main (int argc, char **argv)
     case 'v':			/* verbose */
       acknowledge = 1;
       break;
+    case 'V':
+      printf("Joylisp version %s\n", joylisp_version);
+      exit(0);
+      break;			/* might as well */
     }
   }
 
@@ -1443,10 +1883,6 @@ main (int argc, char **argv)
     diagram_top_of_loop(&the_controller);
 #endif
 
-    /* todo: allow multiple joysticks in one process, so people can
-       construct monstrous multiple-joysticks (e.g. a gamepad with
-       parts of another gamepad on its underside to provide extra
-       buttons) */
     selected = select(fd_max+1, &set, NULL, NULL, &tv);
 
     switch (selected) {
@@ -1502,13 +1938,15 @@ main (int argc, char **argv)
 	    break;
 
 	  case JS_EVENT_INIT | JS_EVENT_BUTTON:
-	    output("(%sdeclare-button \"%s\" %d '%s \"%s\")\n",
+	    output("(%sdeclare-button \"%s\" %d '%s%s \"%s\")\n",
 		   the_controller.sticks[which_stick]->name,
 		   the_controller.sticks[which_stick]->device,
 		   js.number,
-		   /* todo: add stick prefix here */
+		   the_controller.sticks[which_stick]->prefix,
 		   Button_Name(the_controller.sticks[which_stick], js.number),
 		   the_controller.sticks[which_stick]->btn_abbrevs[js.number]);
+
+	    await_acknowledgement();
 
 	    the_controller.sticks[which_stick]->buttons_to_init--;
 
@@ -1517,12 +1955,14 @@ main (int argc, char **argv)
 	    break;
 
 	  case JS_EVENT_INIT | JS_EVENT_AXIS:
-	    output("(%sdeclare-axis \"%s\" %d '%s)\n",
+	    output("(%sdeclare-axis \"%s\" %d '%s%s)\n",
 		   the_controller.sticks[which_stick]->name,
 		   the_controller.sticks[which_stick]->device,
 		   js.number,
-		   /* todo: add stick prefix here */
+		   the_controller.sticks[which_stick]->prefix,
 		   Axis_Name(the_controller.sticks[which_stick], js.number));
+
+	    await_acknowledgement();
 
 	    the_controller.sticks[which_stick]->axes_to_init--;
 
