@@ -274,6 +274,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -1013,6 +1014,42 @@ command_report(struct controller *controller, struct joystick *stick,
   output("(axis-positions-done)\n");
 }
 
+static void run_command_line(struct controller *controller,
+			     char *command_line);
+static void
+command_source(struct controller *controller, struct joystick *stick,
+	       int cmd_n_parts, char *command_parsing,
+	       int has_numeric_arg, int numeric_arg, double float_arg,
+	       int has_name_arg, char *name_arg,
+	       int channel, int channel_index, int channel_type)
+{
+  struct stat stat_buf;
+  if (stat(name_arg, &stat_buf) == 0) {
+    int fd = open(name_arg, O_RDONLY, 0);
+    if (fd >= 0) {
+      int file_size = stat_buf.st_size;
+      char *file_buf = (char*)malloc(file_size+1);
+      char *p = file_buf;
+      char *end = &(file_buf[file_size]);
+      file_size = read(fd, file_buf, file_size);
+      close(fd);
+      file_buf[file_size] = '\0';
+      while (p < end) {
+	char *q = p;
+	char c;
+	while (((c = *q) != '\n')
+	       && (c != '\0')) {
+	  q++;
+	}
+	*q = '\0';
+	run_command_line(controller, p);
+	p = q+1;
+      }
+      free(file_buf);
+    }
+  }
+}
+
 static void
 command_keymap(struct controller *controller, struct joystick *stick,
 	       int cmd_n_parts, char *command_parsing, int has_numeric_arg, int numeric_arg, double float_arg,
@@ -1045,7 +1082,7 @@ typedef struct {
 		 int, char *, int, int, int);
 } command_descr;
 
-static command_descr commands[24] = {
+static command_descr commands[25] = {
   {"quit", command_quit},
   {"rumble", command_rumble},
   {"shock", command_shock},
@@ -1069,6 +1106,7 @@ static command_descr commands[24] = {
   {"acknowledge", command_acknowledge},
   {"renumbering", command_renumbering},
   {"report", command_report},
+  {"source", command_source},
   {"keymap", command_keymap},
 #ifdef DIAGRAM
   {"labels", command_labels},
@@ -1090,10 +1128,10 @@ command_help(struct controller *controller, struct joystick *stick,
 }
 
 static void
-process_command(struct controller *controller)
+run_command_line(struct controller *controller,
+		 char *command_line)
 {
   struct joystick *stick = controller->sticks[0];
-
   char command_name[COMMAND_BUF_SIZE];
   double float_arg;
   int numeric_arg;
@@ -1105,10 +1143,77 @@ process_command(struct controller *controller)
   /* index into the buttons/axes that we actually have */
   int channel_index = -1;
   int channel_type = -1;
-  char *command_parsing;
-  char *command_end;
   command_descr *possible = &commands[0];
   int done = 0;
+
+  int cmd_n_parts = sscanf(command_line, "%s %lf", command_name, &float_arg);
+
+  if (cmd_n_parts == 2) {
+    /* command has numeric arg only */
+    numeric_arg = (int)float_arg;
+    has_numeric_arg = 1;
+  } else if ((cmd_n_parts = sscanf(command_line,
+				   "%s %s %lf",
+				   command_name,
+				   name_arg,
+				   &float_arg)) >= 2) {
+    if (cmd_n_parts == 3) {
+      numeric_arg = (int)float_arg;
+      has_numeric_arg = 1;
+    }
+    /* command has channel (and perhaps numeric arg) */
+    /* look for the channel number and type */
+
+    channel_index = channel_index_from_button_name(stick, name_arg);
+    if (channel_index == -1) {
+      channel_index = channel_index_from_axis_name(stick, name_arg);
+      channel = stick->axmap[channel_index];
+      channel_type = JS_EVENT_AXIS;
+      has_name_arg = 1;
+    } else {
+      channel = stick->btnmap[channel_index];
+      channel_type = JS_EVENT_BUTTON;
+      has_name_arg = 1;
+    }
+  } else {
+    /* command name only */
+  }
+
+  if (acknowledge) {
+    output("(%scommand-acknowledge \"%s\" \"%.64s\")\n",
+	   stick->name,
+	   stick->device,
+	   command_line);
+    if (0) {
+      output("(message \"has_numeric_arg=%d numeric_arg=%lf has_name_arg=%d channel=%d type=%d\")\n",
+	     has_numeric_arg, numeric_arg,
+	     has_name_arg, channel, channel_type);
+    }
+  }
+
+  while (possible->name != NULL) {
+    if (strcmp(command_name, possible->name) == 0) {
+      (possible->cmd_fn)(controller, stick,
+			 cmd_n_parts, command_line,
+			 has_numeric_arg, numeric_arg, float_arg,
+			 has_name_arg, name_arg, channel,
+			 channel_index, channel_type);
+      done = 1;
+      break;
+    }
+    possible++;
+  }
+    
+  if (!done) {
+    output("(%sbad-command \"%s\")\n", stick->event_name, command_line);
+  }
+}
+
+static void
+process_command(struct controller *controller)
+{
+  char *command_parsing;
+  char *command_end;
 
   command_reading[command_length] = '\0';
   command_reading += command_length;
@@ -1117,69 +1222,10 @@ process_command(struct controller *controller)
 
   while ((command_end = strchr(command_parsing, '\n')) != 0) {
 
-    int cmd_n_parts = sscanf(command_parsing, "%s %lf", command_name, &float_arg);
-
     *command_end = '\0'; /* for neat acknowledgement */
 
-    if (cmd_n_parts == 2) {
-      /* command has numeric arg only */
-      numeric_arg = (int)float_arg;
-      has_numeric_arg = 1;
-    } else if ((cmd_n_parts = sscanf(command_parsing,
-				     "%s %s %lf",
-				     command_name,
-				     name_arg,
-				     &float_arg)) >= 2) {
-      if (cmd_n_parts == 3) {
-	numeric_arg = (int)float_arg;
-	has_numeric_arg = 1;
-      }
-      /* command has channel (and perhaps numeric arg) */
-      /* look for the channel number and type */
-
-      channel_index = channel_index_from_button_name(stick, name_arg);
-      if (channel_index == -1) {
-	channel_index = channel_index_from_axis_name(stick, name_arg);
-	channel = stick->axmap[channel_index];
-	channel_type = JS_EVENT_AXIS;
-	has_name_arg = 1;
-      } else {
-	channel = stick->btnmap[channel_index];
-	channel_type = JS_EVENT_BUTTON;
-	has_name_arg = 1;
-      }
-    } else {
-      /* command name only */
-    }
-
-    if (acknowledge) {
-      output("(%scommand-acknowledge \"%s\" \"%.64s\")\n",
-	     stick->name,
-	     stick->device,
-	     command_parsing);
-      if (0) {
-	output("(message \"has_numeric_arg=%d numeric_arg=%lf has_name_arg=%d channel=%d type=%d\")\n",
-	       has_numeric_arg, numeric_arg,
-	       has_name_arg, channel, channel_type);
-      }
-    }
-
-    while (possible->name != NULL) {
-      if (strcmp(command_name, possible->name) == 0) {
-	(possible->cmd_fn)(controller, stick,
-			   cmd_n_parts, command_parsing,
-			   has_numeric_arg, numeric_arg, float_arg,
-			   has_name_arg, name_arg, channel,
-			   channel_index, channel_type);
-	done = 1;
-	break;
-      }
-      possible++;
-    }
+    run_command_line(controller, command_parsing);
     
-    if (!done) {
-      output("(%sbad-command \"%s\")\n", stick->event_name, command_parsing);
-    }
     command_parsing = command_end+1;
   }
   command_reading = command_buf;
