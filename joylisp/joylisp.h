@@ -3,14 +3,14 @@
 
 /* Communication between GNU Emacs and the Linux Joystick Interface.
 
-   Copyright (C) 2007, 2008 John C. G. Sturdy
+   Copyright (C) 2007, 2008, 2009 John C. G. Sturdy
 
    This file is not part of GNU Emacs.
 
    The Emacs Joystick Interface is free software; you can redistribute
    it and/or modify it under the terms of the GNU General Public
    License as published by the Free Software Foundation; either
-   version 2, or (at your option) any later version.
+   version 3, or (at your option) any later version.
 
    The Emacs Joystick Interface is distributed in the hope that it
    will be useful, but WITHOUT ANY WARRANTY; without even the implied
@@ -23,6 +23,8 @@
    Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 */
+
+#define joylisp_version "0.2"
 
 #define NAME_LENGTH 128
 
@@ -62,6 +64,8 @@ typedef struct axis {
   double base_sensitivity;
   /* the limit of sensitivity to which acceleration can take us */
   double max_sensitivity;
+  /* ignore displacements below this -- typically miscalibration */
+  double threshold;
   /* multiply the sensitivity by this on each tick */
   double acceleration;
   /* how much left before producing the next event */
@@ -152,6 +156,9 @@ typedef struct controller {
 
   /* Whether we are reporting joystick positions as octants. */
   int octants;
+
+  /* Whether we are outputting calibration information */
+  int calibrating;
 
   /* Whether we are reporting axis up and down as separate commands.
      This has effect only if timing == 0. */
