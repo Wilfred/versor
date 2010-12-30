@@ -1,13 +1,13 @@
 /* Animate communication between GNU Emacs and the Linux Joystick Interface.
 
-   Copyright (C) 2007 John C. G. Sturdy
+   Copyright (C) 2007, 2009, 2010 John C. G. Sturdy
 
    This file is not part of GNU Emacs.
 
    The Emacs Joystick Interface is free software; you can redistribute
    it and/or modify it under the terms of the GNU General Public
    License as published by the Free Software Foundation; either
-   version 2, or (at your option) any later version.
+   version 3, or (at your option) any later version.
 
    The Emacs Joystick Interface is distributed in the hope that it
    will be useful, but WITHOUT ANY WARRANTY; without even the implied
@@ -243,6 +243,9 @@ static button_rect button_rects[] = {
   UnknownButton("Gear up"),
 };
 
+static char *default_window_title = NULL;
+static char *current_window_title = NULL;
+
 static feature_labels* feature_label_list = NULL;
 
 static int anything_happened = 1;	/* it was created, for a start */
@@ -465,6 +468,18 @@ parse_labels(struct joystick *stick, char *command_parsing)
 	label_group++;
       }
     }
+#if 0
+    {
+      feature_labels *fl;
+      fprintf(stderr, "label records:\n");
+      for (fl = feature_label_list;
+	   fl != NULL;
+	   fl = fl->next) {
+	fprintf(stderr, "  %p: %x\n", fl, fl->modifiers);
+      }
+      fprintf(stderr, "end of label records\n");
+    }
+#endif
   } else {
     feature_labels *label;
 
@@ -536,17 +551,25 @@ draw_diagram (struct controller *controller,
   int half_ascent = fontStruct->ascent / 2;
   int descent = fontStruct->descent;
 
-  while ((current_labels != NULL) &&
-	 (current_labels->modifiers != buttons_down) &&
-	 !(((keymap == NULL) && (current_labels->keymap == NULL)) ||
-	   ((keymap != NULL) && (current_labels->keymap != NULL) &&
-	    (strcmp(keymap, current_labels->keymap) == 0)))) {
+  while (current_labels != NULL) {
+    if (current_labels->modifiers == buttons_down) {
+      break;
+    }
+    if ((keymap != NULL) && (current_labels->keymap != NULL) &&
+	(strcmp(keymap, current_labels->keymap) == 0)) {
+      break;
+    }
     current_labels = current_labels->next;
   }
 
   if (current_labels) {
     gamepad_label = current_labels->gamepad_label;
+    current_window_title = gamepad_label;
+  } else {
+    current_window_title = default_window_title;
   }
+
+  XStoreName(theDisplay, theWindow, current_window_title);
 
 #if 1
   /* deal with overflowing labels */
@@ -722,8 +745,9 @@ draw_diagram (struct controller *controller,
     for (i = 0;
 	 (i < current_labels->n_axis_labels) && (i < N_AXIS_LABELS);
 	 i++) {
+
       button_rect *rect = &axis_rects[i];
-      char *label = rect->label; /* not using these for now */
+      char *label = rect->label; /* not using these for now; todo: what does that mean?*/
 
       XSetForeground(theDisplay, theGC, theColorPixels[rect->colour]);
 
@@ -732,18 +756,19 @@ draw_diagram (struct controller *controller,
       /* handy for debugging label placement */
       XDrawRectangle(theDisplay, theWindow, theGC,
 		     rect->x * window_x_scale,
-		     rect->y * window_y_scale,
+		     (rect->y * window_y_scale) - half_ascent,
 		     rect->w * window_x_scale,
 		     rect->h * window_y_scale);
 #endif
       XDrawImageString(theDisplay, theWindow, theGC,
-		  ((rect->x + rect->w/2) * window_x_scale)
-		  - (XTextWidth(fontStruct, label, strlen(label)) / 2),
-		  ((rect->y) * window_y_scale) + half_ascent,
-		  label, strlen(label));
+		       ((rect->x + rect->w/2) * window_x_scale)
+		       - (XTextWidth(fontStruct, label, strlen(label)) / 2),
+		       ((rect->y) * window_y_scale) + half_ascent,
+		       label, strlen(label));
     }
   }
 
+  /* draw the buttons */
   for (i = 0; i < stick->nbuttons; i++) {
     int b_type = stick->btnmap[i] - BTN_MISC;
     button_rect *rect = &button_rects[b_type];
@@ -754,6 +779,7 @@ draw_diagram (struct controller *controller,
       label = current_labels->button_labels[i];
     }
     if (buttons_down & (1 << i)) {
+      /* draw a pressed button */
       XSetForeground(theDisplay, theGC, theBlackPixel);
       if (rect->shape) {
 	XSetForeground(theDisplay, theGC, theColorPixels[rect->colour]);
@@ -768,6 +794,7 @@ draw_diagram (struct controller *controller,
 		       rect->w * window_x_scale, rect->h * window_y_scale);
       }
     } else {
+      /* draw a released button */
       XSetForeground(theDisplay, theGC, theWhitePixel);
       if (rect->shape) {
 	XFillArc(theDisplay, theWindow, theGC,
@@ -779,6 +806,7 @@ draw_diagram (struct controller *controller,
 		       rect->x * window_x_scale, rect->y * window_y_scale,
 		       rect->w * window_x_scale, rect->h * window_y_scale);
       }
+      /* label the button */
 #if 1
       XSetForeground(theDisplay, theGC, theColorPixels[i]);
 #else
@@ -857,6 +885,11 @@ init_diagram()
 			    CopyFromParent,
 			    theWindowMask,
 			    &theWindowAttributes);
+
+  current_window_title
+    = default_window_title
+    = "Emacs Gamepad Interface";
+  XStoreName(theDisplay, theWindow, current_window_title);
 
   theSizeHints.flags = PPosition | PSize;
   theSizeHints.x = window_x;
