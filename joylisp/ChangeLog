@@ -1,3 +1,62 @@
+2010-12-30  John Sturdy  <john.sturdy@citrix.com>
+
+	* joylisp_graphics.c (draw_diagram): fixes to labelling.
+
+	* joylisp.c (command_source): Command to run commands from a file.
+
+2010-12-28  John Sturdy  <jcgs@hosea>
+
+	* joylisp.c (check_init_complete): Allocate controller-wide button
+	alias array *after* counting how long it must be, instead
+	of *before*.
+
+2009-02-13  John C G Sturdy  <john.sturdy@ul.ie>
+
+	* joylisp.c (main): use /dev/input/js0 instead of /dev/js0 as the
+	default device.
+	(js_do_axis_event): Suppress spurious output of 32767 and -32767.
+
+	* joylisp.h, joylisp.c, joylisp_graphics.c: Use GPL v3.
+
+	* joylisp.c (js_do_axis_event): Added calibration output.
+
+2008-12-01  John Sturdy  <john.sturdy@ul.ie>
+
+	* joystick.el (joystick-increase-threshold): Added threshold
+	command to the elisp.
+
+2008-09-28  John Sturdy  <john.sturdy@ul.ie>
+
+	* joylisp.c (process_command): added commands "report" and
+	"threshold", with a view to being able to suppress the small
+	spurious movements that sometimes occur.
+	(js_do_axis_event): Added thresholding.
+	(process_command): Moved all the commands into their own
+	functions, then made a list of command names and functions instead
+	of a series of hard-coded strcmps; that also let me do a help
+	function that lists all the command names automatically
+
+2008-07-17  John Sturdy  <john.sturdy@ul.ie>
+
+	* joystick.el (find-error-or-this-file-or-tag): finding things
+	requires ffap
+
+2008-04-30  John Sturdy  <john.sturdy@ul.ie>
+
+	* joystick.el (joystick-gamepad-setup): make the "find" button
+	understand filenames
+
+2008-02-22  John Sturdy  <john.sturdy@ul.ie>
+
+	* joylisp.c (check_init_complete): Set up countdown for
+	initializing all sticks correctly.
+
+2008-02-14  John Sturdy  <john.sturdy@ul.ie>
+
+	* joylisp.h, joylisp.c (new_joystick): Filled in possibly sensible
+	defaults in axmap, as it appears that some joysticks (or drivers)
+	may not fill it in properly (bug reported by T.V. Raman.).
+
 2008-02-04  John Sturdy  <john.sturdy@ul.ie>
 
 	* joystick.el (jse): Accept chords from the controller process.
@@ -15,7 +74,7 @@
 2008-01-30 John Sturdy  <john.sturdy@ul.ie>
 	* Move into emacs-versor as a new module, joylisp.  Release on
 	sourceforge.
-	
+
 2008-01-30  John Sturdy  <jcgs@hosea>
 
 	* joylisp.c, joylisp.h: make Button_Name construct a name even

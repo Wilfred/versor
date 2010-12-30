@@ -1384,13 +1384,14 @@ are as follows:
 * tickrate::                    Set the tick rate
 * timing::                      Use timing for axes (normal)
 * updown::                      Use up and down events
+* source::                      Run commands from a file
 @end menu
 
 @node  acceleration, acknowledge, Driver commands, Driver commands
 @comment  node-name,  next,  previous,  up
 @subsection acceleration
 @itemize @bullet
-@item acceleration ratio
+@item @code{acceleration} ratio
 @end itemize
 
 For every axis event, increase the sensitivity by the given
@@ -1400,7 +1401,7 @@ ratio.  Normal speed is resumed when the axis is next centred.
 @comment  node-name,  next,  previous,  up
 @subsection acknowledge
 @itemize @bullet
-@item acknowledge [arg]
+@item @code{acknowledge} [arg]
 @end itemize
 
 With arg == 0, turn command acknowledgment off; otherwise turn
@@ -1410,10 +1411,10 @@ it on.
 @comment  node-name,  next,  previous,  up
 @subsection hatspeed
 @itemize @bullet
-@item hatspeed
-@item hatspeed value
-@item hatspeed channel
-@item hatspeed channel value
+@item @code{hatspeed}
+@item @code{hatspeed} value
+@item @code{hatspeed} channel
+@item @code{hatspeed} channel value
 @end itemize
 
 Set the hat speed.  This is the same as `sensitivity', but only
@@ -1438,8 +1439,8 @@ of modifier buttons.  This is then remembered.
 @comment  node-name,  next,  previous,  up
 @subsection numeric-mods
 @itemize @bullet
-@item numeric-mods
-@item symbolic-mods
+@item @code{numeric}-mods
+@item @code{symbolic}-mods
 @end itemize
 
 Set the modifier representation to numeric or symbolic.
@@ -1448,7 +1449,7 @@ Set the modifier representation to numeric or symbolic.
 @comment  node-name,  next,  previous,  up
 @subsection maxspeed
 @itemize @bullet
-@item maxspeed value
+@item @code{maxspeed} value
 @end itemize
 
 Set the maximum sensitivity (limit of acceleration) to value.
@@ -1457,7 +1458,7 @@ Set the maximum sensitivity (limit of acceleration) to value.
 @comment  node-name,  next,  previous,  up
 @subsection quit
 @itemize @bullet
-@item quit
+@item @code{quit}
 @end itemize
 
 Quit the joystick-to-lisp program.
@@ -1466,7 +1467,7 @@ Quit the joystick-to-lisp program.
 @comment  node-name,  next,  previous,  up
 @subsection rumble
 @itemize @bullet
-@item rumble
+@item @code{rumble}
 @end itemize
 
 Make the joystick / keypad rumble.  Not implemented, as there's
@@ -1476,10 +1477,10 @@ no mention of this in the joystick driver documentation.
 @comment  node-name,  next,  previous,  up
 @subsection sensitivity
 @itemize @bullet
-@item sensitivity
-@item sensitivity value
-@item sensitivity axis value
-@item sensitivity axis
+@item @code{sensitivity}
+@item @code{sensitivity} value
+@item @code{sensitivity} axis value
+@item @code{sensitivity} axis
 @end itemize
  
 With no args, or with only an axis name, report all or one of
@@ -1499,7 +1500,7 @@ every 4 ticks.
 @comment  node-name,  next,  previous,  up
 @subsection shock
 @itemize @bullet
-@item shock
+@item @code{shock}
 @end itemize
 
 Make the joystick / keypad give the user a shock.  Not implemented, as
@@ -1514,7 +1515,7 @@ rumble motors, and use that to switch the high-tension.
 @comment  node-name,  next,  previous,  up
 @subsection show-ticking
 @itemize @bullet
-@item show-ticking [arg]
+@item @code{show-ticking} [arg]
 @end itemize
 
 With arg == 0, don't show every internal tick.
@@ -1525,7 +1526,7 @@ Mostly meant for debugging.
 @comment  node-name,  next,  previous,  up
 @subsection signed
 @itemize @bullet
-@item signed
+@item @code{signed}
 @end itemize
 
 Output the joystick displacement as a signed value.  See also
@@ -1535,7 +1536,7 @@ Output the joystick displacement as a signed value.  See also
 @comment  node-name,  next,  previous,  up
 @subsection stamped
 @itemize @bullet
-@item stamped [arg]
+@item @code{stamped} [arg]
 @end itemize
 
 With arg == 0, don't send timestamps before each event.
@@ -1545,7 +1546,7 @@ Otherwise, send a timestamp before each event.
 @comment  node-name,  next,  previous,  up
 @subsection tickrate
 @itemize @bullet
-@item tickrate [ticks-per-second]
+@item @code{tickrate} [ticks-per-second]
 @end itemize
 
 With argument, set the ticks per second (for the `timing'
@@ -1562,7 +1563,7 @@ using more CPU time.  Still, that probably won't be much.
 @comment  node-name,  next,  previous,  up
 @subsection timing
 @itemize @bullet
-@item timing
+@item @code{timing}
 @end itemize
 
 When a joystick axis is off-center, send a stream of events, at
@@ -1571,16 +1572,25 @@ default.  See also `signed' and `updown'.  The scale of the
 individual axis is set with the `sensitivity' command, and the
 overall rate of the system is set with `tickrate'.
 
-@node  updown,  , timing, Driver commands
+@node  updown, source, timing, Driver commands
 @comment  node-name,  next,  previous,  up
 @subsection updown
 @itemize @bullet
-@item updown
+@item @code{updown}
 @end itemize
 
 Output the joystick displacement as an unsigned value, and give
 the sign by issuing different event types.  See also `signed'
 and `timing' output modes.
+
+@node  source,  , updown, Driver commands
+@comment  node-name,  next,  previous,  up
+@subsection source
+@itemize @bullet
+@item @code{source} filename
+@end itemize
+
+Run the commands in a file.
 
 @node  Compatibility, Acknowledgements, Implementation details, Top
 @comment  node-name,  next,  previous,  up
