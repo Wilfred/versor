@@ -1,6 +1,8 @@
 #define LEFT(_a_) (15 - (_a_))
 #define RIGHT(_a_) (15 + (_a_))
 
+#define SCALE(_b_) (_b_)
+
 /* the boundary between the face/handle and the shoulder */
 #define HANDLE_SHOULDER_X  12
 #define HANDLE_SHOULDER_Y  (((LONG_BUTTON_HEIGHT + 1) * LONG_BUTTON_ROWS))
